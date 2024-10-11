@@ -44,9 +44,11 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TextField
 import androidx.navigation.compose.currentBackStackEntryAsState
-import android.util.Log
+import kotlinx.serialization.json.Json
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
+val LocalJson = compositionLocalOf<Json> { Json { ignoreUnknownKeys = true } }
+// val LocalKVault = compositionLocalOf<KVault?> { null }
 
 enum class AppScreen(val title : StringResource) {
     Home(title = Res.string.home),
@@ -77,12 +79,12 @@ fun AppBar (
     )
 }
 
-@Composable
-fun changeLogin( username : String, password : String) {
+
+fun changeLogin( kvault : KVault?, username : String, password : String) {
     println("username: $username")
-    LocalKVault.current?.set(key = "USERNAME", stringValue = username)
-    LocalKVault.current?.set(key = "PASSWORD", stringValue = password)
-    LocalKVault.current?.set(key = "GRADE_DATA", stringValue = getSourceData(username, password)?.toString() ?: "")
+    kvault?.set(key = "USERNAME", stringValue = username)
+    kvault?.set(key = "PASSWORD", stringValue = password)
+    kvault?.set(key = "GRADE_DATA", stringValue = getSourceData(username, password)?.toString() ?: "")
 }
 
 
@@ -91,20 +93,15 @@ fun changeLogin( username : String, password : String) {
 fun App( navController : NavHostController = rememberNavController()) {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
-
-        var usernameState by remember { mutableStateOf("") }
-        usernameState = LocalKVault.current?.string(forKey = "USERNAME") ?: ""
-        var passwordState by remember { mutableStateOf("") }
-        passwordState = LocalKVault.current?.string(forKey = "PASSWORD") ?: ""
-
-        val changeLoginVal = mutableStateOf(false)
-
         var kvault = LocalKVault.current
 
+        var usernameState by remember { mutableStateOf(kvault?.string(forKey = "USERNAME") ?: "") }
+        var passwordState by remember { mutableStateOf(kvault?.string(forKey = "PASSWORD") ?: "") }
         
-
-        var testingSourceData by remember { mutableStateOf("") }
-        println("testingSourceData: $testingSourceData")
+        val localJson = LocalJson.current
+        var sourceData: List<Class>? by remember { mutableStateOf(localJson?.decodeFromString<List<Class>>(kvault?.string(forKey = "GRADE_DATA") ?: "")) }
+        
+        println("testingSourceData: $sourceData")
 
         // Get current back stack entry
         val backStackEntry by navController.currentBackStackEntryAsState()
@@ -115,7 +112,7 @@ fun App( navController : NavHostController = rememberNavController()) {
 
         LaunchedEffect(currentScreen)
         {
-            testingSourceData = kvault?.string(forKey = "GRADE_DATA") ?: ""
+            sourceData = localJson?.decodeFromString<List<Class>>(kvault?.string(forKey = "GRADE_DATA") ?: "")
         }
         
         Scaffold(
@@ -139,7 +136,7 @@ fun App( navController : NavHostController = rememberNavController()) {
 
                 composable(route = AppScreen.Home.name) {
                     Text("Home")
-                    Text(testingSourceData)
+                    Text(sourceData?.get(0).toString())
                 }
                 composable(route = AppScreen.Grades.name) {
                     Text("Grades")
@@ -157,16 +154,10 @@ fun App( navController : NavHostController = rememberNavController()) {
                             onValueChange = { passwordState = it },
                             label = {Text("Password")}
                         )
-
-                        Button(onClick = { changeLoginVal.value = true }) {
+                        Button(onClick = { changeLogin(kvault, usernameState, passwordState) }) {
                             Text("Change")
                         }
 
-                        if (changeLoginVal.value)
-                        {
-                            changeLogin(usernameState, passwordState)
-                            changeLoginVal.value = false;
-                        }
                     }
                 }
             }
