@@ -17,6 +17,8 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import android.os.Bundle
+import android.util.Log
 
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
@@ -36,18 +38,21 @@ import androidx.navigation.compose.composable
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.IconButton
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Scaffold
+import androidx.compose.material.TextField
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
 
 enum class AppScreen(val title : StringResource) {
     Home(title = Res.string.home),
-    Grades(title = Res.string.grades)
+    Grades(title = Res.string.grades),
+    Settings(title = Res.string.settings)
 }
 
 @Composable
@@ -66,8 +71,18 @@ fun AppBar (
             IconButton(onClick = { navController.navigate(AppScreen.Grades.name)} ) {
                 Icon(Icons.Filled.School, contentDescription = "Localized description")
             }
+            IconButton(onClick = { navController.navigate(AppScreen.Settings.name)} ) {
+                Icon(Icons.Filled.Settings, contentDescription = "Localized description")
+            }
         }
     )
+}
+
+@Composable
+fun changeLogin( username : String, password : String) {
+    Log.d("com.chrissytopher.source", username)
+    LocalKVault.current?.set(key = "USERNAME", stringValue = username)
+    LocalKVault.current?.set(key = "PASSWORD", stringValue = password)
 }
 
 
@@ -77,7 +92,17 @@ fun App( navController : NavHostController = rememberNavController()) {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
 
-        var testingSourceData = remember { getSourceData("1cjhuntwork", "joemama")?.toString() ?: "" }
+        var usernameState by remember { mutableStateOf("") }
+        usernameState = LocalKVault.current?.string(forKey = "USERNAME") ?: ""
+        var passwordState by remember { mutableStateOf("") }
+        passwordState = LocalKVault.current?.string(forKey = "PASSWORD") ?: ""
+
+        val changeLoginVal = mutableStateOf(false)
+
+        
+
+        var testingSourceData = remember { getSourceData(usernameState, passwordState)?.toString() ?: "" }
+        Log.d("com.chrissytopher.source", testingSourceData)
 
         // Get current back stack entry
         val backStackEntry by navController.currentBackStackEntryAsState()
@@ -104,12 +129,38 @@ fun App( navController : NavHostController = rememberNavController()) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+
                 composable(route = AppScreen.Home.name) {
                     Text("Home")
                     Text(testingSourceData)
                 }
                 composable(route = AppScreen.Grades.name) {
                     Text("Grades")
+                }
+                composable(route = AppScreen.Settings.name) {
+                    Column() {
+                        Text("Settings")
+                        TextField(
+                            value = usernameState,
+                            onValueChange = { usernameState = it },
+                            label = {Text("Username")}
+                        )
+                        TextField(
+                            value = passwordState,
+                            onValueChange = { passwordState = it },
+                            label = {Text("Password")}
+                        )
+
+                        Button(onClick = { changeLoginVal.value = true }) {
+                            Text("Change")
+                        }
+
+                        if (changeLoginVal.value)
+                        {
+                            changeLogin(usernameState, passwordState)
+                            changeLoginVal.value = false;
+                        }
+                    }
                 }
             }
         }
