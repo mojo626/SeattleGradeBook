@@ -39,57 +39,53 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Subscriptions
+import androidx.compose.material.icons.outlined.Camera
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Subscriptions
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TextField
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
 val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
- val LocalSourceData = compositionLocalOf<MutableState<List<Class>?>> { mutableStateOf(null) }
+val LocalSourceData = compositionLocalOf<MutableState<List<Class>?>> { mutableStateOf(null) }
 
-enum class AppScreen(val title : StringResource) {
-    Home(title = Res.string.home),
-    Grades(title = Res.string.grades),
-    Settings(title = Res.string.settings)
+enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector) {
+    Home(Icons.Filled.Home, Icons.Outlined.Home),
+    Grades(Icons.Filled.Home, Icons.Outlined.Home),
+    Settings(Icons.Filled.Settings, Icons.Outlined.Settings)
 }
 
 @Composable
-fun AppBar (
-    currentScreen : AppScreen,
-    canNavigateBack : Boolean,
-    navigateUp : () -> Unit,
-    modifier : Modifier = Modifier,
-    navController : NavHostController
-) {
-    BottomAppBar(
-        content = {
-            IconButton(onClick = { navController.navigate(AppScreen.Home.name)} ) {
-                Icon(Icons.Filled.Home, contentDescription = "Localized description")
-            }
-            IconButton(onClick = { navController.navigate(AppScreen.Grades.name)} ) {
-                Icon(Icons.Filled.School, contentDescription = "Localized description")
-            }
-            IconButton(onClick = { navController.navigate(AppScreen.Settings.name)} ) {
-                Icon(Icons.Filled.Settings, contentDescription = "Localized description")
-            }
+fun AppBottomBar(currentScreenState: State<NavBackStackEntry?>, select: (NavScreen) -> Unit) {
+    val currentScreen by currentScreenState
+    NavigationBar {
+        NavScreen.entries.forEach { item ->
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        if (currentScreen?.destination?.route == item.name) item.selectedIcon else item.unselectedIcon,
+                        contentDescription = item.name
+                    )
+                },
+                label = { Text(item.name) },
+                selected = currentScreen?.destination?.route == item.name,
+                onClick = { select(item) }
+            )
         }
-    )
-}
-
-
-fun changeLogin( kvault : KVault?, username : String, password : String) {
-    println("username: $username")
-    kvault?.set(key = "USERNAME", stringValue = username)
-    kvault?.set(key = "PASSWORD", stringValue = password)
-    getSourceData(username, password).getOrNull()?.let {
-        kvault?.set(key = "GRADE_DATA", stringValue = Json.encodeToString(it))
     }
 }
-
 
 @Composable
 @Preview
@@ -105,39 +101,29 @@ fun App( navController : NavHostController = rememberNavController()) {
         val sourceData: List<Class>? by LocalSourceData.current
         
         println("testingSourceData: $sourceData")
-
-        // Get current back stack entry
-        val backStackEntry by navController.currentBackStackEntryAsState()
-
-        val currentScreen = AppScreen.valueOf(
-            backStackEntry?.destination?.route ?: AppScreen.Home.name
-        )
         
         Scaffold(
             bottomBar = {
-                AppBar(
-                    currentScreen = currentScreen,
-                    canNavigateBack = navController.previousBackStackEntry != null,
-                    navigateUp = { navController.navigateUp() },
-                    navController = navController
-                )
+                AppBottomBar(
+                    navController.currentBackStackEntryAsState()
+                ) { navController.navigate(it.name) }
             }
         ) {
             NavHost(
                 navController = navController,
-                startDestination = AppScreen.Home.name,
+                startDestination = NavScreen.Home.name,
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
 
-                composable(route = AppScreen.Home.name) {
+                composable(route = NavScreen.Home.name) {
                     HomeScreen()
                 }
-                composable(route = AppScreen.Grades.name) {
+                composable(route = NavScreen.Grades.name) {
                     GradesScreen()
                 }
-                composable(route = AppScreen.Settings.name) {
+                composable(route = NavScreen.Settings.name) {
                     SettingsScreen()
                 }
             }

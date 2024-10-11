@@ -21,7 +21,7 @@ fun HomeScreen() {
     val sourceData: List<Class>? by LocalSourceData.current
     Column {
         Text("Home")
-        Text(sourceData?.get(0)?.assignments_parsed?.get(0)?._assignmentsections?.get(0)?.name.toString())
+        Text(sourceData?.getOrNull(0)?.assignments_parsed?.getOrNull(0)?._assignmentsections?.getOrNull(0)?.name.toString())
 
 
         var classes = sourceData
