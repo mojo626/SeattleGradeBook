@@ -7,3 +7,7 @@ class IOSPlatform: Platform {
 }
 
 actual fun getPlatform(): Platform = IOSPlatform()
+
+actual fun getSourceData(username: String, password: String): String {
+    TODO()
+}

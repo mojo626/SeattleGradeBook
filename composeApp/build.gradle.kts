@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.tasks.getProjectNativeLibs
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -17,7 +18,7 @@ kotlin {
         }
     }
     
-    jvm("desktop")
+//    jvm("desktop")
     
     listOf(
         iosX64(),
@@ -29,13 +30,15 @@ kotlin {
             isStatic = true
         }
     }
-    
     sourceSets {
-        val desktopMain by getting
+//        val desktopMain by getting {
+//            resources.srcDirs("src/desktopMain/jniLibs")
+//        }
         
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -47,10 +50,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
         }
-        desktopMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutines.swing)
-        }
+//        desktopMain.dependencies {
+//            implementation(compose.desktop.currentOs)
+//            implementation(libs.kotlinx.coroutines.swing)
+//        }
     }
 }
 
@@ -85,14 +88,14 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
-compose.desktop {
-    application {
-        mainClass = "com.chrissytopher.source.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.chrissytopher.source"
-            packageVersion = "1.0.0"
-        }
-    }
-}
+//compose.desktop {
+//    application {
+//        mainClass = "com.chrissytopher.source.MainKt"
+//
+//        nativeDistributions {
+//            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+//            packageName = "com.chrissytopher.source"
+//            packageVersion = "1.0.0"
+//        }
+//    }
+//}

@@ -5,3 +5,8 @@ class JVMPlatform: Platform {
 }
 
 actual fun getPlatform(): Platform = JVMPlatform()
+
+actual fun getSourceData(username: String, password: String): String {
+    println(System.mapLibraryName("sourceapp"))
+    return SourceApi.getSourceData(username, password)
+}

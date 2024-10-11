@@ -7,3 +7,7 @@ class AndroidPlatform : Platform {
 }
 
 actual fun getPlatform(): Platform = AndroidPlatform()
+
+actual fun getSourceData(username: String, password: String): String {
+    return SourceApi.getSourceData(username, password)
+}
