@@ -102,9 +102,6 @@ fun App( navController : NavHostController = rememberNavController()) {
         }
     }
     MaterialTheme {
-        var usernameState by remember { mutableStateOf(kvault?.string(forKey = "USERNAME") ?: "") }
-        var passwordState by remember { mutableStateOf(kvault?.string(forKey = "PASSWORD") ?: "") }
-
         val sourceData: List<Class>? by LocalSourceData.current
         
         println("testingSourceData: $sourceData")
@@ -135,32 +132,13 @@ fun App( navController : NavHostController = rememberNavController()) {
             ) {
 
                 composable(route = AppScreen.Home.name) {
-                    Column {
-                        Text("Home")
-                        Text(sourceData?.get(0)?.assignments_parsed?.get(0)?._assignmentsections?.get(0)?.name.toString())
-                    }
+                    HomeScreen()
                 }
                 composable(route = AppScreen.Grades.name) {
-                    Text("Grades")
+                    GradesScreen()
                 }
                 composable(route = AppScreen.Settings.name) {
-                    Column {
-                        Text("Settings")
-                        TextField(
-                            value = usernameState,
-                            onValueChange = { usernameState = it },
-                            label = {Text("Username")}
-                        )
-                        TextField(
-                            value = passwordState,
-                            onValueChange = { passwordState = it },
-                            label = {Text("Password")}
-                        )
-                        Button(onClick = { changeLogin(kvault, usernameState, passwordState) }) {
-                            Text("Change")
-                        }
-
-                    }
+                    SettingsScreen()
                 }
             }
         }
