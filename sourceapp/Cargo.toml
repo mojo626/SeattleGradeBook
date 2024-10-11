@@ -14,8 +14,7 @@ thiserror = "1.0.64"
 jni = { version = "0.21.1" }
 
 [lib]
-crate-type = ["cdylib"]
-path = "src/jni.rs"
+crate-type = ["cdylib", "staticlib"]
 
 [[bin]]
 name = "runner"

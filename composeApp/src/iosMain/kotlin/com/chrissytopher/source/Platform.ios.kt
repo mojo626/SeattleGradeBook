@@ -8,6 +8,8 @@ class IOSPlatform: Platform {
 
 actual fun getPlatform(): Platform = IOSPlatform()
 
+lateinit var getSourceDataSwift: (String, String) -> String
+
 actual fun getSourceData(username: String, password: String): String {
-    TODO()
+    return getSourceDataSwift(username, password)
 }

@@ -1,5 +1,3 @@
-mod common;
-
 use jni::{JNIEnv, objects::{JClass, JString}, sys::jstring};
 
 use crate::common::get_source_data;

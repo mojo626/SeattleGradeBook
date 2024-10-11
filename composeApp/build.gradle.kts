@@ -2,6 +2,7 @@ import com.android.build.gradle.internal.tasks.getProjectNativeLibs
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.gradle.internal.os.OperatingSystem
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -19,7 +20,7 @@ kotlin {
     }
     
 //    jvm("desktop")
-    
+
     listOf(
         iosX64(),
         iosArm64(),

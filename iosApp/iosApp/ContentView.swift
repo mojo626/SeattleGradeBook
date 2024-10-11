@@ -4,7 +4,10 @@ import ComposeApp
 
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
+        return MainViewControllerKt.MainViewController(getSourceData: {username,password in
+            let cchar = get_source_data(username, password)
+            return String(cString: cchar!)
+        })
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
