@@ -1,5 +1,6 @@
 package com.chrissytopher.source
 
+import kotlinx.serialization.json.Json
 import platform.UIKit.UIDevice
 
 class IOSPlatform: Platform {
@@ -10,6 +11,6 @@ actual fun getPlatform(): Platform = IOSPlatform()
 
 lateinit var getSourceDataSwift: (String, String) -> String
 
-actual fun getSourceData(username: String, password: String): String {
-    return getSourceDataSwift(username, password)
-}
+actual fun getSourceData(username: String, password: String): List<Class>? = runCatching {
+    Json.decodeFromString<List<Class>>(getSourceDataSwift(username, password))
+}.getOrNull()

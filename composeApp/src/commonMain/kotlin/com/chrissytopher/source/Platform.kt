@@ -6,4 +6,4 @@ interface Platform {
 
 expect fun getPlatform(): Platform
 
-expect fun getSourceData(username: String, password: String): String
+expect fun getSourceData(username: String, password: String): List<Class>?

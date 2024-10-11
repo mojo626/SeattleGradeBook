@@ -5,15 +5,19 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
+import com.liftric.kvault.KVault
 
 class MainActivity : ComponentActivity() {
+    val kvault = KVault(this)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("SourceApi", getSourceData("1cjhuntwork", "joemama"))
         setContent {
-            App()
+            CompositionLocalProvider(LocalKVault provides kvault) {
+                App()
+            }
         }
     }
 }
