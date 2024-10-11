@@ -44,6 +44,7 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TextField
 import androidx.navigation.compose.currentBackStackEntryAsState
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
@@ -84,7 +85,9 @@ fun changeLogin( kvault : KVault?, username : String, password : String) {
     println("username: $username")
     kvault?.set(key = "USERNAME", stringValue = username)
     kvault?.set(key = "PASSWORD", stringValue = password)
-    kvault?.set(key = "GRADE_DATA", stringValue = getSourceData(username, password)?.toString() ?: "")
+    getSourceData(username, password).getOrNull()?.let {
+        kvault?.set(key = "GRADE_DATA", stringValue = Json.encodeToString(it))
+    }
 }
 
 
@@ -114,7 +117,6 @@ fun App( navController : NavHostController = rememberNavController()) {
         )
         
         Scaffold(
-            
             bottomBar = {
                 AppBar(
                     currentScreen = currentScreen,
@@ -133,14 +135,16 @@ fun App( navController : NavHostController = rememberNavController()) {
             ) {
 
                 composable(route = AppScreen.Home.name) {
-                    Text("Home")
-                    Text(sourceData?.get(0).toString())
+                    Column {
+                        Text("Home")
+                        Text(sourceData?.get(0).toString())
+                    }
                 }
                 composable(route = AppScreen.Grades.name) {
                     Text("Grades")
                 }
                 composable(route = AppScreen.Settings.name) {
-                    Column() {
+                    Column {
                         Text("Settings")
                         TextField(
                             value = usernameState,
