@@ -70,6 +70,8 @@ fun App( navController : NavHostController = rememberNavController()) {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
 
+        var testingSourceData = remember { getSourceData("1cjhuntwork", "joemama") }
+
         // Get current back stack entry
         val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -97,6 +99,7 @@ fun App( navController : NavHostController = rememberNavController()) {
             ) {
                 composable(route = AppScreen.Home.name) {
                     Text("Home")
+                    Text(testingSourceData)
                 }
                 composable(route = AppScreen.Grades.name) {
                     Text("Grades")
