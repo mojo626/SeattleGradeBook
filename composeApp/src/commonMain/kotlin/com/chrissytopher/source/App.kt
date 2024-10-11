@@ -44,6 +44,7 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Scaffold
 import androidx.compose.material.TextField
 import androidx.navigation.compose.currentBackStackEntryAsState
+import android.util.Log
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
 
@@ -81,6 +82,7 @@ fun changeLogin( username : String, password : String) {
     println("username: $username")
     LocalKVault.current?.set(key = "USERNAME", stringValue = username)
     LocalKVault.current?.set(key = "PASSWORD", stringValue = password)
+    LocalKVault.current?.set(key = "GRADE_DATA", stringValue = getSourceData(username, password)?.toString() ?: "")
 }
 
 
@@ -97,9 +99,11 @@ fun App( navController : NavHostController = rememberNavController()) {
 
         val changeLoginVal = mutableStateOf(false)
 
+        var kvault = LocalKVault.current
+
         
 
-        var testingSourceData = remember { getSourceData(usernameState, passwordState)?.toString() ?: "" }
+        var testingSourceData by remember { mutableStateOf("") }
         println("testingSourceData: $testingSourceData")
 
         // Get current back stack entry
@@ -108,6 +112,11 @@ fun App( navController : NavHostController = rememberNavController()) {
         val currentScreen = AppScreen.valueOf(
             backStackEntry?.destination?.route ?: AppScreen.Home.name
         )
+
+        LaunchedEffect(currentScreen)
+        {
+            testingSourceData = kvault?.string(forKey = "GRADE_DATA") ?: ""
+        }
         
         Scaffold(
             
