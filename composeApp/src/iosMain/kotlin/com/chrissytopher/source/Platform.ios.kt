@@ -11,6 +11,8 @@ actual fun getPlatform(): Platform = IOSPlatform()
 
 lateinit var getSourceDataSwift: (String, String) -> String
 
-actual fun getSourceData(username: String, password: String): List<Class>? = runCatching {
-    Json.decodeFromString<List<Class>>(getSourceDataSwift(username, password))
-}.getOrNull()
+private val json = Json { ignoreUnknownKeys = true }
+
+actual fun getSourceData(username: String, password: String): Result<List<Class>> = runCatching {
+    json.decodeFromString<List<Class>>(getSourceDataSwift(username, password))
+}

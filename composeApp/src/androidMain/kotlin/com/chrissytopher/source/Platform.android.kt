@@ -9,6 +9,8 @@ class AndroidPlatform : Platform {
 
 actual fun getPlatform(): Platform = AndroidPlatform()
 
-actual fun getSourceData(username: String, password: String): List<Class>? = runCatching {
-    Json.decodeFromString<List<Class>>(SourceApi.getSourceData(username, password))
-}.getOrNull()
+private val json = Json { ignoreUnknownKeys = true }
+
+actual fun getSourceData(username: String, password: String): Result<List<Class>> = runCatching {
+    json.decodeFromString<List<Class>>(SourceApi.getSourceData(username, password))
+}

@@ -17,8 +17,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import android.os.Bundle
-import android.util.Log
 
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
@@ -80,7 +78,7 @@ fun AppBar (
 
 @Composable
 fun changeLogin( username : String, password : String) {
-    Log.d("com.chrissytopher.source", username)
+    println("username: $username")
     LocalKVault.current?.set(key = "USERNAME", stringValue = username)
     LocalKVault.current?.set(key = "PASSWORD", stringValue = password)
 }
@@ -102,7 +100,7 @@ fun App( navController : NavHostController = rememberNavController()) {
         
 
         var testingSourceData = remember { getSourceData(usernameState, passwordState)?.toString() ?: "" }
-        Log.d("com.chrissytopher.source", testingSourceData)
+        println("testingSourceData: $testingSourceData")
 
         // Get current back stack entry
         val backStackEntry by navController.currentBackStackEntryAsState()
