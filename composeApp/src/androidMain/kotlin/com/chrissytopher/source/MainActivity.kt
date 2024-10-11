@@ -11,8 +11,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.liftric.kvault.KVault
 
 class MainActivity : ComponentActivity() {
-    val kvault = KVault(this)
     override fun onCreate(savedInstanceState: Bundle?) {
+        val kvault = KVault(this)
         super.onCreate(savedInstanceState)
         setContent {
             CompositionLocalProvider(LocalKVault provides kvault) {

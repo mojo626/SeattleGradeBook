@@ -54,6 +54,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kvault)
             implementation(compose.materialIconsExtended)
+            implementation(libs.navigation.compose)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)

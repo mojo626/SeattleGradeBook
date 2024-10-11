@@ -24,7 +24,6 @@ import androidx.navigation.compose.NavHost
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.compose_multiplatform
 
-val LocalKVault = compositionLocalOf<KVault?> { null }
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import source2.composeapp.generated.resources.*
@@ -44,6 +43,7 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Scaffold
 import androidx.navigation.compose.currentBackStackEntryAsState
 
+val LocalKVault = compositionLocalOf<KVault?> { null }
 
 enum class AppScreen(val title : StringResource) {
     Home(title = Res.string.home),
@@ -77,7 +77,7 @@ fun App( navController : NavHostController = rememberNavController()) {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
 
-        var testingSourceData = remember { getSourceData("1cjhuntwork", "joemama") }
+        var testingSourceData = remember { getSourceData("1cjhuntwork", "joemama")?.toString() ?: "" }
 
         // Get current back stack entry
         val backStackEntry by navController.currentBackStackEntryAsState()
