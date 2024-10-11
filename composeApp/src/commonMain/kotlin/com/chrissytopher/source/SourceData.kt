@@ -2,7 +2,10 @@
 
 package com.chrissytopher.source
 
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Serializable
 data class Class(
@@ -55,3 +58,48 @@ data class AssignmentScore (
     var studentsdcid: Int,
     var whenmodified: String,
 )
+
+class ClassMeta(classData: Class) {
+    var totalPoints: Float = 0f
+    var earnedPoints: Float = 0f
+    var finalScore: Float
+    var grade: String
+
+    init {
+        classData.assignments_parsed.forEach { assignment ->
+            assignment._assignmentsections.forEach { section ->
+                val possiblePoints = section.totalpointvalue
+                val finalScore = max(section._assignmentscores.minByOrNull {
+                    LocalDateTime.parse(it.scoreentrydate)
+                }?.scorepercent ?: 0f, 50f)/100f * possiblePoints
+                earnedPoints += finalScore
+                totalPoints += possiblePoints
+            }
+        }
+        finalScore = (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f
+        val roundedScore = finalScore.roundToInt()
+        grade = if (roundedScore > 92) {
+            "A"
+        } else if (roundedScore > 89) {
+            "A-"
+        } else if (roundedScore > 86) {
+            "B+"
+        } else if (roundedScore > 82) {
+            "B"
+        } else if (roundedScore > 79) {
+            "B-"
+        } else if (roundedScore > 76) {
+            "C+"
+        } else if (roundedScore > 72) {
+            "C"
+        } else if (roundedScore > 69) {
+            "C-"
+        } else if (roundedScore > 66) {
+            "D+"
+        } else if (roundedScore > 64) {
+            "D"
+        } else {
+            "E"
+        }
+    }
+}

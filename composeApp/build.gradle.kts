@@ -55,6 +55,7 @@ kotlin {
             implementation(libs.kvault)
             implementation(compose.materialIconsExtended)
             implementation(libs.navigation.compose)
+            implementation(libs.kotlinx.datetime)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)
