@@ -137,7 +137,7 @@ fun App( navController : NavHostController = rememberNavController()) {
                 composable(route = AppScreen.Home.name) {
                     Column {
                         Text("Home")
-                        Text(sourceData?.get(0).toString())
+                        Text(sourceData?.get(0)?.assignments_parsed?.get(0)?._assignmentsections?.get(0)?.name.toString())
                     }
                 }
                 composable(route = AppScreen.Grades.name) {
