@@ -47,8 +47,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.serialization.json.Json
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
-val LocalJson = compositionLocalOf<Json> { Json { ignoreUnknownKeys = true } }
-// val LocalKVault = compositionLocalOf<KVault?> { null }
+val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
+ val LocalSourceData = compositionLocalOf<MutableState<List<Class>?>> { mutableStateOf(null) }
 
 enum class AppScreen(val title : StringResource) {
     Home(title = Res.string.home),
@@ -91,15 +91,18 @@ fun changeLogin( kvault : KVault?, username : String, password : String) {
 @Composable
 @Preview
 fun App( navController : NavHostController = rememberNavController()) {
+    val localJson = LocalJson.current
+    val kvault = LocalKVault.current
+    if (LocalSourceData.current.value == null) {
+        kvault?.string(forKey = "GRADE_DATA")?.let { gradeData ->
+            LocalSourceData.current.value = localJson.decodeFromString<List<Class>>(gradeData)
+        }
+    }
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        var kvault = LocalKVault.current
-
         var usernameState by remember { mutableStateOf(kvault?.string(forKey = "USERNAME") ?: "") }
         var passwordState by remember { mutableStateOf(kvault?.string(forKey = "PASSWORD") ?: "") }
-        
-        val localJson = LocalJson.current
-        var sourceData: List<Class>? by remember { mutableStateOf(localJson?.decodeFromString<List<Class>>(kvault?.string(forKey = "GRADE_DATA") ?: "")) }
+
+        val sourceData: List<Class>? by LocalSourceData.current
         
         println("testingSourceData: $sourceData")
 
@@ -109,11 +112,6 @@ fun App( navController : NavHostController = rememberNavController()) {
         val currentScreen = AppScreen.valueOf(
             backStackEntry?.destination?.route ?: AppScreen.Home.name
         )
-
-        LaunchedEffect(currentScreen)
-        {
-            sourceData = localJson?.decodeFromString<List<Class>>(kvault?.string(forKey = "GRADE_DATA") ?: "")
-        }
         
         Scaffold(
             
