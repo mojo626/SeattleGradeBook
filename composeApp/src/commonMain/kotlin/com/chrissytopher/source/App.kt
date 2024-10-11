@@ -13,23 +13,93 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.compose_multiplatform
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import source2.composeapp.generated.resources.*
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.navigation.compose.composable
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.IconButton
+import androidx.compose.material.BottomAppBar
+import androidx.compose.material.Scaffold
+import androidx.navigation.compose.currentBackStackEntryAsState
+
+
+enum class AppScreen(val title : StringResource) {
+    Home(title = Res.string.home),
+    Grades(title = Res.string.grades)
+}
+
+@Composable
+fun AppBar (
+    currentScreen : AppScreen,
+    canNavigateBack : Boolean,
+    navigateUp : () -> Unit,
+    modifier : Modifier = Modifier,
+    navController : NavHostController
+) {
+    BottomAppBar(
+        content = {
+            IconButton(onClick = { navController.navigate(AppScreen.Home.name)} ) {
+                Icon(Icons.Filled.Home, contentDescription = "Localized description")
+            }
+            IconButton(onClick = { navController.navigate(AppScreen.Grades.name)} ) {
+                Icon(Icons.Filled.School, contentDescription = "Localized description")
+            }
+        }
+    )
+}
+
 
 @Composable
 @Preview
-fun App() {
+fun App( navController : NavHostController = rememberNavController()) {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
+
+        // Get current back stack entry
+        val backStackEntry by navController.currentBackStackEntryAsState()
+
+        val currentScreen = AppScreen.valueOf(
+            backStackEntry?.destination?.route ?: AppScreen.Home.name
+        )
+        
+        Scaffold(
+            
+            bottomBar = {
+                AppBar(
+                    currentScreen = currentScreen,
+                    canNavigateBack = navController.previousBackStackEntry != null,
+                    navigateUp = { navController.navigateUp() },
+                    navController = navController
+                )
             }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { getSourceData("1cjhuntwork", "joemama") }
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = AppScreen.Home.name,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                composable(route = AppScreen.Home.name) {
+                    Text("Home")
+                }
+                composable(route = AppScreen.Grades.name) {
+                    Text("Grades")
                 }
             }
         }

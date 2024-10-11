@@ -1,0 +1,5 @@
+<resources>
+    <string name="home">Home</string>
+    <string name="grades">Grades</string>
+    <string name="back_button">Back</string>
+</resources>
