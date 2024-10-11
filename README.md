@@ -12,3 +12,24 @@ This is a Kotlin Multiplatform project targeting Android, iOS, Desktop.
 
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
+
+#Useful commands
+
+For running on an android emulator or physical device without android studio, you can first build the project with 
+
+```
+./gradlew assembleDebug
+```
+
+And then deploy to the device with 
+
+```
+adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk      
+```
+
+If you want to be able to see logs, you can use logcat and filter out everything but debug level logs from com.chrissytopher.source with
+
+```
+adb logcat com.chrissytopher.source:D "*:S"
+```
