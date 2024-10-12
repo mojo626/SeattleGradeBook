@@ -36,6 +36,7 @@ val LocalKVault = compositionLocalOf<KVault?> { null }
 val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
 val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableStateOf(null) }
 val LocalNavHost = compositionLocalOf<NavHostController?> { null }
+val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateOf(null) }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),

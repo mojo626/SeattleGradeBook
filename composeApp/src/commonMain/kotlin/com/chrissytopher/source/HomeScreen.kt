@@ -106,14 +106,13 @@ fun HomeScreen() {
                 it.forEachIndexed { column, it ->
                     val index = row*2 + column
                     val meta = classMetas?.getOrNull(index)
+                    val classForGradePage = ClassForGradePage.current
+                    val navHost = LocalNavHost.current
                     Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
-                        Card(modifier = Modifier.fillMaxWidth().aspectRatio(1f), colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it) } } ?: CardDefaults.cardColors()) {
-                            Box(Modifier.fillMaxSize()) {
-                                Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(meta?.grade ?: "-")
-                                    Text(meta?.finalScore?.roundToInt()?.toString() ?: " ")
-                                    Text(it.name)
-                                }
+                        ClassCard(it, meta) {
+                            classForGradePage.value = it
+                            navHost?.navigate(NavScreen.Grades.name) {
+                                launchSingleTop = true
                             }
                         }
                     }
@@ -134,3 +133,27 @@ val gradeColors = mapOf(
     "D" to Color(0xFFf09151),
     "E" to Color(0xFFf24646),
 )
+
+@Composable
+fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
+    val inner = @Composable {
+        Box(Modifier.fillMaxSize()) {
+            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(meta?.grade ?: "-")
+                Text(meta?.finalScore?.roundToInt()?.toString() ?: " ")
+                Text(`class`.name)
+            }
+        }
+    }
+    val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+    val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it) } } ?: CardDefaults.cardColors()
+    if (onClick == null) {
+        Card(modifier, colors = colors) {
+            inner()
+        }
+    } else {
+        Card(onClick, modifier = modifier, colors = colors) {
+            inner()
+        }
+    }
+}
