@@ -12,10 +12,13 @@ actual fun getPlatform(): Platform = AndroidPlatform()
 
 private val json = Json { ignoreUnknownKeys = true }
 
-actual fun getSourceData(username: String, password: String): Result<List<Class>> = runCatching {
-    json.decodeFromString<List<Class>>(SourceApi.getSourceData(username, password))
+actual fun getSourceData(username: String, password: String): Result<SourceData> = runCatching {
+    json.decodeFromString(SourceApi.getSourceData(username, password, filesDirectory))
 }
 
 actual fun closeApp() {
     exitProcess(0)
+}
+actual fun filesDir(): String {
+    return filesDirectory
 }

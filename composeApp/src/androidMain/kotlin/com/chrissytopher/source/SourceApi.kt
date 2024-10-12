@@ -6,5 +6,5 @@ object SourceApi {
     }
 
     @JvmStatic
-    external fun getSourceData(username: String, password: String): String
+    external fun getSourceData(username: String, password: String, downloadPath: String): String
 }

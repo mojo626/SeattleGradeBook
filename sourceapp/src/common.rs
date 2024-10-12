@@ -1,9 +1,17 @@
+use std::{fs, io::{self, Write}, path::Path};
+
 use regex::Regex;
-use reqwest::blocking::ClientBuilder;
+use reqwest::blocking::{Client, ClientBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 use url::Url;
+
+#[derive(Deserialize, Serialize, Debug)]
+struct SourceData {
+    student_name: String,
+    classes: Vec<Class>,
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Class {
@@ -68,9 +76,13 @@ pub enum SourceError {
     UrlParseError(#[from] url::ParseError),
     #[error("Json Parse Error")]
     JsonParseError(#[from] serde_json::Error),
+    #[error("IO Error")]
+    IOError(#[from] io::Error),
+    #[error("Detected Login Failure")]
+    LoginFailureError,
 }
 
-pub fn get_source_data(username: &str, password: &str) -> Result<String, SourceError> {
+pub fn get_source_data(username: &str, password: &str, download_path: &str) -> Result<String, SourceError> {
     let client = ClientBuilder::new().cookie_store(true).build()?;
     let session_res = client.get("https://ps.seattleschools.org").send()?;
     let login_body  = [
@@ -83,10 +95,15 @@ pub fn get_source_data(username: &str, password: &str) -> Result<String, SourceE
         ("pw", password),
     ];
     session_res.error_for_status()?;
-    let login_res = client.post("https://ps.seattleschools.org/guardian/home.html").form(&login_body).send()?;
+    let login_res = client.post("https://ps.seattleschools.org/guardian/home.html").form(&login_body).send()?.error_for_status()?;
     let home_html = login_res.text()?;
+    // fs::File::create("home.html").unwrap().write(home_html.as_bytes()).unwrap();
+    get_img_url(&client, download_path)?;
 
     let scores_html_regex = Regex::new("<a href=\"scores.html\\?frn=[^\\\"]*\"")?;
+    let name_regex = Regex::new("<span id=\"firstlast\">[^<]*")?;
+    let student_name = name_regex.find(&home_html).map(|name_match| name_match.as_str()["<span id=\"firstlast\">".len()..].to_string());
+    let student_name = student_name.ok_or(SourceError::LoginFailureError)?;
     let score_url_regex = Regex::new("\"s[^\"]*")?;
     let class_header_regex = Regex::new("<td class=\"table-element-text-align-start\">[^&]*")?;
     let class_headers = class_header_regex.find_iter(&home_html).map(|class_header_match| {
@@ -109,7 +126,6 @@ pub fn get_source_data(username: &str, password: &str) -> Result<String, SourceE
         class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string()));
         
     }
-    
     
     let data_ng_regex: Regex = Regex::new("data-ng-init=\"[^\"]*")?;
     let student_frn_regex: Regex = Regex::new("studentFRN = '[^']*")?;
@@ -149,5 +165,19 @@ pub fn get_source_data(username: &str, password: &str) -> Result<String, SourceE
         });
     }
     println!("{assignments:?}");
-    Ok(serde_json::to_string_pretty(&assignments)?)
+    let source_data = SourceData {
+        classes: assignments,
+        student_name,
+    };
+    Ok(serde_json::to_string_pretty(&source_data)?)
+}
+
+fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> {
+    let photo_html = client.get("https://ps.seattleschools.org/guardian/student_photo.html").send()?.text()?;
+    let img_url_regex: Regex = Regex::new("<img src=\"[^\"]*")?;
+    let Some(image_url_match) = img_url_regex.find(&photo_html) else { return Ok(()) };
+    let image_url = &image_url_match.as_str()["<img src=\"".len()..];
+    let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", image_url)).send()?.bytes()?;
+    fs::File::create(Path::new(download_path).join("pfp.jpeg"))?.write(&pfp_bytes)?;
+    Ok(())
 }

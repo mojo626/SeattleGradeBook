@@ -5,9 +5,9 @@ import ComposeApp
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         return MainViewControllerKt.MainViewController(getSourceData: {username,password in
-            let cchar = get_source_data(username, password)
+            let cchar = get_source_data(username, password, NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true)[0])
             return String(cString: cchar!)
-        })
+        }, NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true)[0])
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

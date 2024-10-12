@@ -6,6 +6,8 @@ interface Platform {
 
 expect fun getPlatform(): Platform
 
-expect fun getSourceData(username: String, password: String): Result<List<Class>>
+expect fun getSourceData(username: String, password: String): Result<SourceData>
 
 expect fun closeApp()
+
+expect fun filesDir(): String

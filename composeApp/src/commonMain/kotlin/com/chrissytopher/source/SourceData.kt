@@ -8,6 +8,12 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Serializable
+data class SourceData(
+    var classes: List<Class>,
+    var student_name: String,
+)
+
+@Serializable
 data class Class(
     var assignments_parsed: List<Assignment>,
     var frn: String,
@@ -62,44 +68,49 @@ data class AssignmentScore (
 class ClassMeta(classData: Class) {
     var totalPoints: Float = 0f
     var earnedPoints: Float = 0f
-    var finalScore: Float
-    var grade: String
+    var finalScore: Float? = null
+    var grade: String? = null
 
     init {
         classData.assignments_parsed.forEach { assignment ->
             assignment._assignmentsections.forEach { section ->
+                if (!section.iscountedinfinalgrade) return@forEach
+                if (section._assignmentscores.isEmpty()) return@forEach
                 val possiblePoints = section.totalpointvalue
-                val finalScore = max(section._assignmentscores.minByOrNull {
+                val newestScore = section._assignmentscores.minByOrNull {
                     LocalDateTime.parse(it.scoreentrydate)
-                }?.scorepercent ?: 0f, 50f)/100f * possiblePoints
+                }?.scorepercent
+                if (newestScore == null) return@forEach
+                val finalScore = max(newestScore, 50f)/100f * possiblePoints
                 earnedPoints += finalScore
                 totalPoints += possiblePoints
             }
         }
-        finalScore = (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f
-        val roundedScore = finalScore.roundToInt()
-        grade = if (roundedScore > 92) {
-            "A"
-        } else if (roundedScore > 89) {
-            "A-"
-        } else if (roundedScore > 86) {
-            "B+"
-        } else if (roundedScore > 82) {
-            "B"
-        } else if (roundedScore > 79) {
-            "B-"
-        } else if (roundedScore > 76) {
-            "C+"
-        } else if (roundedScore > 72) {
-            "C"
-        } else if (roundedScore > 69) {
-            "C-"
-        } else if (roundedScore > 66) {
-            "D+"
-        } else if (roundedScore > 64) {
-            "D"
-        } else {
-            "E"
+        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
+        finalScore?.roundToInt()?.let { roundedScore ->
+            grade = if (roundedScore > 92) {
+                "A"
+            } else if (roundedScore > 89) {
+                "A-"
+            } else if (roundedScore > 86) {
+                "B+"
+            } else if (roundedScore > 82) {
+                "B"
+            } else if (roundedScore > 79) {
+                "B-"
+            } else if (roundedScore > 76) {
+                "C+"
+            } else if (roundedScore > 72) {
+                "C"
+            } else if (roundedScore > 69) {
+                "C-"
+            } else if (roundedScore > 66) {
+                "D+"
+            } else if (roundedScore > 64) {
+                "D"
+            } else {
+                "E"
+            }
         }
     }
 }

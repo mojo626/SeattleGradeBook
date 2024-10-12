@@ -11,6 +11,6 @@ fn main() {
     println!("Enter password: ");
     let mut password = String::new();
     io::stdin().read_line(&mut password).unwrap();
-    let data = get_source_data(&username.trim(), &password.trim()).unwrap();
+    let data = get_source_data(&username.trim(), &password.trim(), ".").unwrap();
     fs::File::create("assignments.json").unwrap().write(data.as_bytes()).unwrap();
 }

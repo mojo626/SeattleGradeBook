@@ -67,9 +67,11 @@ fun OnboardingScreen() {
                 CoroutineScope(Dispatchers.IO).launch {
                     loading = true
                     error = false
-                    val sourceData = getSourceData(username, password).getOrNull()
+                    val sourceDataRes = getSourceData(username, password)
+                    println("source data: $sourceDataRes")
+                    val sourceData = sourceDataRes.getOrNull()
                     if (sourceData != null) {
-                        if (sourceData.isEmpty()) {
+                        if (sourceData.classes.isEmpty()) {
                             error = true
                             loading = false
                             return@launch

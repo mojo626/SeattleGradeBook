@@ -28,11 +28,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.createGraph
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
 val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
-val LocalSourceData = compositionLocalOf<MutableState<List<Class>?>> { mutableStateOf(null) }
+val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableStateOf(null) }
 val LocalNavHost = compositionLocalOf<NavHostController?> { null }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val special: Boolean = false) {
@@ -70,11 +71,11 @@ fun App(navController : NavHostController = rememberNavController()) {
         val localJson = LocalJson.current
         if (LocalSourceData.current.value == null) {
             kvault?.string(forKey = "GRADE_DATA")?.let { gradeData ->
-                LocalSourceData.current.value = localJson.decodeFromString<List<Class>>(gradeData)
+                LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNull()
             }
         }
         MaterialTheme {
-            val sourceData: List<Class>? by LocalSourceData.current
+            val sourceData by LocalSourceData.current
 
             println("testingSourceData: $sourceData")
 
