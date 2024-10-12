@@ -7,7 +7,7 @@ struct ComposeView: UIViewControllerRepresentable {
         return MainViewControllerKt.MainViewController(getSourceData: {username,password in
             let cchar = get_source_data(username, password, NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true)[0])
             return String(cString: cchar!)
-        }, NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true)[0])
+        }, filesDir: NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true)[0])
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

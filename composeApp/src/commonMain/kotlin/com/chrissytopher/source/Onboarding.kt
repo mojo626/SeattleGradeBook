@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.liftric.kvault.KVault
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -68,7 +69,7 @@ fun OnboardingScreen() {
                     loading = true
                     error = false
                     val sourceDataRes = getSourceData(username, password)
-                    println("source data: $sourceDataRes")
+                    Napier.d("source data: $sourceDataRes")
                     val sourceData = sourceDataRes.getOrNull()
                     if (sourceData != null) {
                         if (sourceData.classes.isEmpty()) {
@@ -96,7 +97,7 @@ fun OnboardingScreen() {
 }
 
 fun changeLogin(kvault : KVault?, username : String, password : String, sourceData: String) {
-    println("username: $username")
+    Napier.d("username: $username")
     kvault?.set(key = "USERNAME", stringValue = username)
     kvault?.set(key = "PASSWORD", stringValue = password)
     kvault?.set(key = "GRADE_DATA", stringValue = sourceData)

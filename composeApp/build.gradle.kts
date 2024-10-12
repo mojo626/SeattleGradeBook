@@ -58,6 +58,7 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.datetime)
             implementation(libs.coil3.coil.compose)
+            implementation(libs.napier)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)

@@ -1,4 +1,5 @@
 import SwiftUI
+import ComposeApp
 
 @main
 struct iOSApp: App {
@@ -6,5 +7,9 @@ struct iOSApp: App {
         WindowGroup {
             ContentView()
         }
+    }
+
+    init() {
+        MainViewControllerKt.debugBuild()
     }
 }

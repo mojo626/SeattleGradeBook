@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.tooling.preview.Preview
 import com.liftric.kvault.KVault
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 
 lateinit var filesDirectory: String
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        Napier.base(DebugAntilog())
         val kvault = KVault(this)
         super.onCreate(savedInstanceState)
         filesDirectory = this.filesDir.path

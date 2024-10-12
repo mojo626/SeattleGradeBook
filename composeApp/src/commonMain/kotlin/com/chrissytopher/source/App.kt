@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.createGraph
+import io.github.aakira.napier.Napier
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
@@ -36,18 +37,18 @@ val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
 val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableStateOf(null) }
 val LocalNavHost = compositionLocalOf<NavHostController?> { null }
 
-enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val special: Boolean = false) {
-    Home(Icons.Filled.Home, Icons.Outlined.Home),
-    Grades(Icons.Filled.Home, Icons.Outlined.Home),
+enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
+    Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
     Settings(Icons.Filled.Settings, Icons.Outlined.Settings),
-    Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, special = true),
+    Home(Icons.Filled.Home, Icons.Outlined.Home),
+    Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
 }
 
 @Composable
 fun AppBottomBar(currentScreenState: State<NavBackStackEntry?>, select: (NavScreen) -> Unit) {
     val currentScreen by currentScreenState
     NavigationBar {
-        NavScreen.entries.filter { !it.special }.forEach { item ->
+        NavScreen.entries.filter { it.showInNavBar }.forEach { item ->
             NavigationBarItem(
                 icon = {
                     Icon(
@@ -77,12 +78,12 @@ fun App(navController : NavHostController = rememberNavController()) {
         MaterialTheme {
             val sourceData by LocalSourceData.current
 
-            println("testingSourceData: $sourceData")
+            Napier.d("testingSourceData: $sourceData")
 
             Scaffold(
                 bottomBar = {
                     val currentNav by navController.currentBackStackEntryAsState()
-                    if (currentNav?.destination?.route?.let { NavScreen.valueOf(it).special } == false) {
+                    if (currentNav?.destination?.route?.let { NavScreen.valueOf(it).hideNavBar } == false) {
                         AppBottomBar(
                             navController.currentBackStackEntryAsState()
                         ) { navController.navigate(it.name) }
