@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Card
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.aspectRatio
@@ -37,11 +36,12 @@ fun HomeScreen() {
                 ) {
                     it.forEach {
                         Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
-                            Card (modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-                                Text(it.name, modifier = Modifier.align(Alignment.center))
+                            Card(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                                Column(Modifier.fillMaxSize()) {
+                                    Text(it.name, modifier = Modifier.align(Alignment.CenterHorizontally))
+                                }
                             }
                         }
-                        
                     }
 
                     if (it.size == 1)

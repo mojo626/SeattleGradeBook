@@ -7,3 +7,5 @@ interface Platform {
 expect fun getPlatform(): Platform
 
 expect fun getSourceData(username: String, password: String): Result<List<Class>>
+
+expect fun closeApp()
