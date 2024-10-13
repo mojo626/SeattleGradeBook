@@ -12,6 +12,8 @@ url = "2.5.2"
 futures-io = { version = "0.3.31" }
 thiserror = "1.0.64"
 jni = { version = "0.21.1" }
+tl = "0.7.8"
+scraper = "0.20.0"
 
 [lib]
 crate-type = ["cdylib", "staticlib"]

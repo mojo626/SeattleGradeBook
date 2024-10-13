@@ -2,6 +2,7 @@ use std::{fs, io::{self, Write}, path::Path};
 
 use regex::Regex;
 use reqwest::blocking::{Client, ClientBuilder};
+use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -11,6 +12,7 @@ use url::Url;
 struct SourceData {
     student_name: String,
     classes: Vec<Class>,
+    past_classes: Vec<PastClass>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -80,6 +82,8 @@ pub enum SourceError {
     IOError(#[from] io::Error),
     #[error("Detected Login Failure")]
     LoginFailureError,
+    #[error("DOM parse error {0}")]
+    DOMParseError(#[from] tl::ParseError)
 }
 
 pub fn get_source_data(username: &str, password: &str, download_path: &str) -> Result<String, SourceError> {
@@ -165,19 +169,90 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
         });
     }
     println!("{assignments:?}");
+    let past_classes = get_past_grades(&client)?;
     let source_data = SourceData {
         classes: assignments,
         student_name,
+        past_classes,
     };
     Ok(serde_json::to_string_pretty(&source_data)?)
 }
 
 fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> {
     let photo_html = client.get("https://ps.seattleschools.org/guardian/student_photo.html").send()?.text()?;
-    let img_url_regex: Regex = Regex::new("<img src=\"[^\"]*")?;
-    let Some(image_url_match) = img_url_regex.find(&photo_html) else { return Ok(()) };
-    let image_url = &image_url_match.as_str()["<img src=\"".len()..];
-    let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", image_url)).send()?.bytes()?;
-    fs::File::create(Path::new(download_path).join("pfp.jpeg"))?.write(&pfp_bytes)?;
+    let photo_dom = tl::parse(&photo_html, tl::ParserOptions::default())?;
+    let parser = photo_dom.parser();
+    if let Some(photo_container_handle) = photo_dom.get_elements_by_class_name("user-photo").next() {
+        if let Some(photo_container) = photo_container_handle.get(parser) {
+            if let Some(children) = photo_container.children() {
+                if let Some(image_node) = children.all(parser).first() {
+                    if let Some(image_tag) = image_node.as_tag() {
+                        if let Some(Some(src)) = image_tag.attributes().get("src") {
+                            if let Ok(src_string) = String::from_utf8(src.as_bytes().into()) {
+                                let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", src_string)).send()?.bytes()?;
+                                fs::File::create(Path::new(download_path).join("pfp.jpeg"))?.write(&pfp_bytes)?;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct PastClass {
+    date_completed: String,
+    grade_level: String,
+    school: String,
+    course_id: String,
+    course_name: String,
+    credit_earned: f32,
+    credit_attempted: f32,
+    grade: String,
+}
+
+fn get_past_grades(client: &Client) -> Result<Vec<PastClass>, SourceError> {
+    let grades_html = client.get("https://ps.seattleschools.org/guardian/termgrades.html").send()?.text()?;
+    let grades_dom = Html::parse_document(&grades_html);
+    let table_body_selector = Selector::parse("tbody").unwrap();
+    if let Some(table_body) = grades_dom.select(&table_body_selector).next() {
+        let mut classes = vec![];
+        for table_row in table_body.child_elements() {
+            if table_row.value().name() == "tr" {
+                let table_data = table_row.child_elements().map(|child| {
+                    child.inner_html()
+                }).collect::<Vec<String>>();
+                if table_data.len() == 8 {
+                    if let Ok(credit_earned) = table_data[5].trim().parse() {
+                        if let Ok(credit_attempted) = table_data[6].trim().parse() {
+                            classes.push(PastClass {
+                                date_completed: table_data[0].clone(),
+                                grade_level: table_data[1].clone(),
+                                school: table_data[2].clone(),
+                                course_id: table_data[3].clone(),
+                                course_name: table_data[4].clone(),
+                                credit_earned,
+                                credit_attempted,
+                                grade: table_data[7].clone(),
+                            });
+                        } else {
+                            println!("attempted is {}", table_data[6].trim());
+                        }
+                    } else {
+                        println!("earned is {}", table_data[5].trim());
+                    }
+                } else {
+                    println!("table data is not 8 it is {}", table_data.len());
+                }
+            } else {
+                println!("found child but not tr {}", table_row.value().name());
+            }
+        }
+        return Ok(classes);
+    } else {
+        println!("no tbody");
+    }
+    Ok(vec![])
 }

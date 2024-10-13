@@ -11,6 +11,7 @@ import kotlin.math.roundToInt
 data class SourceData(
     var classes: List<Class>,
     var student_name: String,
+    var past_classes: List<PastClass>,
 )
 
 @Serializable
@@ -63,6 +64,18 @@ data class AssignmentScore (
     var scorepoints: Float?,
     var studentsdcid: Int,
     var whenmodified: String,
+)
+
+@Serializable
+data class PastClass (
+    var date_completed: String,
+    var grade_level: String,
+    var school: String,
+    var course_id: String,
+    var course_name: String,
+    var credit_earned: Float,
+    var credit_attempted: Float,
+    var grade: String,
 )
 
 class ClassMeta(classData: Class) {
