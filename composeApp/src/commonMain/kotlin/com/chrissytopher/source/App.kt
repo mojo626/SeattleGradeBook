@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.navigation.compose.composable
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
@@ -54,6 +56,8 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     Settings(Icons.Filled.Settings, Icons.Outlined.Settings),
     Home(Icons.Filled.Home, Icons.Outlined.Home),
     Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
+    More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
+    GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
 }
 
 @Composable
@@ -135,6 +139,12 @@ fun App(navController : NavHostController = rememberNavController()) {
                     composable(route = NavScreen.Onboarding.name) {
                         OnboardingScreen()
                     }
+                        composable(route = NavScreen.More.name) {
+                            MoreScreen()
+                        }
+                        composable(route = NavScreen.GPA.name) {
+                            GPAScreen()
+                        }
                 }
             }
         }
