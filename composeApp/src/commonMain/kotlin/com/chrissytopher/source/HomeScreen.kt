@@ -94,34 +94,36 @@ fun HomeScreen() {
                 CircularProgressIndicator(modifier = Modifier.size(50.dp))
             }
         }
-        val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
-        val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
-            val mentorshipIndex = sourceData?.classes?.indexOfFirst {
-                it.name == MENTORSHIP_NAME
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
+            val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
+                val mentorshipIndex = sourceData?.classes?.indexOfFirst {
+                    it.name == MENTORSHIP_NAME
+                }
+                Pair(sourceData?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
+            } else {
+                Pair(sourceData?.classes, classMetas)
             }
-            Pair(sourceData?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
-        } else {
-            Pair(sourceData?.classes, classMetas)
-        }
-        filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                it.forEachIndexed { column, it ->
-                    val index = row*2 + column
-                    val meta = filteredClassMetas?.getOrNull(index)
-                    val classForGradePage = ClassForGradePage.current
-                    val navHost = LocalNavHost.current
-                    Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
-                        ClassCard(it, meta) {
-                            classForGradePage.value = it
-                            navHost?.navigate(NavScreen.Grades.name) {
-                                launchSingleTop = true
+            filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    it.forEachIndexed { column, it ->
+                        val index = row*2 + column
+                        val meta = filteredClassMetas?.getOrNull(index)
+                        val classForGradePage = ClassForGradePage.current
+                        val navHost = LocalNavHost.current
+                        Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
+                            ClassCard(it, meta) {
+                                classForGradePage.value = it
+                                navHost?.navigate(NavScreen.Grades.name) {
+                                    launchSingleTop = true
+                                }
                             }
                         }
                     }
-                }
 
-                if (it.size == 1) {
-                    Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {}
+                    if (it.size == 1) {
+                        Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {}
+                    }
                 }
             }
         }

@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Percent
@@ -42,7 +45,7 @@ fun GradesScreen() {
     val meta = key(currentClass) {
         remember { ClassMeta(currentClass!!) }
     }
-    Column {
+    Column(Modifier.fillMaxSize()) {
         Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
@@ -71,34 +74,36 @@ fun GradesScreen() {
         val assignmentsSorted = key(currentClass) {
             remember { currentClass?.assignments_parsed?.sortedBy { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
         }
-        assignmentsSorted?.forEach {assignment ->
-            val newestSection =
-                assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
-            val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-            if (newestSection != null && newestScore != null) {
-                val colors = if (newestSection.iscountedinfinalgrade) {
-                    newestScore.scorelettergrade?.let {
-                        gradeColors[it]?.let {
-                            CardDefaults.cardColors(
-                                containerColor = it
-                            )
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            assignmentsSorted?.forEach {assignment ->
+                val newestSection =
+                    assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
+                val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+                if (newestSection != null && newestScore != null) {
+                    val colors = if (newestSection.iscountedinfinalgrade) {
+                        newestScore.scorelettergrade?.let {
+                            gradeColors[it]?.let {
+                                CardDefaults.cardColors(
+                                    containerColor = it
+                                )
+                            }
+                        } ?: CardDefaults.cardColors()
+                    } else {
+                        CardDefaults.cardColors()
+                    }
+                    Card(modifier = Modifier.padding(5.dp), colors = colors) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
+                            val localDensity = LocalDensity.current
+                            Text(newestScore.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
+                            Text(newestSection.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                            Text(
+                                if (showPercent) {
+                                    newestScore.scorepercent?.toString()?.let {"$it%"} ?: "-"
+                                } else {
+                                    newestScore.scorepoints?.let { "$it / ${newestSection.totalpointvalue}" } ?: "-"
+                                },
+                                style = MaterialTheme.typography.titleLarge)
                         }
-                    } ?: CardDefaults.cardColors()
-                } else {
-                    CardDefaults.cardColors()
-                }
-                Card(modifier = Modifier.padding(5.dp), colors = colors) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
-                        val localDensity = LocalDensity.current
-                        Text(newestScore.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
-                        Text(newestSection.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                        Text(
-                            if (showPercent) {
-                                newestScore.scorepercent?.toString()?.let {"$it%"} ?: "-"
-                            } else {
-                                newestScore.scorepoints?.let { "$it / ${newestSection.totalpointvalue}" } ?: "-"
-                            },
-                            style = MaterialTheme.typography.titleLarge)
                     }
                 }
             }

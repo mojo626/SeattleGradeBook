@@ -115,27 +115,25 @@ fun App(navController : NavHostController = rememberNavController()) {
                 }
             ) { paddingValues ->
                 val loggedIn = remember { kvault?.existsObject(USERNAME_KEY) == true }
-                Box(Modifier.safeDrawingPadding()) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues.calculateStartPadding(LocalLayoutDirection.current), 0.dp, paddingValues.calculateEndPadding(LocalLayoutDirection.current), paddingValues.calculateBottomPadding())
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        composable(route = NavScreen.Home.name) {
-                            HomeScreen()
-                        }
-                        composable(route = NavScreen.Grades.name) {
-                            GradesScreen()
-                        }
-                        composable(route = NavScreen.Settings.name) {
-                            SettingsScreen()
-                        }
-                        composable(route = NavScreen.Onboarding.name) {
-                            OnboardingScreen()
-                        }
+                NavHost(
+                    navController = navController,
+                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+
+                ) {
+                    composable(route = NavScreen.Home.name) {
+                        HomeScreen()
+                    }
+                    composable(route = NavScreen.Grades.name) {
+                        GradesScreen()
+                    }
+                    composable(route = NavScreen.Settings.name) {
+                        SettingsScreen()
+                    }
+                    composable(route = NavScreen.Onboarding.name) {
+                        OnboardingScreen()
                     }
                 }
             }
