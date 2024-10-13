@@ -27,7 +27,7 @@ fun MoreScreen() {
     val navHost = LocalNavHost.current
 
     Column {
-        Box (onClick = { navHost?.navigate(NavScreen.GPA.name)}) {
+        Box () {
             Row ( modifier = Modifier
                     .padding(25.dp)
                     .border(2.dp, SolidColor(Color.Black),shape = RoundedCornerShape(15.dp))
