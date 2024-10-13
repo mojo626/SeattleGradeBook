@@ -18,6 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.border 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
 
 @Composable
 fun MoreScreen() {
@@ -26,8 +32,18 @@ fun MoreScreen() {
     val sourceDataState = LocalSourceData.current
     val navHost = LocalNavHost.current
 
+    var goToGPA by remember { mutableStateOf(false) }
+
+    LaunchedEffect (goToGPA)
+    {
+        if (goToGPA)
+        {
+            navHost?.navigate(NavScreen.GPA.name)
+        }
+    }
+
     Column {
-        Box () {
+        Box ( modifier = Modifier.clickable { goToGPA = true }) {
             Row ( modifier = Modifier
                     .padding(25.dp)
                     .border(2.dp, SolidColor(Color.Black),shape = RoundedCornerShape(15.dp))
