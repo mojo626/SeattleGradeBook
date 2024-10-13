@@ -84,17 +84,17 @@ fun App(navController : NavHostController = rememberNavController()) {
         val localJson = LocalJson.current
         var sourceData by LocalSourceData.current
         if (LocalSourceData.current.value == null) {
-            kvault?.string(forKey = "GRADE_DATA")?.let { gradeData ->
-                LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNull()
+            kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
+                LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNullAndThrow()
             }
         }
         LaunchedEffect(true) {
             CoroutineScope(Dispatchers.IO).launch {
-                kvault?.string("USERNAME")?.let { username ->
-                    kvault.string("PASSWORD")?.let { password ->
+                kvault?.string(USERNAME_KEY)?.let { username ->
+                    kvault.string(PASSWORD_KEY)?.let { password ->
                         CoroutineScope(Dispatchers.IO).launch {
-                            val newSourceData = getSourceData(username, password).getOrNull()
-                            kvault.set("SOURCE_DATA", localJson.encodeToString(sourceData))
+                            val newSourceData = getSourceData(username, password).getOrNullAndThrow()
+                            kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(newSourceData))
                             sourceData = newSourceData
                         }
                     }
@@ -114,7 +114,7 @@ fun App(navController : NavHostController = rememberNavController()) {
                     }
                 }
             ) { paddingValues ->
-                val loggedIn = remember { kvault?.existsObject("USERNAME") == true }
+                val loggedIn = remember { kvault?.existsObject(USERNAME_KEY) == true }
                 Box(Modifier.safeDrawingPadding()) {
                     NavHost(
                         navController = navController,
@@ -141,4 +141,9 @@ fun App(navController : NavHostController = rememberNavController()) {
             }
         }
     }
+}
+
+fun <T> Result<T>.getOrNullAndThrow(): T? {
+    exceptionOrNull()?.printStackTrace()
+    return getOrNull()
 }

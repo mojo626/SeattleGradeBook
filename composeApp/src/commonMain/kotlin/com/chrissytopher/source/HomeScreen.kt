@@ -78,12 +78,12 @@ fun HomeScreen() {
                 val sourceDataState = LocalSourceData.current
                 val json = LocalJson.current
                 Icon(Icons.Outlined.Refresh, "Refresh grades", modifier = Modifier.size(50.dp).clickable {
-                    kvault?.string("USERNAME")?.let { username ->
-                        kvault.string("PASSWORD")?.let { password ->
+                    kvault?.string(USERNAME_KEY)?.let { username ->
+                        kvault.string(PASSWORD_KEY)?.let { password ->
                             CoroutineScope(Dispatchers.IO).launch {
                                 refreshingInProgress = true
-                                val sourceData = getSourceData(username, password).getOrNull()
-                                kvault.set("SOURCE_DATA", json.encodeToString(sourceData))
+                                val sourceData = getSourceData(username, password).getOrNullAndThrow()
+                                kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
                                 sourceDataState.value = sourceData
                                 refreshingInProgress = false
                             }
@@ -94,10 +94,10 @@ fun HomeScreen() {
                 CircularProgressIndicator(modifier = Modifier.size(50.dp))
             }
         }
-        val hideMentorship = remember { mutableStateOf(kvault?.bool("HIDE_MENTORSHIP") ?: false) }
+        val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
         val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
             val mentorshipIndex = sourceData?.classes?.indexOfFirst {
-                it.name == "MENTORSHIP"
+                it.name == MENTORSHIP_NAME
             }
             Pair(sourceData?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
         } else {
@@ -127,14 +127,6 @@ fun HomeScreen() {
         }
     }
 }
-
-val gradeColors = mapOf(
-    "A" to Color(0xFF64ed72),
-    "B" to Color(0xFF69d0f5),
-    "C" to Color(0xFFf0e269),
-    "D" to Color(0xFFf09151),
-    "E" to Color(0xFFf24646),
-)
 
 @Composable
 fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {

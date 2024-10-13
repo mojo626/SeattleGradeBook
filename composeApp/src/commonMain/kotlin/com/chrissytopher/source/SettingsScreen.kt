@@ -21,19 +21,19 @@ fun SettingsScreen() {
     Column {
         val kvault = LocalKVault.current
         Button(onClick = {
-            kvault?.deleteObject("USERNAME")
-            kvault?.deleteObject("PASSWORD")
-            kvault?.deleteObject("GRADE_DATA")
+            kvault?.deleteObject(USERNAME_KEY)
+            kvault?.deleteObject(PASSWORD_KEY)
+            kvault?.deleteObject(SOURCE_DATA_KEY)
             closeApp()
         }) {
             Text("Log out")
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(5.dp)) {
-            var hideMentorship by remember { mutableStateOf(kvault?.bool("HIDE_MENTORSHIP") ?: false) }
+            var hideMentorship by remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
             Text("Hide mentorship from home", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             Switch(hideMentorship, onCheckedChange = {
                 hideMentorship = it
-                kvault?.set("HIDE_MENTORSHIP", it)
+                kvault?.set(HIDE_MENTORSHIP_KEY, it)
             })
         }
     }

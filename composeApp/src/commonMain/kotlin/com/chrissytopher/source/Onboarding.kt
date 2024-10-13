@@ -35,8 +35,8 @@ fun OnboardingScreen() {
     val json = LocalJson.current
     val sourceDataState = LocalSourceData.current
     val navHost = LocalNavHost.current
-    var username by remember { mutableStateOf(kvault?.string(forKey = "USERNAME") ?: "") }
-    var password by remember { mutableStateOf(kvault?.string(forKey = "PASSWORD") ?: "") }
+    var username by remember { mutableStateOf(kvault?.string(forKey = USERNAME_KEY) ?: "") }
+    var password by remember { mutableStateOf(kvault?.string(forKey = PASSWORD_KEY) ?: "") }
     var error by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var loggedIn by remember { mutableStateOf(false) }
@@ -70,7 +70,7 @@ fun OnboardingScreen() {
                     error = false
                     val sourceDataRes = getSourceData(username, password)
                     Napier.d("source data: $sourceDataRes")
-                    val sourceData = sourceDataRes.getOrNull()
+                    val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
                         if (sourceData.classes.isEmpty()) {
                             error = true
@@ -98,7 +98,7 @@ fun OnboardingScreen() {
 
 fun changeLogin(kvault : KVault?, username : String, password : String, sourceData: String) {
     Napier.d("username: $username")
-    kvault?.set(key = "USERNAME", stringValue = username)
-    kvault?.set(key = "PASSWORD", stringValue = password)
-    kvault?.set(key = "GRADE_DATA", stringValue = sourceData)
+    kvault?.set(key = USERNAME_KEY, stringValue = username)
+    kvault?.set(key = PASSWORD_KEY, stringValue = password)
+    kvault?.set(key = SOURCE_DATA_KEY, stringValue = sourceData)
 }
