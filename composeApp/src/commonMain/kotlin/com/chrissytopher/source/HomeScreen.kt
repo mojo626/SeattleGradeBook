@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
@@ -94,18 +95,19 @@ fun HomeScreen() {
             }
         }
         val hideMentorship = remember { mutableStateOf(kvault?.bool("HIDE_MENTORSHIP") ?: false) }
-        val filteredClasses = if (hideMentorship.value) {
-            sourceData?.classes?.filter {
-                it.name != "MENTORSHIP"
+        val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
+            val mentorshipIndex = sourceData?.classes?.indexOfFirst {
+                it.name == "MENTORSHIP"
             }
+            Pair(sourceData?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
         } else {
-            sourceData?.classes
+            Pair(sourceData?.classes, classMetas)
         }
         filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
-            Row (modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth()) {
                 it.forEachIndexed { column, it ->
                     val index = row*2 + column
-                    val meta = classMetas?.getOrNull(index)
+                    val meta = filteredClassMetas?.getOrNull(index)
                     val classForGradePage = ClassForGradePage.current
                     val navHost = LocalNavHost.current
                     Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
@@ -139,9 +141,9 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
     val inner = @Composable {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(meta?.grade ?: "-")
-                Text(meta?.finalScore?.roundToInt()?.toString() ?: " ")
-                Text(`class`.name)
+                Text(meta?.grade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
+                Text(meta?.finalScore?.roundToInt()?.toString() ?: " ", style = MaterialTheme.typography.titleLarge)
+                Text(`class`.name, style = MaterialTheme.typography.titleMedium)
             }
         }
     }
