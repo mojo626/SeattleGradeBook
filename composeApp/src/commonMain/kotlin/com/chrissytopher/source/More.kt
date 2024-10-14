@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun MoreScreen() {
@@ -33,6 +34,7 @@ fun MoreScreen() {
     val navHost = LocalNavHost.current
 
     var goToGPA by remember { mutableStateOf(false) }
+    var goToGradeCalculator by remember { mutableStateOf(false) }
 
     LaunchedEffect (goToGPA)
     {
@@ -42,14 +44,35 @@ fun MoreScreen() {
         }
     }
 
+    LaunchedEffect (goToGradeCalculator)
+    {
+        if (goToGradeCalculator)
+        {
+            navHost?.navigate(NavScreen.Calculator.name)
+        }
+    }
+
     Column {
         Box ( modifier = Modifier.clickable { goToGPA = true }) {
             Row ( modifier = Modifier
-                    .padding(25.dp)
-                    .border(2.dp, SolidColor(Color.Black),shape = RoundedCornerShape(15.dp))
+                    .padding(15.dp)
+                    .border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))
                     
                 ) {
                 Text("GPA Calculator", modifier = Modifier.padding(10.dp))
+                Spacer( modifier = Modifier.weight(1f) )
+                Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.padding(10.dp))
+            }
+            
+        }
+
+        Box ( modifier = Modifier.clickable { goToGradeCalculator = true }) {
+            Row ( modifier = Modifier
+                    .padding(15.dp)
+                    .border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))
+                    
+                ) {
+                Text("Grade Calculator", modifier = Modifier.padding(10.dp))
                 Spacer( modifier = Modifier.weight(1f) )
                 Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.padding(10.dp))
             }
