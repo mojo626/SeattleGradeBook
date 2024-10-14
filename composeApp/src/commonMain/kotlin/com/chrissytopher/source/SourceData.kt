@@ -134,7 +134,7 @@ class ClassMeta() {
     
 
     //constructor for adding new assignments to see new grade, score is list of pairs that are <points earned, points possible>
-    constructor(classData : Class, newScores : List<Pair<Double, Double>>) : this() {
+    constructor(classData : Class, newScores : List<Pair<Float, Float>>) : this() {
         classData.assignments_parsed.forEach { assignment ->
             assignment._assignmentsections.forEach { section ->
                 if (!section.iscountedinfinalgrade) return@forEach
