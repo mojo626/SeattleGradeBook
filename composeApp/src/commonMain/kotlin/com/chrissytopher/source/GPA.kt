@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.key
 import io.github.aakira.napier.Napier
 import kotlin.math.round
+import kotlin.math.pow
 
 
 @Composable
@@ -54,7 +55,7 @@ fun GPAScreen() {
         }
         Box( contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth() )
         {
-            Text((if (gpaSelector == 0) unweightedGpa else weightedGpa).round(2).toString(), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
+            Text((if (gpaSelector == 0) unweightedGpa else weightedGpa).round(3).toString(), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
         }
 
         pastClasses?.reversed()?.forEach {
@@ -81,12 +82,12 @@ fun GPAScreen() {
 
 private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass>?): Pair<Double, Double> {
     var unweightedGpa = 0.0
-    var weightedAdditions = 0.0
+    var weightedGpa = 0.0
     var totalClasses = 0
 
     pastClasses?.forEach {
-        if (it.credit_attempted > 0) {
-            unweightedGpa += when (it.grade.removeSuffix(" <br></br>")) {
+        if (it.credit_attempted > 0 && !it.grade.removeSuffix(" <b></b>").startsWith("P")) {
+            var newVal = when (it.grade.removeSuffix(" <b></b>")) {
                 "A" -> {  4.0 }
                 "A-" -> { 3.7 }
                 "B+" -> { 3.3 }
@@ -98,16 +99,18 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
                 "D+" -> { 1.3 }
                 "D" -> { 1.0 }
                 else -> {
-                    return@forEach
+                    0.0
                 }
             }
+            unweightedGpa += newVal
+            weightedGpa += newVal
 
             if (it.course_name.startsWith("AP ")) {
                 Napier.d("adding +1 because of class ${it.course_name}")
-                weightedAdditions += 1.0
+                weightedGpa += 1.0
             } else if (it.course_name.endsWith(" H")) {
                 Napier.d("adding +0.5 because of class ${it.course_name}")
-                weightedAdditions += 0.5
+                weightedGpa += 0.5
             }
             totalClasses ++
         }
@@ -118,7 +121,7 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
     currClasses?.forEachIndexed { i, it ->
         if (metas?.get(i)?.grade != null)
         {
-            unweightedGpa += when (metas[i].grade.toString()) {
+            var newVal = when (metas[i].grade.toString()) {
                 "A" -> { 4.0 }
                 "A-" -> { 3.7 }
                 "B+" -> { 3.3 }
@@ -130,28 +133,29 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
                 "D+" -> { 1.3 }
                 "D" -> { 1.0 }
                 else -> {
-                    return@forEachIndexed
+                    0.0
                 }
             }
+            unweightedGpa += newVal
+            weightedGpa += newVal
 
             if (it.name.startsWith("AP ")) {
                 Napier.d("adding +1 because of class ${it.name}")
-                weightedAdditions += 1.0
+                weightedGpa += 1.0
             } else if (it.name.endsWith(" H")) {
                 Napier.d("adding +0.5 because of class ${it.name}")
-                weightedAdditions += 0.5
+                weightedGpa += 0.5
             }
             totalClasses ++
         }
     }
 
     unweightedGpa /= totalClasses
-    weightedAdditions /= totalClasses
-    return Pair(unweightedGpa, unweightedGpa + weightedAdditions)
+    weightedGpa /= totalClasses
+    return Pair(unweightedGpa, weightedGpa)
 }
 
 fun Double.round(decimals: Int): Double {
-    var multiplier = 1.0f
-    repeat(decimals) { multiplier *= 10 }
+    var multiplier = 10.0f.pow(decimals)
     return round(this * multiplier) / multiplier
 }
