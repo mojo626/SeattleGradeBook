@@ -125,7 +125,7 @@ fun GradesScreen() {
                                 if (showPercent) {
                                     newestScore.scorepercent?.toString()?.let {"$it%"} ?: "-"
                                 } else {
-                                    newestScore.scorepoints?.let { "$it / ${newestSection.totalpointvalue}" } ?: "-"
+                                    newestScore.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"
                                 },
                                 style = MaterialTheme.typography.titleLarge)
                         }

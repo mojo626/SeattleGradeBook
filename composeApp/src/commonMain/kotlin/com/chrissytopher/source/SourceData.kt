@@ -6,6 +6,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.math.max
 import kotlin.math.roundToInt
+import io.github.aakira.napier.Napier
 
 @Serializable
 data class SourceData(
@@ -93,7 +94,10 @@ class ClassMeta(classData: Class) {
                 var newestScore = section._assignmentscores.minByOrNull {
                     LocalDateTime.parse(it.scoreentrydate)
                 }?.scorepoints
+                
                 if (newestScore == null) return@forEach
+                newestScore = newestScore!! * section.weight
+                Napier.d(newestScore.toString())
                 if (newestScore < possiblePoints / 2)
                 {
                     newestScore = possiblePoints / 2
