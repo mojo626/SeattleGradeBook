@@ -96,11 +96,9 @@ class ClassMeta(classData: Class) {
                 }?.scorepoints
                 
                 if (newestScore == null) return@forEach
-                newestScore = newestScore!! * section.weight
-                Napier.d(newestScore.toString())
-                if (newestScore < possiblePoints / 2)
-                {
-                    newestScore = possiblePoints / 2
+                newestScore *= section.weight
+                if (newestScore < possiblePoints / 2f) {
+                    newestScore = possiblePoints / 2f
                 }
                 earnedPoints += newestScore
                 totalPoints += possiblePoints

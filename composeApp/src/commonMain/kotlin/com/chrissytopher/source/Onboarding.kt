@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.liftric.kvault.KVault
@@ -67,9 +68,9 @@ fun OnboardingScreen() {
     }
     Box(Modifier.imePadding()) {
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Source log in", style = MaterialTheme.typography.titleLarge, modifier = Modifier.fillMaxWidth(0.7f))
+            Text("Source log in", style = MaterialTheme.typography.titleLarge, modifier = Modifier.fillMaxWidth(0.7f), textAlign = TextAlign.Center)
             Spacer(Modifier.height(20.dp))
-            Text("Use your SPS username and password to log into the source", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth(0.7f))
+            Text("Use your SPS username and password to log into the source", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth(0.7f), textAlign = TextAlign.Center)
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },

@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun GradesScreen() {
