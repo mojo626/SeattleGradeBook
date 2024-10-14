@@ -45,7 +45,7 @@ fun GradesScreen() {
     val meta = key(currentClass) {
         remember { ClassMeta(currentClass!!) }
     }
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
@@ -74,7 +74,7 @@ fun GradesScreen() {
         val assignmentsSorted = key(currentClass) {
             remember { currentClass?.assignments_parsed?.sortedBy { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
         }
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach {assignment ->
                 val newestSection =
                     assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
