@@ -90,12 +90,15 @@ class ClassMeta(classData: Class) {
                 if (!section.iscountedinfinalgrade) return@forEach
                 if (section._assignmentscores.isEmpty()) return@forEach
                 val possiblePoints = section.totalpointvalue
-                val newestScore = section._assignmentscores.minByOrNull {
+                var newestScore = section._assignmentscores.minByOrNull {
                     LocalDateTime.parse(it.scoreentrydate)
-                }?.scorepercent
+                }?.scorepoints
                 if (newestScore == null) return@forEach
-                val finalScore = max(newestScore, 50f)/100f * possiblePoints
-                earnedPoints += finalScore
+                if (newestScore < possiblePoints / 2)
+                {
+                    newestScore = possiblePoints / 2
+                }
+                earnedPoints += newestScore
                 totalPoints += possiblePoints
             }
         }
