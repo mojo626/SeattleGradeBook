@@ -50,18 +50,18 @@ fun GPAScreen() {
     var total_classes = 0
 
     pastClasses?.forEachIndexed { i, it ->
-        if (it.credit_attempted > 0 && it.grade.removeRange(it.grade.indexOf('<'), it.grade.length) != "P*") {
+        if (it.credit_attempted > 0 && !(it.grade.removeRange(it.grade.indexOf('<'), it.grade.length).equals("P "))) {
             when (it.grade.removeRange(it.grade.indexOf('<'), it.grade.length)) {
-                "A" -> { unweighted_gpa += 4.0; weighted_gpa += 4.0 }
-                "A-" -> { unweighted_gpa += 3.7; weighted_gpa += 4.0 }
-                "B+" -> { unweighted_gpa += 3.3; weighted_gpa += 4.0 }
-                "B" -> { unweighted_gpa += 3.0; weighted_gpa += 4.0 }
-                "B-" -> { unweighted_gpa += 2.7; weighted_gpa += 4.0 }
-                "C+" -> { unweighted_gpa += 2.3; weighted_gpa += 4.0 }
-                "C" -> { unweighted_gpa += 2.0; weighted_gpa += 4.0 }
-                "C-" -> { unweighted_gpa += 1.7; weighted_gpa += 4.0 }
-                "D+" -> { unweighted_gpa += 1.3; weighted_gpa += 4.0 }
-                "D" -> { unweighted_gpa += 1.0; weighted_gpa += 4.0 }
+                "A " -> { unweighted_gpa += 4.0; weighted_gpa += 4.0 }
+                "A- " -> { unweighted_gpa += 3.7; weighted_gpa += 4.0 }
+                "B+ " -> { unweighted_gpa += 3.3; weighted_gpa += 4.0 }
+                "B " -> { unweighted_gpa += 3.0; weighted_gpa += 4.0 }
+                "B- " -> { unweighted_gpa += 2.7; weighted_gpa += 4.0 }
+                "C+ " -> { unweighted_gpa += 2.3; weighted_gpa += 4.0 }
+                "C " -> { unweighted_gpa += 2.0; weighted_gpa += 4.0 }
+                "C- " -> { unweighted_gpa += 1.7; weighted_gpa += 4.0 }
+                "D+ " -> { unweighted_gpa += 1.3; weighted_gpa += 4.0 }
+                "D " -> { unweighted_gpa += 1.0; weighted_gpa += 4.0 }
                 else -> {
                     unweighted_gpa += 0.0
                 }
@@ -79,32 +79,39 @@ fun GPAScreen() {
     }
 
     currClasses?.forEachIndexed { i, it ->
-        when (ClassMeta(it).grade) {
-            "A" -> { unweighted_gpa += 4.0; weighted_gpa += 4.0 }
-            "A-" -> { unweighted_gpa += 3.7; weighted_gpa += 4.0 }
-            "B+" -> { unweighted_gpa += 3.3; weighted_gpa += 4.0 }
-            "B" -> { unweighted_gpa += 3.0; weighted_gpa += 4.0 }
-            "B-" -> { unweighted_gpa += 2.7; weighted_gpa += 4.0 }
-            "C+" -> { unweighted_gpa += 2.3; weighted_gpa += 4.0 }
-            "C" -> { unweighted_gpa += 2.0; weighted_gpa += 4.0 }
-            "C-" -> { unweighted_gpa += 1.7; weighted_gpa += 4.0 }
-            "D+" -> { unweighted_gpa += 1.3; weighted_gpa += 4.0 }
-            "D" -> { unweighted_gpa += 1.0; weighted_gpa += 4.0 }
-            else -> {
-                unweighted_gpa += 0.0
+        if (ClassMeta(it).grade != null)
+        {
+            Napier.d("Hello")
+            when (ClassMeta(it).grade.toString()) {
+                "A" -> { unweighted_gpa += 4.0; weighted_gpa += 4.0 }
+                "A-" -> { unweighted_gpa += 3.7; weighted_gpa += 4.0 }
+                "B+" -> { unweighted_gpa += 3.3; weighted_gpa += 4.0 }
+                "B" -> { unweighted_gpa += 3.0; weighted_gpa += 4.0 }
+                "B-" -> { unweighted_gpa += 2.7; weighted_gpa += 4.0 }
+                "C+" -> { unweighted_gpa += 2.3; weighted_gpa += 4.0 }
+                "C" -> { unweighted_gpa += 2.0; weighted_gpa += 4.0 }
+                "C-" -> { unweighted_gpa += 1.7; weighted_gpa += 4.0 }
+                "D+" -> { unweighted_gpa += 1.3; weighted_gpa += 4.0 }
+                "D" -> { unweighted_gpa += 1.0; weighted_gpa += 4.0 }
+                else -> {
+                    unweighted_gpa += 0.0
+                }
             }
+    
+            if (it.name.get(0) == 'A' && it.name.get(1) == 'P')
+            {
+                weighted_gpa += 1.0
+            } else if (it.name.get(it.name.length - 1) == 'H')
+            {
+                weighted_gpa += 0.5
+            }
+            total_classes ++
         }
-
-        if (it.name.get(0) == 'A' && it.name.get(1) == 'P')
-        {
-            weighted_gpa += 1.0
-        } else if (it.name.get(it.name.length - 1) == 'H')
-        {
-            weighted_gpa += 0.5
-        }
-        total_classes ++
+        
     }
 
+    Napier.d(unweighted_gpa.toString())
+    Napier.d(total_classes.toString())
     unweighted_gpa /= total_classes
     weighted_gpa /= total_classes
 
@@ -117,7 +124,7 @@ fun GPAScreen() {
             Tab(text = {Text("Unweighted GPA")}, selected = gpa_selector == 0, onClick = { gpa_selector = 0 })
             Tab(text = {Text("Weighted GPA")}, selected = gpa_selector == 1, onClick = { gpa_selector = 1 })
         }
-        Text(if (gpa_selector == 0) unweighted_gpa.toString() else weighted_gpa.toString())
+        Text(String.format("%.3f", (if (gpa_selector == 0) unweighted_gpa else weighted_gpa)))
 
 
         pastClasses?.forEachIndexed { i, it ->
