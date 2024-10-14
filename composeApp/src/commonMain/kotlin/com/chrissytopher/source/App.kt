@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.createGraph
+import com.chrissytopher.source.theme.AppTheme
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,7 +106,7 @@ fun App(navController : NavHostController = rememberNavController()) {
                 }
             }
         }
-        MaterialTheme {
+        AppTheme {
             Napier.d("testingSourceData: $sourceData")
 
             Scaffold(
@@ -152,6 +153,6 @@ fun App(navController : NavHostController = rememberNavController()) {
 }
 
 fun <T> Result<T>.getOrNullAndThrow(): T? {
-    exceptionOrNull()?.printStackTrace()
+    exceptionOrNull()?.let { Napier.w("Caught error $it") }
     return getOrNull()
 }

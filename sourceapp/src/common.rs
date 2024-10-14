@@ -190,6 +190,9 @@ fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> 
                         if let Some(Some(src)) = image_tag.attributes().get("src") {
                             if let Ok(src_string) = String::from_utf8(src.as_bytes().into()) {
                                 let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", src_string)).send()?.bytes()?;
+                                if !Path::new(download_path).exists() {
+                                    fs::create_dir(download_path)?;
+                                }
                                 fs::File::create(Path::new(download_path).join("pfp.jpeg"))?.write(&pfp_bytes)?;
                             }
                         }

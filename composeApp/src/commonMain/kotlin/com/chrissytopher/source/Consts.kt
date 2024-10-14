@@ -1,5 +1,7 @@
 package com.chrissytopher.source
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 const val SOURCE_DATA_KEY = "SOURCE_DATA"
@@ -16,3 +18,6 @@ val gradeColors = mapOf(
     "D" to Color(0xFFf09151),
     "E" to Color(0xFFf24646),
 )
+
+@Composable
+fun darkModeColorModifier() = if (isSystemInDarkTheme()) 0.8f else 1f

@@ -22,3 +22,5 @@ actual fun closeApp() {
 actual fun filesDir(): String {
     return filesDirectory
 }
+
+actual fun livingInFearOfBackGestures(): Boolean = true

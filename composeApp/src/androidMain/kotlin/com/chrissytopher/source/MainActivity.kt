@@ -17,7 +17,7 @@ lateinit var filesDirectory: String
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT))
+        enableEdgeToEdge()
         Napier.base(DebugAntilog())
         val kvault = KVault(this)
         super.onCreate(savedInstanceState)

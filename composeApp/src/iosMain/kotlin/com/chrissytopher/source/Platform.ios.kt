@@ -26,3 +26,5 @@ actual fun closeApp() {
 actual fun filesDir(): String {
     return globalFilesDir
 }
+
+actual fun livingInFearOfBackGestures(): Boolean = false

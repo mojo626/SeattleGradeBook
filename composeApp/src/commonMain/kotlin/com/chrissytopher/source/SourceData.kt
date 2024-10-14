@@ -102,7 +102,7 @@ class ClassMeta(classData: Class) {
                 totalPoints += possiblePoints
             }
         }
-        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNullAndThrow()
+        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
         finalScore?.roundToInt()?.let { roundedScore ->
             grade = if (roundedScore > 92) {
                 "A"

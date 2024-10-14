@@ -2,6 +2,7 @@ package com.chrissytopher.source
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
@@ -137,12 +138,13 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(meta?.grade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
                 Text(meta?.finalScore?.roundToInt()?.toString() ?: " ", style = MaterialTheme.typography.titleLarge)
-                Text(`class`.name, style = MaterialTheme.typography.titleMedium)
+                Text(`class`.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             }
         }
     }
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-    val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it) } } ?: CardDefaults.cardColors()
+    val themeModifier = darkModeColorModifier()
+    val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     if (onClick == null) {
         Card(modifier, colors = colors) {
             inner()
@@ -152,4 +154,8 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
             inner()
         }
     }
+}
+
+operator fun Color.times(x: Float): Color {
+    return copy(red = this.red*x, green = this.green*x, blue = this.blue*x)
 }
