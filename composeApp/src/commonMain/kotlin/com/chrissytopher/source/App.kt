@@ -99,9 +99,10 @@ fun App(navController : NavHostController = rememberNavController()) {
                 kvault?.string(USERNAME_KEY)?.let { username ->
                     kvault.string(PASSWORD_KEY)?.let { password ->
                         CoroutineScope(Dispatchers.IO).launch {
-                            val newSourceData = getSourceData(username, password).getOrNullAndThrow()
-                            kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(newSourceData))
-                            sourceData = newSourceData
+                            getSourceData(username, password).getOrNullAndThrow()?.let {
+                                kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(it))
+                                sourceData = it
+                            }
                         }
                     }
                 }

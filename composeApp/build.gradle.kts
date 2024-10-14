@@ -60,8 +60,8 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.datetime)
             implementation(libs.coil3.coil.compose)
+            implementation(libs.mp.stools)
             implementation(libs.napier)
-            implementation("net.sergeych:mp_stools:1.5.1")
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)

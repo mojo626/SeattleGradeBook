@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -54,6 +56,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen() {
     var refreshingInProgress by remember { mutableStateOf(false) }
+    var refreshError by remember { mutableStateOf(false) }
 
     val sourceData by LocalSourceData.current
     var classMetas: List<ClassMeta>? by remember { mutableStateOf(null) }
@@ -78,19 +81,24 @@ fun HomeScreen() {
             if (!refreshingInProgress) {
                 val sourceDataState = LocalSourceData.current
                 val json = LocalJson.current
-                Icon(Icons.Outlined.Refresh, "Refresh grades", modifier = Modifier.size(50.dp).clickable {
+                Icon(if (!refreshError) Icons.Outlined.Refresh else Icons.Outlined.Error , "Refresh grades", modifier = Modifier.size(50.dp).clickable {
                     kvault?.string(USERNAME_KEY)?.let { username ->
                         kvault.string(PASSWORD_KEY)?.let { password ->
                             CoroutineScope(Dispatchers.IO).launch {
                                 refreshingInProgress = true
                                 val sourceData = getSourceData(username, password).getOrNullAndThrow()
-                                kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
-                                sourceDataState.value = sourceData
+                                if (sourceData != null) {
+                                    kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
+                                    sourceDataState.value = sourceData
+                                    refreshError = false
+                                } else {
+                                    refreshError = true
+                                }
                                 refreshingInProgress = false
                             }
                         }
                     }
-                }.clip(CircleShape))
+                }.then(if (refreshError) Modifier.background(MaterialTheme.colorScheme.error, CircleShape) else Modifier).clip(CircleShape))
             } else {
                 CircularProgressIndicator(modifier = Modifier.size(50.dp))
             }

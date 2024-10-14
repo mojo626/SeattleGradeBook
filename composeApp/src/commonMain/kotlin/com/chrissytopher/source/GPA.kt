@@ -26,12 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.key
 import io.github.aakira.napier.Napier
-import kotlin.math.round
-import kotlin.math.pow
-import kotlin.math.roundToInt
 import net.sergeych.sprintf.*
 
 
@@ -57,6 +53,7 @@ fun GPAScreen() {
         }
         Box( contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth() )
         {
+            Napier.d("unweighted: $unweightedGpa, weighted: $weightedGpa")
             Text("%.3f".sprintf((if (gpaSelector == 0) unweightedGpa else weightedGpa)), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
         }
 
@@ -84,7 +81,7 @@ fun GPAScreen() {
 
 private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass>?): Pair<Double, Double> {
     var unweightedGpa = 0.0
-    var weightedGpa = 0.0
+    var weightedAdditions = 0.0
     var totalClasses = 0
 
     pastClasses?.forEach {
@@ -101,11 +98,9 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
                 "D+" -> { 1.3 }
                 "D" -> { 1.0 }
                 else -> {
-                    0.0
+                    return@forEach
                 }
             }
-            unweightedGpa += newVal
-            weightedGpa += newVal
 
             if (it.course_name.startsWith("AP ")) {
                 weightedAdditions += 1.0
@@ -119,9 +114,8 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
     val metas = currClasses?.map { ClassMeta(it) }
 
     currClasses?.forEachIndexed { i, it ->
-        if (metas?.get(i)?.grade != null)
-        {
-            var newVal = when (metas[i].grade.toString()) {
+        if (metas?.get(i)?.grade != null) {
+            unweightedGpa += when (metas[i].grade.toString()) {
                 "A" -> { 4.0 }
                 "A-" -> { 3.7 }
                 "B+" -> { 3.3 }
@@ -133,11 +127,9 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
                 "D+" -> { 1.3 }
                 "D" -> { 1.0 }
                 else -> {
-                    0.0
+                    return@forEachIndexed
                 }
             }
-            unweightedGpa += newVal
-            weightedGpa += newVal
 
             if (it.name.startsWith("AP ")) {
                 weightedAdditions += 1.0
@@ -149,6 +141,6 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
     }
 
     unweightedGpa /= totalClasses
-    weightedGpa /= totalClasses
-    return Pair(unweightedGpa, weightedGpa)
+    weightedAdditions /= totalClasses
+    return Pair(unweightedGpa, unweightedGpa + weightedAdditions)
 }

@@ -114,8 +114,8 @@ fun OnboardingScreen() {
             }
         }
         Column(Modifier.align(Alignment.BottomCenter)) {
-            Text("This app is not associated with Seattle Public Schools or PowerSchool.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth(0.9f))
-            Text("Login info stays private and is only used to connect directly to The Source", style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth(0.9f))
+            Text("This app is not associated with Seattle Public Schools or PowerSchool.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth(0.9f), textAlign = TextAlign.Center)
+            Text("Login info stays private and is only used to connect directly to The Source", style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth(0.9f), textAlign = TextAlign.Center)
         }
     }
 }
@@ -125,67 +125,4 @@ fun changeLogin(kvault : KVault?, username : String, password : String, sourceDa
     kvault?.set(key = USERNAME_KEY, stringValue = username)
     kvault?.set(key = PASSWORD_KEY, stringValue = password)
     kvault?.set(key = SOURCE_DATA_KEY, stringValue = sourceData)
-}
-
-@Composable
-fun StyledTextInput(modifier: Modifier = Modifier, label: @Composable (Color) -> Unit, value: String, onValueChange: (String) -> Unit) {
-    Surface(modifier) {
-        Surface(
-            Modifier
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
-                .padding(10.dp)
-        ) {
-//            val brush = remember {
-//                Brush.linearGradient(
-//                    colors = rainbowColors
-//                )
-//            }
-            val background = MaterialTheme.colorScheme.surface
-            var size by remember { mutableStateOf(IntSize.Zero) }
-            Box(Modifier.onSizeChanged {
-                size = it
-            }) {
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-//                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    modifier = Modifier,
-//                        .fillMaxWidth()
-//                        .background(background),
-                    decorationBox = { innerTextField ->
-                        var outlineModifier = Modifier
-                            .fillMaxWidth()
-                        if (value.isNotEmpty()) {
-                            outlineModifier = outlineModifier.border(
-                                brush = SolidColor(MaterialTheme.colorScheme.primary),
-                                width = 1.dp,
-                                shape = RoundedCornerShape(5.dp)
-                            )
-                        } else {
-                            outlineModifier = outlineModifier.border(
-                                color = MaterialTheme.colorScheme.onSurface,
-                                width = 1.dp,
-                                shape = RoundedCornerShape(5.dp)
-                            )
-                        }
-                        outlineModifier = outlineModifier.padding(12.dp)
-                        Surface(
-                            modifier = outlineModifier
-                        ) {
-                            if (value.isEmpty()) {
-                                label(MaterialTheme.colorScheme.onSurface)
-                            }
-
-                            innerTextField()
-                        }
-                    },
-//                    textStyle = TextStyle.Companion.Default.copy(
-//                        color = MaterialTheme.colorScheme.onSurface,
-//                        fontWeight = if (value.isNotEmpty()) FontWeight.Bold else FontWeight.Normal,
-//                    )
-                )
-            }
-
-        }
-    }
 }
