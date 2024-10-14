@@ -33,10 +33,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.clickable
 
 @Composable
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
+    val navHost = LocalNavHost.current
+
     if (currentClass == null) {
         val navHost = LocalNavHost.current
         navHost?.popBackStack()
@@ -45,8 +53,25 @@ fun GradesScreen() {
     val meta = key(currentClass) {
         remember { ClassMeta(currentClass!!) }
     }
+
+    var goBack by remember { mutableStateOf(false) }
+    LaunchedEffect (goBack)
+    {
+        if (goBack)
+        {
+            navHost?.navigate(NavScreen.Home.name)
+        }
+    }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Row () {
+            IconButton({ goBack = true }) {
+                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+            }
+            
+            Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).offset(x= -12.dp).padding(5.dp), textAlign = TextAlign.Center)
+        }
+        
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 ClassCard(currentClass!!, meta)
