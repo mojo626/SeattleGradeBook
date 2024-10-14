@@ -12,6 +12,7 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
+
 
 
 
@@ -120,11 +126,15 @@ fun GPAScreen() {
     
 
     Column ( modifier = Modifier.verticalScroll(rememberScrollState()) ) {
-        TabRow( selectedTabIndex = gpa_selector ) {
+        TabRow( selectedTabIndex = gpa_selector, backgroundColor = MaterialTheme.colorScheme.surface ) {
             Tab(text = {Text("Unweighted GPA")}, selected = gpa_selector == 0, onClick = { gpa_selector = 0 })
             Tab(text = {Text("Weighted GPA")}, selected = gpa_selector == 1, onClick = { gpa_selector = 1 })
         }
-        Text(String.format("%.3f", (if (gpa_selector == 0) unweighted_gpa else weighted_gpa)))
+        Box( contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth() )
+        {
+            Text(String.format("%.3f", (if (gpa_selector == 0) unweighted_gpa else weighted_gpa)), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
+        }
+       
 
 
         pastClasses?.forEachIndexed { i, it ->
