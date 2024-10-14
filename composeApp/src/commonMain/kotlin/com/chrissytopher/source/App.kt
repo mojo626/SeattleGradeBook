@@ -59,6 +59,7 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
     GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
+    Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
 }
 
 @Composable
@@ -138,12 +139,15 @@ fun App(navController : NavHostController = rememberNavController()) {
                     composable(route = NavScreen.Onboarding.name) {
                         OnboardingScreen()
                     }
-                        composable(route = NavScreen.More.name) {
-                            MoreScreen()
-                        }
-                        composable(route = NavScreen.GPA.name) {
-                            GPAScreen()
-                        }
+                    composable(route = NavScreen.More.name) {
+                        MoreScreen()
+                    }
+                    composable(route = NavScreen.GPA.name) {
+                        GPAScreen()
+                    }
+                    composable(route = NavScreen.Calculator.name) {
+                        GradeCalculatorScreen()
+                    }
                 }
             }
         }
