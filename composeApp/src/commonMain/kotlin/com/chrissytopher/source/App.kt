@@ -107,8 +107,6 @@ fun App(navController : NavHostController = rememberNavController()) {
             }
         }
         AppTheme {
-            Napier.d("testingSourceData: $sourceData")
-
             Scaffold(
                 bottomBar = {
                     val currentNav by navController.currentBackStackEntryAsState()

@@ -17,8 +17,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.TabRow
-import androidx.compose.material.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Tab
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -48,7 +48,7 @@ fun GPAScreen() {
     var gpaSelector by remember { mutableStateOf(0) }
 
     Column ( modifier = Modifier.verticalScroll(rememberScrollState()) ) {
-        TabRow( selectedTabIndex = gpaSelector, backgroundColor = MaterialTheme.colorScheme.surface ) {
+        TabRow( selectedTabIndex = gpaSelector ) {
             Tab(text = {Text("Unweighted GPA")}, selected = gpaSelector == 0, onClick = { gpaSelector = 0 })
             Tab(text = {Text("Weighted GPA")}, selected = gpaSelector == 1, onClick = { gpaSelector = 1 })
         }
@@ -86,7 +86,7 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
 
     pastClasses?.forEach {
         if (it.credit_attempted > 0) {
-            unweightedGpa += when (it.grade.removeSuffix(" <br></br>")) {
+            unweightedGpa += when (it.grade.removeSuffix(" <b></b>")) {
                 "A" -> {  4.0 }
                 "A-" -> { 3.7 }
                 "B+" -> { 3.3 }
@@ -103,10 +103,8 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
             }
 
             if (it.course_name.startsWith("AP ")) {
-                Napier.d("adding +1 because of class ${it.course_name}")
                 weightedAdditions += 1.0
             } else if (it.course_name.endsWith(" H")) {
-                Napier.d("adding +0.5 because of class ${it.course_name}")
                 weightedAdditions += 0.5
             }
             totalClasses ++
@@ -135,10 +133,8 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
             }
 
             if (it.name.startsWith("AP ")) {
-                Napier.d("adding +1 because of class ${it.name}")
                 weightedAdditions += 1.0
             } else if (it.name.endsWith(" H")) {
-                Napier.d("adding +0.5 because of class ${it.name}")
                 weightedAdditions += 0.5
             }
             totalClasses ++
