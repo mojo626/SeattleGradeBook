@@ -11,6 +11,8 @@ pluginManagement {
             }
         }
         mavenCentral()
+        
+
         gradlePluginPortal()
     }
 }
@@ -25,6 +27,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven("https://maven.universablockchain.com/")
     }
 }
 

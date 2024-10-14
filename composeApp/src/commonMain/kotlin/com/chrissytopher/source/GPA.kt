@@ -31,6 +31,8 @@ import androidx.compose.runtime.key
 import io.github.aakira.napier.Napier
 import kotlin.math.round
 import kotlin.math.pow
+import kotlin.math.roundToInt
+import net.sergeych.sprintf.*
 
 
 @Composable
@@ -55,7 +57,7 @@ fun GPAScreen() {
         }
         Box( contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth() )
         {
-            Text((if (gpaSelector == 0) unweightedGpa else weightedGpa).round(3).toString(), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
+            Text("%.3f".sprintf((if (gpaSelector == 0) unweightedGpa else weightedGpa)), fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
         }
 
         pastClasses?.reversed()?.forEach {
@@ -153,9 +155,4 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
     unweightedGpa /= totalClasses
     weightedGpa /= totalClasses
     return Pair(unweightedGpa, weightedGpa)
-}
-
-fun Double.round(decimals: Int): Double {
-    var multiplier = 10.0f.pow(decimals)
-    return round(this * multiplier) / multiplier
 }

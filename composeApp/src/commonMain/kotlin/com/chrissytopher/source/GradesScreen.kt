@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextAlign
+import net.sergeych.sprintf.*
 
 @Composable
 fun GradesScreen() {
@@ -124,7 +125,7 @@ fun GradesScreen() {
                             Text(newestSection.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                             Text(
                                 if (showPercent) {
-                                    newestScore.scorepercent?.toString()?.let {"$it%"} ?: "-"
+                                    newestScore.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
                                 } else {
                                     newestScore.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"
                                 },
