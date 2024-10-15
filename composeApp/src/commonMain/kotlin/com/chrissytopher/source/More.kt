@@ -72,21 +72,21 @@ fun MoreScreen() {
             
         }
 
-//        OutlinedCard (
-//            colors = CardDefaults.cardColors(
-//                containerColor = MaterialTheme.colorScheme.surface,
-//            ),
-//            border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-//            modifier = Modifier.padding(20.dp).clickable {goToGradeCalculator = true}
-//        ) {
-//            Row ( modifier = Modifier
-//                    .padding(15.dp)
-//                ) {
-//                Text("Grade Calculator", modifier = Modifier.padding(10.dp))
-//                Spacer( modifier = Modifier.weight(1f) )
-//                Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.padding(10.dp))
-//            }
-//
-//        }
+        OutlinedCard (
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+            modifier = Modifier.padding(20.dp).clickable {goToGradeCalculator = true}
+        ) {
+            Row ( modifier = Modifier
+                    .padding(15.dp)
+                ) {
+                Text("Grade Calculator", modifier = Modifier.padding(10.dp))
+                Spacer( modifier = Modifier.weight(1f) )
+                Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.padding(10.dp))
+            }
+
+        }
     }
 }
