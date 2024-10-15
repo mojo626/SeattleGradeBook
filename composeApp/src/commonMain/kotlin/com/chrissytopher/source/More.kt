@@ -86,7 +86,7 @@ fun MoreScreen() {
                 Spacer( modifier = Modifier.weight(1f) )
                 Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.padding(10.dp))
             }
-            
+
         }
     }
 }

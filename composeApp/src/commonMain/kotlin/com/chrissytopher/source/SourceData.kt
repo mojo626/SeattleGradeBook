@@ -22,7 +22,11 @@ data class Class(
     var store_code: String,
     var url: String,
     var name: String,
-)
+) {
+    fun totalSections(): Int {
+        return assignments_parsed.sumOf { it._assignmentsections.size }
+    }
+}
 
 @Serializable
 data class Assignment (

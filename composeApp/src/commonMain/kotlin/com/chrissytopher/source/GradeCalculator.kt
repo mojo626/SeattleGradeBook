@@ -81,7 +81,8 @@ fun GradeCalculatorScreen() {
                     var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
                     ClassCard(
                         currClass,
-                        ClassMeta(currClass)
+                        ClassMeta(currClass),
+                        false,
                     )
                 }
 
@@ -91,7 +92,8 @@ fun GradeCalculatorScreen() {
                     var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
                     ClassCard(
                         currClass,
-                        ClassMeta(currClass, newAssignments)
+                        ClassMeta(currClass, newAssignments),
+                        false,
                     )
                 }
             }
