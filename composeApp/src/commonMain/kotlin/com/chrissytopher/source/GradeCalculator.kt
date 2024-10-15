@@ -11,64 +11,61 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.TabRow
-import androidx.compose.material.Tab
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.key
 import io.github.aakira.napier.Napier
-import kotlin.math.round
-import kotlin.math.pow
-import kotlin.math.roundToInt
-import net.sergeych.sprintf.*
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.TextField
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Slider
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.TextUnit
+import kotlin.math.round
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GradeCalculatorScreen() {
     
     val sourceDataState = LocalSourceData.current
 
     val currClasses = sourceDataState.value?.classes
+
+    var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
 
     var expanded by remember { mutableStateOf(false) }
     var selectedClassName by remember { mutableStateOf("Select a Class") }
@@ -133,7 +130,7 @@ fun GradeCalculatorScreen() {
                         Row () {
                             Text("New Assignment", fontSize = 20.sp)
                             Spacer( modifier = Modifier.weight(1f) )
-                            IconButton( onClick = { newAssignments = newAssignments.filterIndexed { i, _ -> i != index }; Napier.d(newAssignments.toString()) } ) {
+                            IconButton( onClick = { newAssignments = newAssignments.filterIndexed { i, _ -> i != index }; newAssignmentsChanged = !newAssignmentsChanged } ) {
                                 Icon(Icons.Outlined.Close, contentDescription = "Close button")
                             }
                         }
@@ -142,7 +139,7 @@ fun GradeCalculatorScreen() {
                         {
                             Text("If you got ", fontSize = 20.sp)
 
-                            key (newAssignments.size) //This is to force the field to recompose when an assignment is removed
+                            key (newAssignmentsChanged) //This is to force the field to recompose when an assignment is removed
                             {
                                 CustomTextField(
                                     onValueChange = { it ->
@@ -166,7 +163,7 @@ fun GradeCalculatorScreen() {
                             }
 
                             Text(" out of ", fontSize = 20.sp)
-                            key (newAssignments.size)
+                            key (newAssignmentsChanged)
                             {
                                 CustomTextField(
                                     onValueChange = { it ->
@@ -181,6 +178,7 @@ fun GradeCalculatorScreen() {
                                             false
                                         }
 
+
                                     },
                                     modifier = Modifier.height(30.dp).width(50.dp),
                                     placeholderText = "",
@@ -189,6 +187,20 @@ fun GradeCalculatorScreen() {
                                 )
                             }
                         }
+
+                        val interaction = remember { MutableInteractionSource() }
+                        val isDragging by interaction.collectIsDraggedAsState()
+
+                        Slider( value = (if (assignment.second == 0.0f) 0.0f else assignment.first/assignment.second),  onValueChange = {
+                            if (isDragging)
+                            {
+                                newAssignments = (newAssignments.toMutableList().apply{
+                                    this[index] = Pair(round(this[index].second * it*10.0f)/10.0f, this[index].second)
+                                })
+                                newAssignmentsChanged = !newAssignmentsChanged
+                            }},
+                            interactionSource = interaction
+                        )
                     }
 
                 }
