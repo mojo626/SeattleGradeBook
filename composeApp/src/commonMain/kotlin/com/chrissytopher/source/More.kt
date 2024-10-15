@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.CardDefaults
 
 @Composable
 fun MoreScreen() {
@@ -53,11 +55,15 @@ fun MoreScreen() {
     }
 
     Column {
-        Box ( modifier = Modifier.clickable { goToGPA = true }) {
+        OutlinedCard (
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+            modifier = Modifier.padding(20.dp).clickable {goToGPA = true}
+        ) {
             Row ( modifier = Modifier
                     .padding(15.dp)
-                    .border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))
-                    
                 ) {
                 Text("GPA Calculator", modifier = Modifier.padding(10.dp))
                 Spacer( modifier = Modifier.weight(1f) )
@@ -66,11 +72,15 @@ fun MoreScreen() {
             
         }
 
-        Box ( modifier = Modifier.clickable { goToGradeCalculator = true }) {
+        OutlinedCard (
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+            modifier = Modifier.padding(20.dp).clickable {goToGradeCalculator = true}
+        ) {
             Row ( modifier = Modifier
                     .padding(15.dp)
-                    .border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))
-                    
                 ) {
                 Text("Grade Calculator", modifier = Modifier.padding(10.dp))
                 Spacer( modifier = Modifier.weight(1f) )
