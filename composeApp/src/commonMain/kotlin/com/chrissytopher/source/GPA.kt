@@ -29,6 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.runtime.key
 import io.github.aakira.napier.Napier
 import net.sergeych.sprintf.*
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.MaterialTheme
 
 
 @Composable
@@ -59,11 +63,12 @@ fun GPAScreen() {
 
         pastClasses?.reversed()?.forEach {
             if (it.credit_attempted > 0 && it.grade.removeRange(it.grade.indexOf('<'), it.grade.length) != "P*") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-                        .border(2.dp, SolidColor(Color.Black),shape = RoundedCornerShape(15.dp))
+                OutlinedCard (
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+                    modifier = Modifier.padding(10.dp)
                 ) {
                     Row() {
                         Text(it.course_name, modifier = Modifier.padding(10.dp))
