@@ -39,11 +39,20 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextAlign
+import kotlinx.serialization.encodeToString
 import net.sergeych.sprintf.*
 
 @Composable
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
+    val kvault = LocalKVault.current
+    val json = LocalJson.current
+    LaunchedEffect(currentClass) {
+        val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<ArrayList<String>>(it) } ?: arrayListOf()
+        currentClass?.name?.let { updateClasses.remove(it) }
+        kvault?.set(CLASS_UPDATES_KEY, json.encodeToString(updateClasses))
+    }
+
     val navHost = LocalNavHost.current
 
     if (currentClass == null) {
@@ -56,16 +65,14 @@ fun GradesScreen() {
     }
 
     var goBack by remember { mutableStateOf(false) }
-    LaunchedEffect (goBack)
-    {
-        if (goBack)
-        {
+    LaunchedEffect (goBack) {
+        if (goBack) {
             navHost?.navigate(NavScreen.Home.name)
         }
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Row () {
+        Row {
             IconButton({ goBack = true }) {
                 Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
             }
@@ -75,7 +82,7 @@ fun GradesScreen() {
         
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                ClassCard(currentClass!!, meta)
+                ClassCard(currentClass!!, meta, false)
             }
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Text("Does anyone remember what was here on the og source app?")
@@ -98,18 +105,18 @@ fun GradesScreen() {
 
         }
         val assignmentsSorted = key(currentClass) {
-            remember { currentClass?.assignments_parsed?.sortedBy { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
+            remember { currentClass?.assignments_parsed?.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
         }
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach {assignment ->
                 val newestSection =
                     assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
                 val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-                if (newestSection != null && newestScore != null) {
+                if (newestSection != null) {
                     val themeModifier = darkModeColorModifier()
                     val colors = if (newestSection.iscountedinfinalgrade) {
-                        newestScore.scorelettergrade?.let {
-                            gradeColors[it]?.let {
+                        newestScore?.scorelettergrade?.firstOrNull()?.let {
+                            gradeColors[it.toString()]?.let {
                                 CardDefaults.cardColors(
                                     containerColor = it*themeModifier
                                 )
@@ -121,13 +128,13 @@ fun GradesScreen() {
                     Card(modifier = Modifier.padding(5.dp), colors = colors) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
                             val localDensity = LocalDensity.current
-                            Text(newestScore.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
+                            Text(newestScore?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
                             Text(newestSection.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                             Text(
                                 if (showPercent) {
-                                    newestScore.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
+                                    newestScore?.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
                                 } else {
-                                    newestScore.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"
+                                    newestScore?.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"
                                 },
                                 style = MaterialTheme.typography.titleLarge)
                         }

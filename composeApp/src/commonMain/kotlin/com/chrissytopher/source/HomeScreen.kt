@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.BadgedBox
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
@@ -29,12 +30,14 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.Badge
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -59,6 +63,7 @@ fun HomeScreen() {
     var refreshError by remember { mutableStateOf(false) }
 
     val sourceData by LocalSourceData.current
+    val json = LocalJson.current
     var classMetas: List<ClassMeta>? by remember { mutableStateOf(null) }
     LaunchedEffect(sourceData) {
         classMetas = sourceData?.classes?.map { ClassMeta(it) }
@@ -86,10 +91,16 @@ fun HomeScreen() {
                         kvault.string(PASSWORD_KEY)?.let { password ->
                             CoroutineScope(Dispatchers.IO).launch {
                                 refreshingInProgress = true
-                                val sourceData = getSourceData(username, password).getOrNullAndThrow()
-                                if (sourceData != null) {
-                                    kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
-                                    sourceDataState.value = sourceData
+                                val newSourceData = getSourceData(username, password).getOrNullAndThrow()
+                                if (newSourceData != null) {
+                                    kvault.set(SOURCE_DATA_KEY, json.encodeToString(newSourceData))
+                                    val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
+                                    val updatedClasses = newSourceData.classes.filter { newClass ->
+                                        val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter true
+                                        (oldClass.totalSections() != newClass.totalSections())
+                                    }
+                                    kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
+                                    sourceDataState.value = newSourceData
                                     refreshError = false
                                 } else {
                                     refreshError = true
@@ -113,6 +124,12 @@ fun HomeScreen() {
             } else {
                 Pair(sourceData?.classes, classMetas)
             }
+            //converting to a hashmap saves looping through the list for each of the ui cards below
+            val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }
+            val updateClassesMap = hashMapOf(
+                *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
+            )
+            updateClasses?.forEach { updateClassesMap[it] = true }
             filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     it.forEachIndexed { column, it ->
@@ -121,10 +138,12 @@ fun HomeScreen() {
                         val classForGradePage = ClassForGradePage.current
                         val navHost = LocalNavHost.current
                         Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
-                            ClassCard(it, meta) {
-                                classForGradePage.value = it
-                                navHost?.navigate(NavScreen.Grades.name) {
-                                    launchSingleTop = true
+                            key(sourceData) {
+                                ClassCard(it, meta, updateClassesMap[it.name] ?: false) {
+                                    classForGradePage.value = it
+                                    navHost?.navigate(NavScreen.Grades.name) {
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
                         }
@@ -140,7 +159,7 @@ fun HomeScreen() {
 }
 
 @Composable
-fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
+fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, onClick: (() -> Unit)? = null) {
     val inner = @Composable {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -153,13 +172,20 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, onClick: (() -> Unit)? = null) {
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
     val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
-    if (onClick == null) {
-        Card(modifier, colors = colors) {
-            inner()
+    BadgedBox(badge = {
+        Napier.d("updates: $updates")
+        if (updates) {
+            Badge(Modifier.size(15.dp))
         }
-    } else {
-        Card(onClick, modifier = modifier, colors = colors) {
-            inner()
+    }) {
+        if (onClick == null) {
+            Card(modifier, colors = colors) {
+                inner()
+            }
+        } else {
+            Card(onClick, modifier = modifier, colors = colors) {
+                inner()
+            }
         }
     }
 }
