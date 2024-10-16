@@ -1,9 +1,5 @@
 package com.chrissytopher.source
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.liftric.kvault.KVault
@@ -14,9 +10,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.navigation.compose.composable
 import androidx.compose.material.icons.filled.Home
@@ -31,18 +24,15 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.createGraph
-import com.chrissytopher.source.theme.AppTheme
+import com.chrissytopher.source.themes.blueTheme.BlueAppTheme
+import com.chrissytopher.source.themes.redTheme.RedAppTheme
+import com.chrissytopher.source.themes.theme.AppTheme
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -108,7 +98,10 @@ fun App(navController : NavHostController = rememberNavController()) {
                 }
             }
         }
-        AppTheme {
+
+        var currentTheme by remember { mutableStateOf( ThemeVariant.valueOf(kvault?.string("THEME") ?: "Classic")) }
+
+        ThemeSwitcher(currentTheme) {
             Scaffold(
                 bottomBar = {
                     val currentNav by navController.currentBackStackEntryAsState()
@@ -135,7 +128,7 @@ fun App(navController : NavHostController = rememberNavController()) {
                         GradesScreen()
                     }
                     composable(route = NavScreen.Settings.name) {
-                        SettingsScreen()
+                        SettingsScreen(currentTheme = currentTheme, onThemeChange = {newTheme -> currentTheme = newTheme})
                     }
                     composable(route = NavScreen.Onboarding.name) {
                         OnboardingScreen()
@@ -158,4 +151,20 @@ fun App(navController : NavHostController = rememberNavController()) {
 fun <T> Result<T>.getOrNullAndThrow(): T? {
     exceptionOrNull()?.let { Napier.w("Caught error $it") }
     return getOrNull()
+}
+
+enum class ThemeVariant {
+    Classic, Red, Blue
+}
+
+@Composable
+fun ThemeSwitcher(
+    themeVariant: ThemeVariant,
+    content: @Composable () -> Unit
+) {
+    when (themeVariant) {
+        ThemeVariant.Classic -> AppTheme(content = content)
+        ThemeVariant.Red -> RedAppTheme(content = content)
+        ThemeVariant.Blue -> BlueAppTheme(content = content)
+    }
 }

@@ -1,4 +1,4 @@
-package com.chrissytopher.source.theme
+package com.chrissytopher.source.themes.blueTheme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
