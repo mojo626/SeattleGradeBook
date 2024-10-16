@@ -20,6 +20,9 @@ const val ASSIGNMENTS_NOTIFICATION_CHANNEL = "ASSIGNMENTS"
 
 const val WORK_MANAGER_BACKGROUND_SYNC_ID = "BACKGROUND_SYNC"
 
+const val NEW_ASSIGNMENTS_TITLE = "New Assignments"
+const val NEW_ASSIGNMENTS_BODY = "Your assignments have been updated - Tap to view"
+
 val gradeColors = mapOf(
     "A" to Color(0xFF64ed72),
     "B" to Color(0xFF69d0f5),

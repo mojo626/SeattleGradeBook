@@ -16,13 +16,42 @@ fun doBackgroundSync(kvault: KVault, json: Json, notificationSender: Notificatio
                 val newAssignments = arrayListOf<AssignmentSection>()
                 val updatedClasses = newSourceData.classes.filter { newClass ->
                     val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter true
-                    newClass.assignments_parsed.forEach { newAssignment ->
-                        val oldAssignment = oldClass
+                    val newSections = newClass.assignments_parsed.flatMap { it._assignmentsections }
+                    val oldSections = oldClass.assignments_parsed.flatMap { it._assignmentsections }
+                    newSections.forEach { newSection ->
+                        val oldSection = oldSections.find { it._id == newSection._id }
+                        if (oldSection == null || oldSection._assignmentscores.size != newSection._assignmentscores.size) {
+                            newAssignments += newSection
+                        }
                     }
                     (oldClass.totalSections() != newClass.totalSections())
                 }
                 kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
-                Napier.d("sent notification")
+                var sendNotification = false
+                if (kvault.bool(NEW_ASSIGNMENTS_NOTIFICATIONS_KEY) == true) {
+                    sendNotification = true
+                }
+                if (kvault.bool(THRESHOLD_NOTIFICATIONS_KEY) == true) {
+                    kvault.float(THRESHOLD_VALUE_NOTIFICATIONS_KEY)?.let { thresholdPoints ->
+                        if ((newAssignments.maxOfOrNull { it.totalpointvalue } ?: 0f) > thresholdPoints) {
+                            sendNotification = true
+                        }
+                    }
+                }
+                if (kvault.bool(LETTER_GRADE_CHANGES_NOTIFICATIONS_KEY) == true) {
+                    val oldLetters = sourceData?.classes?.map {
+                        ClassMeta(it).grade
+                    }
+                    val newLetters = newSourceData.classes.map {
+                        ClassMeta(it).grade
+                    }
+                    if (oldLetters != newLetters) {
+                        sendNotification = true
+                    }
+                }
+                if (sendNotification) {
+                    notificationSender?.sendNotification(NEW_ASSIGNMENTS_TITLE, NEW_ASSIGNMENTS_BODY)
+                }
                 return true
             }
         }

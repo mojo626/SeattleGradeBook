@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         WorkManager
             .getInstance(this)
             .enqueueUniquePeriodicWork(WORK_MANAGER_BACKGROUND_SYNC_ID, ExistingPeriodicWorkPolicy.KEEP, backgroundSyncRequest)
+
         setContent {
             CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
                 CompositionLocalProvider(LocalKVault provides kvault) {

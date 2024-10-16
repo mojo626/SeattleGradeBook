@@ -146,8 +146,8 @@ fun NotificationsScreen(done: () -> Unit) {
                     Image(painterResource(appIcon()), "App Icon", Modifier.clip(iconRounding()).size(75.dp))
                     Spacer(Modifier.width(25.dp))
                     Column(verticalArrangement = Arrangement.SpaceAround, modifier = Modifier.height(75.dp)) {
-                        Text("New grade in Algebra", style = MaterialTheme.typography.titleLarge)
-                        Text("Unit 1 Exam - Tap to view", style = MaterialTheme.typography.bodyLarge)
+                        Text(NEW_ASSIGNMENTS_TITLE, style = MaterialTheme.typography.titleLarge)
+                        Text(NEW_ASSIGNMENTS_BODY, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
