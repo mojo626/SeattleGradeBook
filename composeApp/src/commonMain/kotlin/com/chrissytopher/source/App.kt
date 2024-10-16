@@ -45,6 +45,7 @@ val LocalNavHost = compositionLocalOf<NavHostController?> { null }
 val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateOf(null) }
 val LocalPermissionsController = compositionLocalOf<PermissionsController> { error("no permissions controller provided") }
 val AssignmentForPage = compositionLocalOf<MutableState<AssignmentSection?>> { mutableStateOf(null) }
+val LocalNotificationSender = compositionLocalOf<NotificationSender?> { null }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
@@ -93,11 +94,15 @@ fun App(navController : NavHostController = rememberNavController()) {
             CoroutineScope(Dispatchers.IO).launch {
                 kvault?.string(USERNAME_KEY)?.let { username ->
                     kvault.string(PASSWORD_KEY)?.let { password ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            getSourceData(username, password).getOrNullAndThrow()?.let {
-                                kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(it))
-                                sourceData = it
+                        getSourceData(username, password).getOrNullAndThrow()?.let { newSourceData ->
+                            kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(newSourceData))
+                            val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { localJson.decodeFromString<List<String>>(it) } ?: listOf()
+                            val updatedClasses = newSourceData.classes.filter { newClass ->
+                                val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter true
+                                (oldClass.totalSections() != newClass.totalSections())
                             }
+                            kvault.set(CLASS_UPDATES_KEY, localJson.encodeToString(currentUpdates + updatedClasses.map { it.name }))
+                            sourceData = newSourceData
                         }
                     }
                 }
