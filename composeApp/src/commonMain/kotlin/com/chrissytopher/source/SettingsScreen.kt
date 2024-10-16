@@ -22,15 +22,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.icerock.moko.permissions.Permission
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -73,6 +77,42 @@ fun SettingsScreen(
                 }
             }
         }
+
+        val permissionsController = LocalPermissionsController.current
+        var notificationsAllowed by remember { mutableStateOf(false) }
+        val coroutineScope = rememberCoroutineScope()
+        LaunchedEffect(true) {
+            launch {
+                notificationsAllowed = permissionsController.isPermissionGranted(Permission.REMOTE_NOTIFICATION)
+            }
+        }
+        if (notificationsAllowed) {
+            var everyAssignment by remember { mutableStateOf(kvault?.bool(NEW_ASSIGNMENTS_NOTIFICATIONS_KEY) ?: false) }
+            var letterGradeChange by remember { mutableStateOf(kvault?.bool(LETTER_GRADE_CHANGES_NOTIFICATIONS_KEY) ?: false) }
+            var threshold by remember { mutableStateOf(kvault?.bool(THRESHOLD_NOTIFICATIONS_KEY) ?: false) }
+            var points by remember { mutableStateOf(kvault?.float(THRESHOLD_VALUE_NOTIFICATIONS_KEY) ?: 100f) }
+            NotificationSettings(
+                everyAssignment, letterGradeChange, threshold, points,
+                setEvery = { everyAssignment = it; kvault?.set(NEW_ASSIGNMENTS_NOTIFICATIONS_KEY, it) },
+                setLetter = { letterGradeChange = it; kvault?.set(LETTER_GRADE_CHANGES_NOTIFICATIONS_KEY, it) },
+                setThreshold = { threshold = it; kvault?.set(THRESHOLD_NOTIFICATIONS_KEY, it) },
+                setPointThreshold = { points = it; kvault?.set(THRESHOLD_VALUE_NOTIFICATIONS_KEY, it) },
+            )
+        } else {
+            Button(onClick = {
+                coroutineScope.launch {
+                    try {
+                        permissionsController.providePermission(Permission.REMOTE_NOTIFICATION)
+                        notificationsAllowed = true
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text("Enable Notifications")
+            }
+        }
+
 
         Button(onClick = {
             kvault?.deleteObject(USERNAME_KEY)

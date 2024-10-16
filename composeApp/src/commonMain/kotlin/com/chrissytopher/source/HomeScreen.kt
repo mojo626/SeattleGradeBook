@@ -173,7 +173,6 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, onClick: (() -
     val themeModifier = darkModeColorModifier()
     val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
-        Napier.d("updates: $updates")
         if (updates) {
             Badge(Modifier.size(15.dp))
         }

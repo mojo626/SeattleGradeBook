@@ -22,6 +22,7 @@ mp_stools = "1.5.1"
 napier = "2.7.1"
 navigationCompose = "2.7.0-alpha07"
 coilComposeVersion = "3.0.0-alpha07"
+permissionsCompose = "0.18.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -44,6 +45,7 @@ mp_stools = { module = "net.sergeych:mp_stools", version.ref = "mp_stools" }
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 coil3-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilComposeVersion" }
+permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "permissionsCompose" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

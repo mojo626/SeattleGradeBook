@@ -62,6 +62,7 @@ kotlin {
             implementation(libs.coil3.coil.compose)
             implementation(libs.mp.stools)
             implementation(libs.napier)
+            implementation(libs.permissions.compose)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)

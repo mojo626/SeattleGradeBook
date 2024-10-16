@@ -1,7 +1,11 @@
 package com.chrissytopher.source
 
 import android.os.Build
+import androidx.compose.foundation.shape.CircleShape
 import kotlinx.serialization.json.Json
+import org.jetbrains.compose.resources.DrawableResource
+import source2.composeapp.generated.resources.Res
+import source2.composeapp.generated.resources.icon_android
 import kotlin.system.exitProcess
 
 class AndroidPlatform : Platform {
@@ -24,3 +28,6 @@ actual fun filesDir(): String {
 }
 
 actual fun livingInFearOfBackGestures(): Boolean = true
+
+actual fun appIcon() = Res.drawable.icon_android
+actual fun iconRounding() = CircleShape
