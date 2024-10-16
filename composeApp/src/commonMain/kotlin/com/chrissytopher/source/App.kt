@@ -18,9 +18,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -31,11 +29,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.chrissytopher.source.themes.blueTheme.BlueAppTheme
 import com.chrissytopher.source.themes.redTheme.RedAppTheme
 import com.chrissytopher.source.themes.theme.AppTheme
-import dev.icerock.moko.permissions.PermissionsController
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -46,6 +42,7 @@ val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableSta
 val LocalNavHost = compositionLocalOf<NavHostController?> { null }
 val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateOf(null) }
 val LocalPermissionsController = compositionLocalOf<PermissionsController> { error("no permissions controller provided") }
+val AssignmentForPage = compositionLocalOf<MutableState<AssignmentSection?>> { mutableStateOf(null) }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
@@ -55,6 +52,7 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
     GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
     Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
+    Assignments(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
 }
 
 @Composable
@@ -93,9 +91,11 @@ fun App(navController : NavHostController = rememberNavController()) {
             CoroutineScope(Dispatchers.IO).launch {
                 kvault?.string(USERNAME_KEY)?.let { username ->
                     kvault.string(PASSWORD_KEY)?.let { password ->
-                        getSourceData(username, password).getOrNullAndThrow()?.let {
-                            kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(it))
-                            sourceData = it
+                        CoroutineScope(Dispatchers.IO).launch {
+                            getSourceData(username, password).getOrNullAndThrow()?.let {
+                                kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(it))
+                                sourceData = it
+                            }
                         }
                     }
                 }
@@ -144,6 +144,9 @@ fun App(navController : NavHostController = rememberNavController()) {
                     }
                     composable(route = NavScreen.Calculator.name) {
                         GradeCalculatorScreen()
+                    }
+                    composable(route = NavScreen.Assignments.name) {
+                        AssignmentScreen()
                     }
                 }
             }

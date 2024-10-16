@@ -45,8 +45,10 @@ import net.sergeych.sprintf.*
 @Composable
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
+    var assignmentForPage = AssignmentForPage.current
     val kvault = LocalKVault.current
     val json = LocalJson.current
+
     LaunchedEffect(currentClass) {
         val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<ArrayList<String>>(it) } ?: arrayListOf()
         currentClass?.name?.let { updateClasses.remove(it) }
@@ -54,6 +56,18 @@ fun GradesScreen() {
     }
 
     val navHost = LocalNavHost.current
+
+    var goToAssignment by remember { mutableStateOf<AssignmentSection?>(null) }
+
+    LaunchedEffect(goToAssignment)
+    {
+        if (goToAssignment != null)
+        {
+            assignmentForPage.value = goToAssignment
+            navHost?.navigate(NavScreen.Assignments.name)
+            goToAssignment = null
+        }
+    }
 
     if (currentClass == null) {
         val navHost = LocalNavHost.current
@@ -72,7 +86,7 @@ fun GradesScreen() {
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Row {
+        Row( verticalAlignment = Alignment.CenterVertically ) {
             IconButton({ goBack = true }) {
                 Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
             }
@@ -125,7 +139,7 @@ fun GradesScreen() {
                     } else {
                         CardDefaults.cardColors()
                     }
-                    Card(modifier = Modifier.padding(5.dp), colors = colors) {
+                    Card(modifier = Modifier.padding(5.dp).clickable { goToAssignment = newestSection }, colors = colors) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
                             val localDensity = LocalDensity.current
                             Text(newestScore?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
