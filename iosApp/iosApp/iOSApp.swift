@@ -8,8 +8,13 @@ struct iOSApp: App {
             ContentView()
         }
     }
+    
+    var notificationDelegate = MyNotificationDelegate()
 
     init() {
+        UNUserNotificationCenter.current().delegate = notificationDelegate
+        BackgroundTaskManager.shared.register()
+        BackgroundTaskManager.shared.scheduleAppRefresh()
         MainViewControllerKt.debugBuild()
     }
 }

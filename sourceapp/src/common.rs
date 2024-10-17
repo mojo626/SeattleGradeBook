@@ -144,7 +144,6 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
             println!("no data_ng found at {full_score_url}");
             continue;
         };
-        println!("{}", data_ng.as_str());
 
         let Some(section_id_match) = section_id_regex.find(&scores_text) else { continue; };
         let section_id = &section_id_match.as_str()["data-sectionid=\"".len()..];
@@ -158,7 +157,6 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
             .header("Accept", "application/json, text/plain, */*")
             .send()?;
         let assignments_json = assignments_res.text()?;
-        println!("{assignments_json}");
         assignments.push(Class {
             frn: class_frn.into(),
             assignments: serde_json::from_str(&assignments_json)?, 
@@ -168,7 +166,6 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
             name: class_headers[i].clone(), 
         });
     }
-    println!("{assignments:?}");
     let past_classes = get_past_grades(&client)?;
     let source_data = SourceData {
         classes: assignments,

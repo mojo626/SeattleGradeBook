@@ -11,6 +11,7 @@
 		058557D9273AAEEB004C7B11 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 058557D8273AAEEB004C7B11 /* Preview Assets.xcassets */; };
 		2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2152FB032600AC8F00CF470E /* iOSApp.swift */; };
 		7555FF83242A565900829871 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7555FF82242A565900829871 /* ContentView.swift */; };
+		9D67F6492CC08ACE009D38C0 /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D67F6482CC08ACA009D38C0 /* BackgroundTaskManager.swift */; };
 		9DFC5DE02CB8F4F600299720 /* libsourceapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DFC5DDA2CB8F0CB00299720 /* libsourceapp.a */; };
 /* End PBXBuildFile section */
 
@@ -21,6 +22,7 @@
 		7555FF7B242A565900829871 /* The Source.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "The Source.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7555FF82242A565900829871 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7555FF8C242A565B00829871 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9D67F6482CC08ACA009D38C0 /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
 		9DFC5DDA2CB8F0CB00299720 /* libsourceapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsourceapp.a; path = ../sourceapp/target/universal/debug/libsourceapp.a; sourceTree = "<group>"; };
 		9DFC5DDD2CB8F16200299720 /* iosApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iosApp-Bridging-Header.h"; sourceTree = "<group>"; };
 		9DFC5DE12CB8F56000299720 /* sourceapp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sourceapp.h; sourceTree = "<group>"; };
@@ -76,6 +78,7 @@
 		7555FF7D242A565900829871 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				9D67F6482CC08ACA009D38C0 /* BackgroundTaskManager.swift */,
 				9DFC5DE12CB8F56000299720 /* sourceapp.h */,
 				058557BA273AAA24004C7B11 /* Assets.xcassets */,
 				7555FF82242A565900829871 /* ContentView.swift */,
@@ -229,6 +232,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9D67F6492CC08ACE009D38C0 /* BackgroundTaskManager.swift in Sources */,
 				2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */,
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
 			);

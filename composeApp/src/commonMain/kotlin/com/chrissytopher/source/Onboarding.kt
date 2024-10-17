@@ -132,7 +132,6 @@ fun LoginScreen(done: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun NotificationsScreen(done: () -> Unit) {
     val permissionsController = LocalPermissionsController.current
@@ -275,7 +274,6 @@ fun OnboardingScreen() {
 }
 
 fun changeLogin(kvault : KVault?, username : String, password : String, sourceData: String) {
-    Napier.d("username: $username")
     kvault?.set(key = USERNAME_KEY, stringValue = username)
     kvault?.set(key = PASSWORD_KEY, stringValue = password)
     kvault?.set(key = SOURCE_DATA_KEY, stringValue = sourceData)
