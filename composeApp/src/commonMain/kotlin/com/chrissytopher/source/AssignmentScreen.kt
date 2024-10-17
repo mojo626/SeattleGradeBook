@@ -1,14 +1,28 @@
 package com.chrissytopher.source
 
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.ChairAlt
 import androidx.compose.material.icons.outlined.Check
@@ -31,6 +45,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -102,29 +119,78 @@ fun AssignmentScreen( ) {
 
         HorizontalDivider(thickness = 2.dp)
 
-        Text("Due Date", fontWeight = FontWeight.Bold, modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), fontSize = 25.sp)
+        Text(
+            "Due Date",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
+            fontSize = 25.sp
+        )
+
         val date = LocalDateTime.parse("${currentAssignment!!.duedate}T12:00:00")
-        Text("${date.month.toString()} ${date.dayOfMonth}, ${date.year}", modifier = Modifier.padding(20.dp, top = 10.dp), fontSize = 20.sp)
 
-        Text("Course", fontWeight = FontWeight.Bold, modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), fontSize = 25.sp)
-        Text(currentClass!!.name, modifier = Modifier.padding(20.dp, top = 10.dp), fontSize = 20.sp)
+        Text(
+            "${date.month.toString()} ${date.dayOfMonth}, ${date.year}",
+            modifier = Modifier.padding(20.dp, top = 10.dp),
+            fontSize = 20.sp
+        )
 
-        Text("Effect on Grade", fontWeight = FontWeight.Bold, modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), fontSize = 25.sp)
+        Text(
+            "Course",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
+            fontSize = 25.sp
+        )
+
+        Text(
+            currentClass!!.name,
+            modifier = Modifier.padding(20.dp, top = 10.dp),
+            fontSize = 20.sp
+        )
+
+        Text(
+            "Effect on Grade",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
+            fontSize = 25.sp
+        )
+
         val withoutAssignment = ClassMeta(currentClass!!, currentAssignment!!._id)
         val withAssignment = ClassMeta(currentClass!!)
         val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
-        Text("${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}%", modifier = Modifier.padding(20.dp, top = 10.dp), fontSize = 20.sp)
+
+        Text(
+            "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}%",
+            modifier = Modifier.padding(20.dp, top = 10.dp),
+            fontSize = 20.sp
+        )
 
         var sliderVal by remember { mutableStateOf((newestScore?.scorepoints ?: 0.0f) * (currentAssignment?.weight ?: 0.0f)) }
 
-        Text("If you got ${sliderVal}/${currentAssignment!!.totalpointvalue} (${"%.2f".sprintf(sliderVal/currentAssignment!!.totalpointvalue*100.0f)}%)", modifier = Modifier.padding(20.dp, top = 20.dp), fontSize = 20.sp)
-        Slider( value = sliderVal, onValueChange = { sliderVal = round(it*10)/10.0f }, valueRange = 0.0f..(currentAssignment!!.totalpointvalue), modifier = Modifier.padding(horizontal = 20.dp) )
+        Text(
+            "If you got ${sliderVal}/${currentAssignment!!.totalpointvalue} (${"%.2f".sprintf(sliderVal/currentAssignment!!.totalpointvalue*100.0f)}%)",
+            modifier = Modifier.padding(20.dp, top = 20.dp),
+            fontSize = 20.sp
+        )
+
+        Slider(
+            value = sliderVal,
+            onValueChange = {
+                sliderVal = round(it*10)/10.0f
+            },
+            valueRange = 0.0f..(currentAssignment!!.totalpointvalue),
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
 
         val classGrade = ClassMeta(currentClass!!, currentAssignment!!._id)
         val newGrade = (classGrade.earnedPoints + sliderVal) / (classGrade.totalPoints + currentAssignment!!.totalpointvalue)
 
-        Text("Your grade would be ${"%.2f".sprintf(newGrade * 100.0f)}%", modifier = Modifier.padding(20.dp, top = 20.dp), fontSize = 20.sp)
+        Text(
+            "Your grade would be ${"%.2f".sprintf(newGrade * 100.0f)}%",
+            modifier = Modifier.padding(20.dp, top = 20.dp),
+            fontSize = 20.sp
+        )
     }
 
 
 }
+
