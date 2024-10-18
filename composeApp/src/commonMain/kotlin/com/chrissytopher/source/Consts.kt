@@ -21,11 +21,11 @@ const val ASSIGNMENTS_NOTIFICATION_CHANNEL = "ASSIGNMENTS"
 const val WORK_MANAGER_BACKGROUND_SYNC_ID = "BACKGROUND_SYNC"
 
 val gradeColors = mapOf(
-    "A" to Color(0xFF64ed72),
-    "B" to Color(0xFF69d0f5),
-    "C" to Color(0xFFf0e269),
-    "D" to Color(0xFFf09151),
-    "E" to Color(0xFFf24646),
+    "A" to Color(0xFF5ab52c),
+    "B" to Color(0xff20abdc),
+    "C" to Color(0xffdcc927),
+    "D" to Color(0xffe76918),
+    "E" to Color(0xffee2323),
 )
 
 @Composable

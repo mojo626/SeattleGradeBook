@@ -37,9 +37,9 @@ import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -59,6 +59,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -79,7 +80,7 @@ fun GradeCalculatorScreen() {
     
     val sourceDataState = LocalSourceData.current
 
-    val currClasses = sourceDataState.value?.classes
+    val currClasses = remember { sourceDataState.value?.classes }
 
     var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
 
@@ -95,6 +96,7 @@ fun GradeCalculatorScreen() {
     LaunchedEffect(recompose) {
         Napier.d(changedAssignments.toString())
     } //this is the only way that I could find to force a recompose :(
+    //all g sometimes you just gotta do that
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
         Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp))
@@ -145,7 +147,7 @@ fun GradeCalculatorScreen() {
 
         Box (modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Row( modifier = Modifier.clickable{ expanded = true }.border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp)) ) {
-                Text(selectedClassName.toString(), modifier = Modifier.padding(15.dp), fontSize = 20.sp)
+                Text(selectedClassName, modifier = Modifier.padding(15.dp), fontSize = 20.sp)
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = "", modifier = Modifier.padding(10.dp))
             }
@@ -249,7 +251,7 @@ fun GradeCalculatorScreen() {
 
             AnimatedVisibility( currentAssignmentsOpened ) {
                 Column () {
-                    selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
+                    selectedClass!!.assignments_parsed.reversed().forEachIndexed { index, assignment ->
 
 
                         val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
@@ -377,67 +379,77 @@ fun GradeCalculatorCard (
     newAssignmentsChanged : Boolean,
     shown : Boolean = true,
 ) {
+    var opened by remember { mutableStateOf(isNewAssignment) }
     OutlinedCard (
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = if (shown) Color(255, 255, 255) else Color(100, 100,100)
+            containerColor = if (shown) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceDim,
+            contentColor = if (shown) MaterialTheme.colorScheme.onSurface else Color(100, 100,100)
         ),
         border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
         modifier = Modifier.padding(20.dp).fillMaxWidth(),
-
+        onClick = {
+            opened = !opened
+        }
     ) {
         Column ( modifier = Modifier.padding(20.dp) )
         {
-            Row () {
-                Text(assignmentName, fontSize = 20.sp)
-                Spacer( modifier = Modifier.weight(1f) )
-                IconButton( onClick = { onRemove() } ) {
-                    Icon(if (isNewAssignment) Icons.Outlined.Close else (if(shown) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff), contentDescription = "Close button")
-                }
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(assignmentName, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                //ben the iconbutton seriously messes up the padding
+//                IconButton(onClick = { onRemove() }) {
+                    Icon(
+                        if (isNewAssignment) Icons.Outlined.Close else (if(shown) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff),
+                        contentDescription = "Close button",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(25.dp).clickable { onRemove() }
+                    )
+//                }
             }
+            AnimatedVisibility(opened) {
+                Column {
+                    Row {
+                        Text("If you got ", fontSize = 20.sp)
 
-            Row()
-            {
-                Text("If you got ", fontSize = 20.sp)
+                        key (newAssignmentsChanged) {
+                            CustomTextField(
+                                onValueChange = { it ->
+                                    onReceivedValueChange(it)
+                                },
+                                modifier = Modifier.height(30.dp).width(50.dp),
+                                placeholderText = "",
+                                fontSize = 20.sp,
+                                value = receivedPointvalue.toString(),
+                            )
+                        }
 
-                key (newAssignmentsChanged) {
-                    CustomTextField(
-                        onValueChange = { it ->
-                            onReceivedValueChange(it)
-                        },
-                        modifier = Modifier.height(30.dp).width(50.dp),
-                        placeholderText = "",
-                        fontSize = 20.sp,
-                        value = receivedPointvalue.toString(),
+
+
+                        Text(" out of ", fontSize = 20.sp)
+
+                        key (newAssignmentsChanged) {
+                            CustomTextField(
+                                onValueChange = { it ->
+                                    onTotalValueChanged(it)
+                                },
+                                modifier = Modifier.height(30.dp).width(50.dp),
+                                placeholderText = "",
+                                fontSize = 20.sp,
+                                value = totalPointvalue.toString()
+                            )
+                        }
+
+
+                    }
+
+                    val interaction = remember { MutableInteractionSource() }
+                    val isDragging by interaction.collectIsDraggedAsState()
+
+                    Slider( value = (if (totalPointvalue == 0.0f) 0.0f else receivedPointvalue/totalPointvalue),
+                        onValueChange = { onSliderChanged(it, isDragging) },
+                        interactionSource = interaction
                     )
                 }
-
-
-
-                Text(" out of ", fontSize = 20.sp)
-
-                key (newAssignmentsChanged) {
-                    CustomTextField(
-                        onValueChange = { it ->
-                            onTotalValueChanged(it)
-                        },
-                        modifier = Modifier.height(30.dp).width(50.dp),
-                        placeholderText = "",
-                        fontSize = 20.sp,
-                        value = totalPointvalue.toString()
-                    )
-                }
-
-
             }
-
-            val interaction = remember { MutableInteractionSource() }
-            val isDragging by interaction.collectIsDraggedAsState()
-
-            Slider( value = (if (totalPointvalue == 0.0f) 0.0f else receivedPointvalue/totalPointvalue),
-                onValueChange = { onSliderChanged(it, isDragging) },
-                interactionSource = interaction
-            )
         }
 
     }

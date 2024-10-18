@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.key
-import io.github.aakira.napier.Napier
 import net.sergeych.sprintf.*
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
@@ -109,12 +108,11 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
     }
     val disabled by disabledState
     val colors = gradeColors[grade.removeSuffix(" <b></b>").firstOrNull().toString()]?.let {
-        Napier.d(disabled.toString())
         if (disabled) {
             null
         } else {
             CardDefaults.cardColors(
-                containerColor = it,
+                containerColor = it * darkModeColorModifier(),
             )
         }
     } ?: CardDefaults.cardColors()

@@ -51,7 +51,7 @@ extension BackgroundTaskManager {
     
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        request.
+    
 
         var message = "Scheduled"
         do {
