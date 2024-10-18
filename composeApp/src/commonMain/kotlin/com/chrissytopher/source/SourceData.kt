@@ -2,6 +2,7 @@
 
 package com.chrissytopher.source
 
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
@@ -136,18 +137,18 @@ class ClassMeta() {
     
 
     //constructor for adding new assignments to see new grade, score is list of pairs that are <points earned, points possible>
-    constructor(classData : Class, newScores : List<Pair<Float, Float>>) : this() {
-        classData.assignments_parsed.forEach { assignment ->
-            assignment._assignmentsections.forEach { section ->
+    constructor(classData : Class, newScores : List<Pair<Float, Float>>, changedAssignments : List<ChangedAssignment>) : this() {
+        classData.assignments_parsed.forEachIndexed() { index, assignment ->
+            if (changedAssignments[index].hidden) {
+                return@forEachIndexed
+            }
+            assignment._assignmentsections.forEach {section ->
+
                 if (!section.iscountedinfinalgrade) return@forEach
                 if (section._assignmentscores.isEmpty()) return@forEach
-                val possiblePoints = section.totalpointvalue
-                var newestScore = section._assignmentscores.minByOrNull {
-                    LocalDateTime.parse(it.scoreentrydate)
-                }?.scorepoints
-                
-                if (newestScore == null) return@forEach
-                newestScore *= section.weight
+                val possiblePoints = changedAssignments[index].totalPointValue
+                var newestScore = changedAssignments[index].receivedPointvalue
+
                 if (newestScore < possiblePoints / 2f) {
                     newestScore = possiblePoints / 2f
                 }

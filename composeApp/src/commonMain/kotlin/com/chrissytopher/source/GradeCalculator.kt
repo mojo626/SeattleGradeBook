@@ -1,5 +1,6 @@
 package com.chrissytopher.source
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Box
@@ -49,13 +50,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Slider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.TextUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.Serializable
 import kotlin.math.round
+
+@Serializable
+data class ChangedAssignment (
+    var totalPointValue : Float = 0.0f,
+    var receivedPointvalue: Float = 0.0f,
+    var hidden : Boolean = false,
+    var assignmentId : Int,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,13 +85,39 @@ fun GradeCalculatorScreen() {
 
     var expanded by remember { mutableStateOf(false) }
     var selectedClassName by remember { mutableStateOf("Select a Class") }
+    var selectedClass by remember { mutableStateOf<Class?>(null) }
 
     var newAssignments by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
+    var changedAssignments by remember { mutableStateOf( emptyList<ChangedAssignment>()) }
+
+    var recompose by remember { mutableStateOf(false) }
+
+    LaunchedEffect(recompose) {
+        Napier.d(changedAssignments.toString())
+    } //this is the only way that I could find to force a recompose :(
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
         Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp))
 
         if (selectedClassName != "Select a Class") {
+
+            //this is to generate the list of ChangedAssignments so that the app won't crash
+            selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
+                val newestSection =
+                    assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
+                val newestScore =
+                    newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+                if (changedAssignments.size <= index) {
+                    changedAssignments += ChangedAssignment(
+                        totalPointValue = newestSection.totalpointvalue,
+                        receivedPointvalue = newestScore?.scorepoints?.let { it * newestSection.weight }
+                            ?: 0.0f,
+                        hidden = false,
+                        assignmentId = newestSection._id
+                    )
+                }
+            }
+
             Row( verticalAlignment = Alignment.CenterVertically ) {
                 Box(modifier = Modifier.aspectRatio(1f).weight(1f).padding(15.dp)) {
                     var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
@@ -92,10 +134,12 @@ fun GradeCalculatorScreen() {
                     var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
                     ClassCard(
                         currClass,
-                        ClassMeta(currClass, newAssignments),
+                        ClassMeta(currClass, newAssignments, changedAssignments),
                         false,
                     )
                 }
+
+
             }
         }
 
@@ -111,7 +155,7 @@ fun GradeCalculatorScreen() {
                 currClasses?.forEach { curClass ->
                     DropdownMenuItem (
                         text = { Text(curClass.name) },
-                        onClick = { selectedClassName = curClass.name; expanded = false; newAssignments = emptyList<Pair<Float, Float>>() }
+                        onClick = { selectedClassName = curClass.name; selectedClass = curClass; expanded = false; newAssignments = emptyList<Pair<Float, Float>>() }
                     )
                 }
             }
@@ -120,93 +164,50 @@ fun GradeCalculatorScreen() {
         if (selectedClassName != "Select a Class")
         {
             newAssignments.forEachIndexed { index, assignment ->
-                OutlinedCard (
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-                    modifier = Modifier.padding(20.dp).fillMaxWidth()
-                ) {
-                    Column ( modifier = Modifier.padding(20.dp) )
-                    {
-                        Row () {
-                            Text("New Assignment", fontSize = 20.sp)
-                            Spacer( modifier = Modifier.weight(1f) )
-                            IconButton( onClick = { newAssignments = newAssignments.filterIndexed { i, _ -> i != index }; newAssignmentsChanged = !newAssignmentsChanged } ) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Close button")
+                    GradeCalculatorCard(
+                        onRemove = {
+                            newAssignments = newAssignments.filterIndexed { i, _ -> i != index }
+                            newAssignmentsChanged = !newAssignmentsChanged
+                        },
+                        onReceivedValueChange = { it ->
+                            if (it.length in 1..4) {
+                                newAssignments = (newAssignments.toMutableList().apply{
+                                    this[index] = Pair(it.toFloat(), this[index].second)
+                                })
+                                true
+                            } else if (it.isEmpty()) {
+                                true
+                            } else {
+                                false
                             }
-                        }
-
-                        Row()
-                        {
-                            Text("If you got ", fontSize = 20.sp)
-
-                            key (newAssignmentsChanged) //This is to force the field to recompose when an assignment is removed
-                            {
-                                CustomTextField(
-                                    onValueChange = { it ->
-                                        if (it.length in 1..4) {
-                                            newAssignments = (newAssignments.toMutableList().apply{
-                                                this[index] = Pair(it.toFloat(), this[index].second)
-                                            })
-                                            true
-                                        } else if (it.isEmpty()) {
-                                            true
-                                        } else {
-                                            false
-                                        }
-
-                                    },
-                                    modifier = Modifier.height(30.dp).width(50.dp),
-                                    placeholderText = "",
-                                    fontSize = 20.sp,
-                                    value = assignment.first.toString(),
-                                )
+                        },
+                        onTotalValueChanged = { it ->
+                            if (it.length in 1..4) {
+                                newAssignments = (newAssignments.toMutableList().apply{
+                                    this[index] = Pair(this[index].first, it.toFloat())
+                                })
+                                true
+                            } else if (it.isEmpty()) {
+                                true
+                            } else {
+                                false
                             }
-
-                            Text(" out of ", fontSize = 20.sp)
-                            key (newAssignmentsChanged)
-                            {
-                                CustomTextField(
-                                    onValueChange = { it ->
-                                        if (it.length in 1..4) {
-                                            newAssignments = (newAssignments.toMutableList().apply{
-                                                this[index] = Pair(this[index].first, it.toFloat())
-                                            })
-                                            true
-                                        } else if (it.isEmpty()) {
-                                            true
-                                        } else {
-                                            false
-                                        }
-
-
-                                    },
-                                    modifier = Modifier.height(30.dp).width(50.dp),
-                                    placeholderText = "",
-                                    fontSize = 20.sp,
-                                    value = assignment.second.toString()
-                                )
-                            }
-                        }
-
-                        val interaction = remember { MutableInteractionSource() }
-                        val isDragging by interaction.collectIsDraggedAsState()
-
-                        Slider( value = (if (assignment.second == 0.0f) 0.0f else assignment.first/assignment.second),  onValueChange = {
+                        },
+                        totalPointvalue = assignment.second,
+                        receivedPointvalue = assignment.first,
+                        onSliderChanged = { it, isDragging ->
                             if (isDragging)
                             {
                                 newAssignments = (newAssignments.toMutableList().apply{
                                     this[index] = Pair(round(this[index].second * it*10.0f)/10.0f, this[index].second)
                                 })
                                 newAssignmentsChanged = !newAssignmentsChanged
-                            }},
-                            interactionSource = interaction
-                        )
-                    }
-
+                            }
+                        },
+                        newAssignmentsChanged = newAssignmentsChanged
+                    )
                 }
-            }
+
 
 
             
@@ -220,6 +221,85 @@ fun GradeCalculatorScreen() {
                 modifier = Modifier.padding(20.dp).fillMaxWidth()
             ) {
                 Text("+ Add Assignment", modifier = Modifier.padding(15.dp), fontSize = 20.sp)
+            }
+
+
+            var currentAssignmentsOpened by remember { mutableStateOf(false) }
+
+            OutlinedCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+                onClick = { currentAssignmentsOpened = !currentAssignmentsOpened },
+                modifier = Modifier.padding(20.dp).fillMaxWidth()
+            ) {
+                Row( verticalAlignment = Alignment.CenterVertically ) {
+                    Text("Current Assignments", modifier = Modifier.padding(15.dp), fontSize = 20.sp)
+
+                    Spacer( modifier = Modifier.weight(1f) )
+
+                    Icon(
+                        if (currentAssignmentsOpened) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                        contentDescription = "current assignments collapse arrow",
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
+
+            AnimatedVisibility( currentAssignmentsOpened ) {
+                Column () {
+                    selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
+
+
+                        val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
+                        val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+
+
+                        if (newestScore?.scorepoints == null) {
+                            return@forEachIndexed
+                        }
+
+                        var newAssignmentsChanged by remember { mutableStateOf(false) }
+
+                        GradeCalculatorCard(
+                            assignmentName = newestSection.name,
+                            isNewAssignment = false,
+                            totalPointvalue = changedAssignments[index].totalPointValue,
+                            receivedPointvalue = changedAssignments[index].receivedPointvalue,
+                            onRemove = {
+
+                                changedAssignments[index].hidden = !changedAssignments[index].hidden
+                                recompose = !recompose
+
+                            },
+                            onReceivedValueChange = {
+                                changedAssignments[index].receivedPointvalue = it.toFloat()
+                                recompose = !recompose
+                                true
+                            },
+                            onTotalValueChanged = {
+                                changedAssignments[index].totalPointValue = it.toFloat()
+                                recompose = !recompose
+                                true
+                            },
+                            onSliderChanged = {it, isDragging ->
+                                if (isDragging) {
+                                    changedAssignments[index].receivedPointvalue = round(changedAssignments[index].totalPointValue * it*10.0f)/10.0f
+                                    recompose = !recompose
+                                    newAssignmentsChanged = !newAssignmentsChanged
+                                }
+                            },
+                            newAssignmentsChanged = newAssignmentsChanged,
+                            shown = !changedAssignments[index].hidden
+                        )
+
+
+
+
+                    }
+                }
+
             }
         }
 
@@ -281,6 +361,86 @@ private fun CustomTextField(
             }
         }
     )
+}
+
+
+@Composable
+fun GradeCalculatorCard (
+    assignmentName : String = "New Assignment",
+    isNewAssignment : Boolean = true,
+    totalPointvalue : Float = 0.0f,
+    receivedPointvalue : Float = 0.0f,
+    onRemove : () -> Unit,
+    onReceivedValueChange : (String) -> Boolean,
+    onTotalValueChanged : (String) -> Boolean,
+    onSliderChanged : (Float, Boolean) -> Unit,
+    newAssignmentsChanged : Boolean,
+    shown : Boolean = true,
+) {
+    OutlinedCard (
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = if (shown) Color(255, 255, 255) else Color(100, 100,100)
+        ),
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+        modifier = Modifier.padding(20.dp).fillMaxWidth(),
+
+    ) {
+        Column ( modifier = Modifier.padding(20.dp) )
+        {
+            Row () {
+                Text(assignmentName, fontSize = 20.sp)
+                Spacer( modifier = Modifier.weight(1f) )
+                IconButton( onClick = { onRemove() } ) {
+                    Icon(if (isNewAssignment) Icons.Outlined.Close else (if(shown) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff), contentDescription = "Close button")
+                }
+            }
+
+            Row()
+            {
+                Text("If you got ", fontSize = 20.sp)
+
+                key (newAssignmentsChanged) {
+                    CustomTextField(
+                        onValueChange = { it ->
+                            onReceivedValueChange(it)
+                        },
+                        modifier = Modifier.height(30.dp).width(50.dp),
+                        placeholderText = "",
+                        fontSize = 20.sp,
+                        value = receivedPointvalue.toString(),
+                    )
+                }
+
+
+
+                Text(" out of ", fontSize = 20.sp)
+
+                key (newAssignmentsChanged) {
+                    CustomTextField(
+                        onValueChange = { it ->
+                            onTotalValueChanged(it)
+                        },
+                        modifier = Modifier.height(30.dp).width(50.dp),
+                        placeholderText = "",
+                        fontSize = 20.sp,
+                        value = totalPointvalue.toString()
+                    )
+                }
+
+
+            }
+
+            val interaction = remember { MutableInteractionSource() }
+            val isDragging by interaction.collectIsDraggedAsState()
+
+            Slider( value = (if (totalPointvalue == 0.0f) 0.0f else receivedPointvalue/totalPointvalue),
+                onValueChange = { onSliderChanged(it, isDragging) },
+                interactionSource = interaction
+            )
+        }
+
+    }
 }
 
 
