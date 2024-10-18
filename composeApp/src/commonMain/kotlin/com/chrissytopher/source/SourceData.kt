@@ -146,6 +146,7 @@ class ClassMeta() {
 
                 if (!section.iscountedinfinalgrade) return@forEach
                 if (section._assignmentscores.isEmpty()) return@forEach
+                if (changedAssignments[index].receivedPointvalue == -1.0f) return@forEach
                 val possiblePoints = changedAssignments[index].totalPointValue
                 var newestScore = changedAssignments[index].receivedPointvalue
 

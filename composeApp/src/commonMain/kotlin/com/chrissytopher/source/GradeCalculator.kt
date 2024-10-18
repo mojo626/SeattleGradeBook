@@ -113,10 +113,12 @@ fun GradeCalculatorScreen() {
                     changedAssignments += ChangedAssignment(
                         totalPointValue = newestSection.totalpointvalue,
                         receivedPointvalue = newestScore?.scorepoints?.let { it * newestSection.weight }
-                            ?: 0.0f,
+                            ?: -1.0f,
                         hidden = false,
                         assignmentId = newestSection._id
                     )
+                    Napier.d("${(newestScore?.scorepoints?.let { it * newestSection.weight }
+                        ?: -1.0f).toString()} out of ${newestSection.totalpointvalue}")
                 }
             }
 
@@ -251,14 +253,14 @@ fun GradeCalculatorScreen() {
 
             AnimatedVisibility( currentAssignmentsOpened ) {
                 Column () {
-                    selectedClass!!.assignments_parsed.reversed().forEachIndexed { index, assignment ->
+                    selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
 
 
                         val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
                         val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
 
 
-                        if (newestScore?.scorepoints == null) {
+                        if (changedAssignments[index].receivedPointvalue == -1.0f) {
                             return@forEachIndexed
                         }
 
@@ -276,7 +278,7 @@ fun GradeCalculatorScreen() {
 
                             },
                             onReceivedValueChange = {
-                                changedAssignments[index].receivedPointvalue = it.toFloat()
+                                changedAssignments[index].receivedPointvalue = if (it.isEmpty()) 0.0f else it.toFloat()
                                 recompose = !recompose
                                 true
                             },

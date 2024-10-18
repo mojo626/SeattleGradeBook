@@ -29,4 +29,4 @@ val gradeColors = mapOf(
 )
 
 @Composable
-fun darkModeColorModifier() = if (isSystemInDarkTheme()) 0.8f else 1f
+fun darkModeColorModifier() = if (isSystemInDarkTheme()) 1f else 1f
