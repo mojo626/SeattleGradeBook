@@ -81,11 +81,14 @@ fun GradeCalculatorScreen() {
 
     val currClasses = remember { sourceDataState.value?.classes }
 
+    val currentClass by ClassForGradePage.current
+
     var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
 
     var expanded by remember { mutableStateOf(false) }
-    var selectedClassName by remember { mutableStateOf("Select a Class") }
-    var selectedClass by remember { mutableStateOf<Class?>(null) }
+    var selectedClassName by remember { mutableStateOf(currentClass.let { it?.name } ?: "Select a Class") }
+
+    var selectedClass by remember { mutableStateOf<Class?>(currentClass) }
 
     var newAssignments by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
     var changedAssignments by remember { mutableStateOf( emptyList<ChangedAssignment>()) }
