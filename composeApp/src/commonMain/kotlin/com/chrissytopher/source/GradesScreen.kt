@@ -1,6 +1,7 @@
 package com.chrissytopher.source
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
@@ -57,7 +61,7 @@ import kotlin.math.round
 @Composable
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
-    var assignmentForPage = AssignmentForPage.current
+    val assignmentForPage = AssignmentForPage.current
     val kvault = LocalKVault.current
     val json = LocalJson.current
 
@@ -112,8 +116,16 @@ fun GradesScreen() {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 ClassCard(currentClass!!, meta, false)
             }
-            Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                Text("Does anyone remember what was here on the og source app?")
+            Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    Text("")
+                }
+                Box(Modifier.background(MaterialTheme.colorScheme.primaryContainer, CardDefaults.shape).padding(10.dp).fillMaxWidth().clickable {
+
+                    navHost?.navigate(NavScreen.Calculator.name)
+                }) {
+                    Text("Grade Calculator", style = MaterialTheme.typography.titleLarge)
+                }
             }
         }
         var showPercent by remember { mutableStateOf(true) }

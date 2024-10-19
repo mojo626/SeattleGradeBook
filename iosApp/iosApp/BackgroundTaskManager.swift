@@ -10,7 +10,7 @@ import BackgroundTasks
 import NotificationCenter
 import ComposeApp
 
-private let backgroundTaskIdentifier = "IOS_SOURCE_BACKGROUND_SYNC"
+private let backgroundTaskIdentifier = "com.chrissytopher.source.Source.background_sync"
 
 class BackgroundTaskManager {
     static let shared = BackgroundTaskManager()
@@ -21,29 +21,21 @@ class BackgroundTaskManager {
 extension BackgroundTaskManager {
     func register() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: backgroundTaskIdentifier, using: .main, launchHandler: handleTask(_:))
+        print("Registered Background Task!")
     }
     
     func handleTask(_ task: BGTask) {
         scheduleAppRefresh()
 
         print("Running background task \(task.identifier)")
+        sendNotification(title: "Background Sync", body: "Background sync started")
 
         let filesDir = if #available(iOS 16.0, *) {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path(percentEncoded: true)
         } else {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path
         }
-        MainViewControllerKt.runBackgroundSync(sendNotification: {title, body in
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("notification error: \(error.localizedDescription)")
-                }
-            }
-        }, filesDir: filesDir)
+        MainViewControllerKt.runBackgroundSync(sendNotification: sendNotification(title:body:), filesDir: filesDir)
         
         
         task.setTaskCompleted(success: true)
@@ -51,7 +43,7 @@ extension BackgroundTaskManager {
     
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-    
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 30)
 
         var message = "Scheduled"
         do {

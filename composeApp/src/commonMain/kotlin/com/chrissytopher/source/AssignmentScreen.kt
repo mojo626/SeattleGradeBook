@@ -40,7 +40,7 @@ import net.sergeych.sprintf.sprintf
 import kotlin.math.round
 
 @Composable
-fun AssignmentScreen( ) {
+fun AssignmentScreen() {
     val currentAssignment by AssignmentForPage.current
     val currentClass by ClassForGradePage.current
     val navHost = LocalNavHost.current
