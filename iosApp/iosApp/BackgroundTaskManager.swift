@@ -28,7 +28,6 @@ extension BackgroundTaskManager {
         scheduleAppRefresh()
 
         print("Running background task \(task.identifier)")
-        sendNotification(title: "Background Sync", body: "Background sync started")
 
         let filesDir = if #available(iOS 16.0, *) {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path(percentEncoded: true)
@@ -43,7 +42,7 @@ extension BackgroundTaskManager {
     
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 30)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 60 * 60)
 
         var message = "Scheduled"
         do {
