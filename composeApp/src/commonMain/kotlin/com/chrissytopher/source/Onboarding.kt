@@ -74,6 +74,7 @@ fun LoginScreen(done: () -> Unit) {
     val kvault = LocalKVault.current
     val json = LocalJson.current
     val sourceDataState = LocalSourceData.current
+    val platform = LocalPlatform.current
     var username by remember { mutableStateOf(kvault?.string(forKey = USERNAME_KEY) ?: "") }
     var password by remember { mutableStateOf(kvault?.string(forKey = PASSWORD_KEY) ?: "") }
     var error by remember { mutableStateOf(false) }
@@ -106,7 +107,7 @@ fun LoginScreen(done: () -> Unit) {
                 CoroutineScope(Dispatchers.IO).launch {
                     loading = true
                     error = false
-                    val sourceDataRes = getSourceData(username, password)
+                    val sourceDataRes = platform.getSourceData(username, password)
                     val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
                         changeLogin(kvault, username, password, json.encodeToString(sourceData))
@@ -136,13 +137,14 @@ fun LoginScreen(done: () -> Unit) {
 fun NotificationsScreen(done: () -> Unit) {
     val permissionsController = LocalPermissionsController.current
     val coroutineScope = rememberCoroutineScope()
+    val platform = LocalPlatform.current
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f)) {
             Column(Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Want updates on your grades?", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*1.2f))
                 Spacer(Modifier.height(25.dp))
                 Row(Modifier.background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(20.dp)).padding(10.dp)) {
-                    Image(painterResource(appIcon()), "App Icon", Modifier.clip(iconRounding()).size(75.dp))
+                    Image(painterResource(platform.appIcon()), "App Icon", Modifier.clip(platform.iconRounding()).size(75.dp))
                     Spacer(Modifier.width(25.dp))
                     Column(verticalArrangement = Arrangement.SpaceAround, modifier = Modifier.height(75.dp)) {
                         Text("New grade in Algebra", style = MaterialTheme.typography.titleLarge)
@@ -249,11 +251,12 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
 @Composable
 fun OnboardingScreen() {
     val navHost = LocalNavHost.current
+    val platform = LocalPlatform.current
     var done by remember { mutableStateOf(false) }
     LaunchedEffect(done) {
         if (done) {
             navHost?.graph?.setStartDestination(NavScreen.Home.name)
-            if (livingInFearOfBackGestures()) {
+            if (platform.livingInFearOfBackGestures()) {
                 var doneBacking: Boolean
                 do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
             } else {

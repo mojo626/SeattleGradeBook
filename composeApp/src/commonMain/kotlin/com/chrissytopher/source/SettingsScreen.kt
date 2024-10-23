@@ -113,12 +113,12 @@ fun SettingsScreen(
             }
         }
 
-
+        val platform = LocalPlatform.current
         Button(onClick = {
             kvault?.deleteObject(USERNAME_KEY)
             kvault?.deleteObject(PASSWORD_KEY)
             kvault?.deleteObject(SOURCE_DATA_KEY)
-            closeApp()
+            platform.closeApp()
         }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(20.dp)) {
             Text("Log out", fontSize = 20.sp)
         }

@@ -19,7 +19,7 @@
 		058557BA273AAA24004C7B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		058557D8273AAEEB004C7B11 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		2152FB032600AC8F00CF470E /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
-		7555FF7B242A565900829871 /* The Source.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "The Source.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7555FF7B242A565900829871 /* Seattle Gradebook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Seattle Gradebook.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7555FF82242A565900829871 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7555FF8C242A565B00829871 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9D67F6482CC08ACA009D38C0 /* BackgroundTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskManager.swift; sourceTree = "<group>"; };
@@ -70,7 +70,7 @@
 		7555FF7C242A565900829871 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7555FF7B242A565900829871 /* The Source.app */,
+				7555FF7B242A565900829871 /* Seattle Gradebook.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,7 +120,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 7555FF7B242A565900829871 /* The Source.app */;
+			productReference = 7555FF7B242A565900829871 /* Seattle Gradebook.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -188,7 +188,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\nSDKROOT=`xcrun --sdk iphoneos --show-sdk-path`\nexport LIBRARY_PATH=\"$SDKROOT/usr/lib\"\n\n# --xcode-integ determines --release and --targets from Xcode's env vars.\n# Depending your setup, specify the rustup toolchain explicitly.\ncargo lipo --xcode-integ --manifest-path ../sourceapp/Cargo.toml\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\n#SDKROOT=`xcrun --sdk iphoneos --show-sdk-path`\nSDKROOT=`xcrun --show-sdk-path`\nexport LIBRARY_PATH=\"$SDKROOT/usr/lib\"\n\n# --xcode-integ determines --release and --targets from Xcode's env vars.\n# Depending your setup, specify the rustup toolchain explicitly.\ncargo lipo --xcode-integ --manifest-path ../sourceapp/Cargo.toml\n";
 		};
 		9D34BFBE2CBD7C16005330B3 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

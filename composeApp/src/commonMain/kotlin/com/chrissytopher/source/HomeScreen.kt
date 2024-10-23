@@ -64,6 +64,7 @@ fun HomeScreen() {
 
     val sourceData by LocalSourceData.current
     val json = LocalJson.current
+    val platform = LocalPlatform.current
     var classMetas: List<ClassMeta>? by remember { mutableStateOf(null) }
     LaunchedEffect(sourceData) {
         classMetas = sourceData?.classes?.map { ClassMeta(it) }
@@ -74,7 +75,7 @@ fun HomeScreen() {
     ) {
         val kvault = LocalKVault.current
         Row(Modifier.fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-            val pfpImage = remember { "file://${filesDir()}/pfp.jpeg" }
+            val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
             AsyncImage(
                 pfpImage,
                 "Content",
@@ -85,13 +86,12 @@ fun HomeScreen() {
             Text(text = "${sourceData?.student_name}", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             if (!refreshingInProgress) {
                 val sourceDataState = LocalSourceData.current
-                val json = LocalJson.current
                 Icon(if (!refreshError) Icons.Outlined.Refresh else Icons.Outlined.Error , "Refresh grades", modifier = Modifier.size(50.dp).clickable {
                     kvault?.string(USERNAME_KEY)?.let { username ->
                         kvault.string(PASSWORD_KEY)?.let { password ->
                             CoroutineScope(Dispatchers.IO).launch {
                                 refreshingInProgress = true
-                                val newSourceData = getSourceData(username, password).getOrNullAndThrow()
+                                val newSourceData = platform.getSourceData(username, password).getOrNullAndThrow()
                                 if (newSourceData != null) {
                                     kvault.set(SOURCE_DATA_KEY, json.encodeToString(newSourceData))
                                     val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()

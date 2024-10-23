@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -58,6 +59,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import kotlinx.datetime.LocalDate
@@ -101,7 +103,19 @@ fun GradeCalculatorScreen() {
     //all g sometimes you just gotta do that
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp))
+        Row {
+            var goBack by remember { mutableStateOf(false) }
+            val navHost = LocalNavHost.current
+            LaunchedEffect (goBack) {
+                if (goBack) {
+                    navHost?.popBackStack()
+                }
+            }
+            IconButton({ goBack = true }) {
+                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+            }
+            Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp).weight(1f), textAlign = TextAlign.Center)
+        }
 
         if (selectedClassName != "Select a Class") {
 

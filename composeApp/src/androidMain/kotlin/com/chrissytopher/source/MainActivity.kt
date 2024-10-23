@@ -20,15 +20,13 @@ import io.github.aakira.napier.Napier
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
-lateinit var filesDirectory: String
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         Napier.base(DebugAntilog())
         val kvault = KVault(this)
         super.onCreate(savedInstanceState)
-        filesDirectory = this.filesDir.path
+        val platform = AndroidPlatform(this)
         val permissionsController = PermissionsController(this)
         permissionsController.bind(this)
         createNotificationChannel(ASSIGNMENTS_NOTIFICATION_CHANNEL, "Grade Updates", "Updates to grades and assignments")
@@ -44,7 +42,9 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
                 CompositionLocalProvider(LocalKVault provides kvault) {
                     CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
-                        App()
+                        CompositionLocalProvider(LocalPlatform provides platform) {
+                            App()
+                        }
                     }
                 }
             }

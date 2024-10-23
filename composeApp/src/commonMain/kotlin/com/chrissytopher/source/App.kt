@@ -47,6 +47,7 @@ val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateO
 val LocalPermissionsController = compositionLocalOf<PermissionsController> { error("no permissions controller provided") }
 val AssignmentForPage = compositionLocalOf<MutableState<AssignmentSection?>> { mutableStateOf(null) }
 val LocalNotificationSender = compositionLocalOf<NotificationSender?> { null }
+val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided") }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
@@ -86,6 +87,7 @@ fun App(navController : NavHostController = rememberNavController()) {
         val kvault = LocalKVault.current
         val localJson = LocalJson.current
         var sourceData by LocalSourceData.current
+        val platform = LocalPlatform.current
         if (LocalSourceData.current.value == null) {
             kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
                 LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNullAndThrow()
@@ -95,7 +97,7 @@ fun App(navController : NavHostController = rememberNavController()) {
             CoroutineScope(Dispatchers.IO).launch {
                 kvault?.string(USERNAME_KEY)?.let { username ->
                     kvault.string(PASSWORD_KEY)?.let { password ->
-                        getSourceData(username, password).getOrNullAndThrow()?.let { newSourceData ->
+                        platform.getSourceData(username, password).getOrNullAndThrow()?.let { newSourceData ->
                             kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(newSourceData))
                             val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { localJson.decodeFromString<List<String>>(it) } ?: listOf()
                             val updatedClasses = newSourceData.classes.filter { newClass ->

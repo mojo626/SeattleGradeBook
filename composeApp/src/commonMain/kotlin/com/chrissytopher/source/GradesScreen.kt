@@ -45,6 +45,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
@@ -62,6 +64,7 @@ import kotlin.math.round
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
     val assignmentForPage = AssignmentForPage.current
+    val platform = LocalPlatform.current
     val kvault = LocalKVault.current
     val json = LocalJson.current
 
@@ -118,10 +121,14 @@ fun GradesScreen() {
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
-                    Text("")
+                    Row {
+                        Text(currentClass?.teacher_name ?: "Contact Teacher", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, "Open teacher contact", modifier = Modifier.size(40.dp).clickable {
+                            currentClass?.teacher_contact?.let { platform.openLink(it) }
+                        })
+                    }
                 }
                 Box(Modifier.background(MaterialTheme.colorScheme.primaryContainer, CardDefaults.shape).padding(10.dp).fillMaxWidth().clickable {
-
                     navHost?.navigate(NavScreen.Calculator.name)
                 }) {
                     Text("Grade Calculator", style = MaterialTheme.typography.titleLarge)

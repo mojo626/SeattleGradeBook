@@ -25,7 +25,7 @@ class ClassWidgetPickerActivity : ComponentActivity() {
         Napier.base(DebugAntilog())
         val kvault = KVault(this)
         super.onCreate(savedInstanceState)
-        filesDirectory = this.filesDir.path
+        val platform = AndroidPlatform(this)
         val permissionsController = PermissionsController(this)
         permissionsController.bind(this)
         val notificationSender = AndroidNotificationSender(this)
@@ -37,20 +37,21 @@ class ClassWidgetPickerActivity : ComponentActivity() {
             CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
                 CompositionLocalProvider(LocalKVault provides kvault) {
                     CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
-                        Scaffold { paddingValues ->
-                            Box(Modifier.padding(paddingValues)) {
-                                ClassWidgetPicker {
-                                    kvault.set(WIDGET_CLASS_KEY+appWidgetId, it.frn)
-                                    val appWidgetManager = AppWidgetManager.getInstance(this@ClassWidgetPickerActivity)
-                                    val meta = ClassMeta(it)
-                                    updateWidgetContent(appWidgetId, it, meta, appWidgetManager, this@ClassWidgetPickerActivity)
-                                    val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                                    setResult(RESULT_OK, resultValue)
-                                    finish()
+                        CompositionLocalProvider(LocalPlatform provides platform) {
+                            Scaffold { paddingValues ->
+                                Box(Modifier.padding(paddingValues)) {
+                                    ClassWidgetPicker {
+                                        kvault.set(WIDGET_CLASS_KEY+appWidgetId, it.frn)
+                                        val appWidgetManager = AppWidgetManager.getInstance(this@ClassWidgetPickerActivity)
+                                        val meta = ClassMeta(it)
+                                        updateWidgetContent(appWidgetId, it, meta, appWidgetManager, this@ClassWidgetPickerActivity)
+                                        val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                                        setResult(RESULT_OK, resultValue)
+                                        finish()
+                                    }
                                 }
                             }
                         }
-
                     }
                 }
             }

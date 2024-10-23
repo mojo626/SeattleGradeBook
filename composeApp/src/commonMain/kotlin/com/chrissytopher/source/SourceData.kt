@@ -21,6 +21,8 @@ data class Class(
     var store_code: String,
     var url: String,
     var name: String,
+    var teacher_name: String,
+    var teacher_contact: String,
 ) {
     fun totalSections(): Int {
         return assignments_parsed.sumOf { it._assignmentsections.size }

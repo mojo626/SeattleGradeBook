@@ -4,15 +4,8 @@ import ComposeApp
 
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        let filesDir = if #available(iOS 16.0, *) {
-            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path(percentEncoded: true)
-        } else {
-            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path
-        }
-        return MainViewControllerKt.MainViewController(getSourceData: {username,password in
-            let cchar = get_source_data(username, password, filesDir.removingPercentEncoding!.replacingOccurrences(of: " ", with: "\\ "))
-            return String(cString: cchar!)
-        }, filesDir: filesDir, sendNotification: sendNotification(title:body:))
+        let filesDir = filesDir()
+        return MainViewControllerKt.MainViewController(getSourceData: getSourceData, filesDir: filesDir, sendNotification: sendNotification(title:body:), openLink: openLink)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

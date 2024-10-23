@@ -15,8 +15,8 @@ class BackgroundSyncWorker(private val appContext: Context, workerParams: Worker
         val kvault = KVault(appContext)
         val json = Json { ignoreUnknownKeys = true }
         val notificationSender = AndroidNotificationSender(appContext)
-        filesDirectory = appContext.filesDir.path
-        doBackgroundSync(kvault, json, notificationSender)
+        val platform = AndroidPlatform(appContext)
+        doBackgroundSync(kvault, json, notificationSender, platform)
         return Result.success()
     }
 }

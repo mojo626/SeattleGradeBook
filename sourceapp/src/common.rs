@@ -23,6 +23,8 @@ struct Class {
     store_code: String,
     url: String,
     name: String,
+    teacher_name: String,
+    teacher_contact: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -114,6 +116,8 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
         class_header_match.as_str()["<td class=\"table-element-text-align-start\">".len()..].to_string()
     }).collect::<Vec<_>>();
 
+    let teachers = get_teachers(&client, &home_html)?;
+
     let mut class_frns = Vec::new();
     for score_href in scores_html_regex.find_iter(&home_html) {
         let Some(score_url_match) = score_url_regex.find(score_href.as_str()) else {
@@ -163,7 +167,9 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
             assignments_parsed: serde_json::from_str(&assignments_json)?, 
             url: full_score_url, 
             store_code, 
-            name: class_headers[i].clone(), 
+            name: class_headers[i].clone(),
+            teacher_name: teachers[i].0.clone(),
+            teacher_contact: teachers[i].1.clone(),
         });
     }
     let past_classes = get_past_grades(&client)?;
@@ -255,4 +261,29 @@ fn get_past_grades(client: &Client) -> Result<Vec<PastClass>, SourceError> {
         println!("no tbody");
     }
     Ok(vec![])
+}
+
+fn get_teachers(client: &Client, home_html: &str) -> Result<Vec<(String, String)>, SourceError>{
+    let mut teachers: Vec<(String, String)> = vec![];
+    let teacher_url_regex = Regex::new("<a href=\"teacherinfo.html\\?frn=[^\"]*\"")?;
+    for teacher_url_match in teacher_url_regex.find_iter(&home_html) {
+        let teacher_url = &teacher_url_match.as_str()["<a href=\"".len()..teacher_url_match.len()-1];
+        let full_url = format!("https://ps.seattleschools.org/guardian/{teacher_url}");
+        let res = client.get(full_url).send()?;
+        let teacher_html = res.text()?;
+        let teacher_name_regex = Regex::new("<p><strong>Name:</strong>[^<]*")?;
+        let Some(teacher_name_match) = teacher_name_regex.find(&teacher_html) else {
+            teachers.push(("".into(), "".into()));
+            continue;
+        };
+        let teacher_name = (&teacher_name_match.as_str()["<p><strong>Name:</strong>".len()..]).trim();
+        let teacher_contact_regex = Regex::new("<a href=\"[^\"]*")?;
+        let Some(teacher_contact_match) = teacher_contact_regex.find(&teacher_html) else {
+            teachers.push((teacher_name.into(), "".into()));
+            continue;
+        };
+        let teacher_contact = &teacher_contact_match.as_str()["<a href=\"".len()..];
+        teachers.push((teacher_name.into(), teacher_contact.into()));
+    }
+    Ok(teachers)
 }
