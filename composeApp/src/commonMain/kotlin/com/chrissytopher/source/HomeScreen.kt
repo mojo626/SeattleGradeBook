@@ -65,7 +65,7 @@ fun HomeScreen() {
     val sourceData by LocalSourceData.current
     val json = LocalJson.current
     val platform = LocalPlatform.current
-    var classMetas: List<ClassMeta>? by remember { mutableStateOf(null) }
+    var classMetas: List<ClassMeta>? by remember { mutableStateOf(sourceData?.classes?.map { ClassMeta(it) }) }
     LaunchedEffect(sourceData) {
         classMetas = sourceData?.classes?.map { ClassMeta(it) }
     }
@@ -141,9 +141,10 @@ fun HomeScreen() {
                             key(sourceData) {
                                 ClassCard(it, meta, updateClassesMap[it.name] ?: false) {
                                     classForGradePage.value = it
-                                    navHost?.navigate(NavScreen.Grades.name) {
-                                        launchSingleTop = true
-                                    }
+                                    navHost?.navigateTo(NavScreen.Grades)
+                                    //TODO
+//                                        launchSingleTop = true
+//                                    }
                                 }
                             }
                         }

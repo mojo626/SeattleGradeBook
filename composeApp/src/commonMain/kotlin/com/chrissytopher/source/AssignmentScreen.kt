@@ -48,7 +48,7 @@ fun AssignmentScreen() {
     var goBack by remember { mutableStateOf(false) }
     LaunchedEffect (goBack) {
         if (goBack) {
-            navHost?.navigateUp()
+            navHost?.popStack()
         }
     }
 

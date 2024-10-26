@@ -254,15 +254,16 @@ fun OnboardingScreen() {
     val platform = LocalPlatform.current
     var done by remember { mutableStateOf(false) }
     LaunchedEffect(done) {
-        if (done) {
-            navHost?.graph?.setStartDestination(NavScreen.Home.name)
-            if (platform.livingInFearOfBackGestures()) {
-                var doneBacking: Boolean
-                do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
-            } else {
-                navHost?.navigate(NavScreen.Home.name)
-            }
-        }
+//        if (done) {
+//            navHost?.graph?.setStartDestination(NavScreen.Home.name)
+//            if (platform.livingInFearOfBackGestures()) {
+//                var doneBacking: Boolean
+//                do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
+//            } else {
+//                navHost?.navigate(NavScreen.Home.name)
+//            }
+//        }
+        navHost?.clearStack(NavScreen.Home)
     }
     var loggedIn by remember { mutableStateOf(false) }
     if (!loggedIn) {

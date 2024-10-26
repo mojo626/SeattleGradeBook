@@ -108,7 +108,7 @@ fun GradeCalculatorScreen() {
             val navHost = LocalNavHost.current
             LaunchedEffect (goBack) {
                 if (goBack) {
-                    navHost?.popBackStack()
+                    navHost?.popStack()
                 }
             }
             IconButton({ goBack = true }) {

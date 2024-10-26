@@ -3,6 +3,7 @@ package com.chrissytopher.source
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.IntSize
 import org.jetbrains.compose.resources.DrawableResource
 
 interface Platform {
@@ -19,4 +20,10 @@ interface Platform {
     fun iconRounding(): RoundedCornerShape
 
     fun openLink(link: String)
+
+    @Composable
+    fun BackHandler(enabled: Boolean, onBack: () -> Unit)
 }
+
+@Composable
+expect fun getScreenSize(): IntSize

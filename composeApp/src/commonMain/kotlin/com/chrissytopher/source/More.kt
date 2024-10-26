@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
@@ -43,7 +44,7 @@ fun MoreScreen() {
     {
         if (goToGPA)
         {
-            navHost?.navigate(NavScreen.GPA.name)
+            navHost?.navigateTo(NavScreen.GPA)
         }
     }
 
@@ -51,7 +52,7 @@ fun MoreScreen() {
     {
         if (goToGradeCalculator)
         {
-            navHost?.navigate(NavScreen.Calculator.name)
+            navHost?.navigateTo(NavScreen.Calculator)
         }
     }
 

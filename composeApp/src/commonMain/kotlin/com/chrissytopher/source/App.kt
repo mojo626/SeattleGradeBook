@@ -26,6 +26,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.chrissytopher.source.navigation.NavigationController
+import com.chrissytopher.source.navigation.NavigationStack
 import com.chrissytopher.source.themes.blueTheme.BlueAppTheme
 import com.chrissytopher.source.themes.redTheme.RedAppTheme
 import com.chrissytopher.source.themes.theme.AppTheme
@@ -42,7 +44,7 @@ import kotlinx.coroutines.IO
 val LocalKVault = compositionLocalOf<KVault?> { null }
 val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
 val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableStateOf(null) }
-val LocalNavHost = compositionLocalOf<NavHostController?> { null }
+val LocalNavHost = compositionLocalOf<NavigationStack<NavScreen>?> { null }
 val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateOf(null) }
 val LocalPermissionsController = compositionLocalOf<PermissionsController> { error("no permissions controller provided") }
 val AssignmentForPage = compositionLocalOf<MutableState<AssignmentSection?>> { mutableStateOf(null) }
@@ -61,19 +63,19 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
 }
 
 @Composable
-fun AppBottomBar(currentScreenState: State<NavBackStackEntry?>, select: (NavScreen) -> Unit) {
+fun AppBottomBar(currentScreenState: State<NavScreen>, select: (NavScreen) -> Unit) {
     val currentScreen by currentScreenState
     NavigationBar {
         NavScreen.entries.filter { it.showInNavBar }.forEach { item ->
             NavigationBarItem(
                 icon = {
                     Icon(
-                        if (currentScreen?.destination?.route == item.name) item.selectedIcon else item.unselectedIcon,
+                        if (currentScreen == item) item.selectedIcon else item.unselectedIcon,
                         contentDescription = item.name
                     )
                 },
                 label = { Text(item.name) },
-                selected = currentScreen?.destination?.route == item.name,
+                selected = currentScreen == item,
                 onClick = { select(item) }
             )
         }
@@ -82,9 +84,11 @@ fun AppBottomBar(currentScreenState: State<NavBackStackEntry?>, select: (NavScre
 
 @Composable
 @Preview
-fun App(navController : NavHostController = rememberNavController()) {
-    CompositionLocalProvider(LocalNavHost provides navController) {
-        val kvault = LocalKVault.current
+fun App() {
+    val kvault = LocalKVault.current
+    val loggedIn = remember { kvault?.existsObject(USERNAME_KEY) == true }
+    val navigationStack : NavigationStack<NavScreen> = remember { NavigationStack(if (loggedIn) NavScreen.Home else NavScreen.Onboarding) }
+    CompositionLocalProvider(LocalNavHost provides navigationStack) {
         val localJson = LocalJson.current
         var sourceData by LocalSourceData.current
         val platform = LocalPlatform.current
@@ -117,45 +121,44 @@ fun App(navController : NavHostController = rememberNavController()) {
         ThemeSwitcher(currentTheme) {
             Scaffold(
                 bottomBar = {
-                    val currentNav by navController.currentBackStackEntryAsState()
-                    if (currentNav?.destination?.route?.let { NavScreen.valueOf(it).hideNavBar } == false) {
+                    val currentNav by navigationStack.routeState
+                    if (!currentNav.hideNavBar) {
                         AppBottomBar(
-                            navController.currentBackStackEntryAsState()
-                        ) { navController.navigate(it.name) }
+                            navigationStack.routeState
+                        ) { navigationStack.navigateTo(it) }
                     }
                 }
             ) { paddingValues ->
-                val loggedIn = remember { kvault?.existsObject(USERNAME_KEY) == true }
-                NavHost(
-                    navController = navController,
-                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
+                NavigationController(
+                    navigationStack = navigationStack,
+//                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
 
                 ) {
-                    composable(route = NavScreen.Home.name) {
+                    composable(route = NavScreen.Home) {
                         HomeScreen()
                     }
-                    composable(route = NavScreen.Grades.name) {
+                    composable(route = NavScreen.Grades) {
                         GradesScreen()
                     }
-                    composable(route = NavScreen.Settings.name) {
+                    composable(route = NavScreen.Settings) {
                         SettingsScreen(currentTheme = currentTheme, onThemeChange = {newTheme -> currentTheme = newTheme})
                     }
-                    composable(route = NavScreen.Onboarding.name) {
+                    composable(route = NavScreen.Onboarding) {
                         OnboardingScreen()
                     }
-                    composable(route = NavScreen.More.name) {
+                    composable(route = NavScreen.More) {
                         MoreScreen()
                     }
-                    composable(route = NavScreen.GPA.name) {
+                    composable(route = NavScreen.GPA) {
                         GPAScreen()
                     }
-                    composable(route = NavScreen.Calculator.name) {
+                    composable(route = NavScreen.Calculator) {
                         GradeCalculatorScreen()
                     }
-                    composable(route = NavScreen.Assignments.name) {
+                    composable(route = NavScreen.Assignments) {
                         AssignmentScreen()
                     }
                 }

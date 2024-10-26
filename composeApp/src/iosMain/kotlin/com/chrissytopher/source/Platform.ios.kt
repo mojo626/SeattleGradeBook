@@ -2,6 +2,11 @@ package com.chrissytopher.source
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import io.github.aakira.napier.Napier
 import kotlinx.serialization.json.Json
 import platform.UIKit.UIDevice
@@ -34,5 +39,16 @@ class IOSPlatform(private var filesDir: String, private var getSourceDataSwift: 
     override fun openLink(link: String) {
         openLinkSwift(link)
     }
+
+    @Composable
+    override fun BackHandler(enabled: Boolean, onBack: () -> Unit) {
+        //😔
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+actual fun getScreenSize(): IntSize {
+    return LocalWindowInfo.current.containerSize
 }
 

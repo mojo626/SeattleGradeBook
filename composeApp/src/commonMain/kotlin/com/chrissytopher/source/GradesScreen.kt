@@ -85,14 +85,13 @@ fun GradesScreen() {
         if (goToAssignment != null)
         {
             assignmentForPage.value = goToAssignment
-            navHost?.navigate(NavScreen.Assignments.name)
+            navHost?.navigateTo(NavScreen.Assignments)
             goToAssignment = null
         }
     }
 
     if (currentClass == null) {
-        val navHost = LocalNavHost.current
-        navHost?.popBackStack()
+        navHost?.popStack()
         return
     }
     val meta = key(currentClass) {
@@ -102,7 +101,7 @@ fun GradesScreen() {
     var goBack by remember { mutableStateOf(false) }
     LaunchedEffect (goBack) {
         if (goBack) {
-            navHost?.navigate(NavScreen.Home.name)
+            navHost?.navigateTo(NavScreen.Home)
         }
     }
 
@@ -129,7 +128,7 @@ fun GradesScreen() {
                     }
                 }
                 Box(Modifier.background(MaterialTheme.colorScheme.primaryContainer, CardDefaults.shape).padding(10.dp).fillMaxWidth().clickable {
-                    navHost?.navigate(NavScreen.Calculator.name)
+                    navHost?.navigateTo(NavScreen.Calculator)
                 }) {
                     Text("Grade Calculator", style = MaterialTheme.typography.titleLarge)
                 }
