@@ -125,7 +125,12 @@ fun App() {
                     if (!currentNav.hideNavBar) {
                         AppBottomBar(
                             navigationStack.routeState
-                        ) { navigationStack.navigateTo(it) }
+                        ) {
+                            navigationStack.clearStack(NavScreen.Home)
+                            if (it != NavScreen.Home) {
+                                navigationStack.navigateTo(it)
+                            }
+                        }
                     }
                 }
             ) { paddingValues ->

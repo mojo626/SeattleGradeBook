@@ -55,6 +55,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import kotlinx.serialization.encodeToString
 import net.sergeych.sprintf.*
 import kotlin.math.round
@@ -98,20 +99,16 @@ fun GradesScreen() {
         remember { ClassMeta(currentClass!!) }
     }
 
-    var goBack by remember { mutableStateOf(false) }
-    LaunchedEffect (goBack) {
-        if (goBack) {
-            navHost?.navigateTo(NavScreen.Home)
-        }
-    }
-
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Row( verticalAlignment = Alignment.CenterVertically ) {
-            IconButton({ goBack = true }) {
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+        Box(Modifier.fillMaxWidth()) {
+            Row(Modifier.align(Alignment.CenterStart)) {
+                Spacer(Modifier.width(20.dp))
+                IconButton({ navHost?.popStack() }) {
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+                }
             }
-            
-            Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).offset(x= -12.dp).padding(5.dp), textAlign = TextAlign.Center)
+
+            Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
         }
         
         Row {

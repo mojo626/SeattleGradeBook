@@ -103,18 +103,15 @@ fun GradeCalculatorScreen() {
     //all g sometimes you just gotta do that
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Row {
-            var goBack by remember { mutableStateOf(false) }
+        Box(Modifier.fillMaxWidth()) {
             val navHost = LocalNavHost.current
-            LaunchedEffect (goBack) {
-                if (goBack) {
-                    navHost?.popStack()
+            Row(Modifier.align(Alignment.CenterStart)) {
+                Spacer(Modifier.width(20.dp))
+                IconButton({ navHost?.popStack() }) {
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
                 }
             }
-            IconButton({ goBack = true }) {
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
-            }
-            Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp).weight(1f), textAlign = TextAlign.Center)
+            Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp).align(Alignment.Center), textAlign = TextAlign.Center)
         }
 
         if (selectedClassName != "Select a Class") {

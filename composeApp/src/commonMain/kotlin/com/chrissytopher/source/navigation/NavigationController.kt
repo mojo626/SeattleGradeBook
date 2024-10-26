@@ -79,7 +79,8 @@ fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modi
                             dragOffset.animateTo(0f)
                         }
                     }
-                ))
+                )
+            )
         }
     }
 }
@@ -99,7 +100,7 @@ class NavigationStack<T>(private val initialRoute: T) {
     private val navigationStackState = mutableStateOf(listOf(initialRoute))
     private val _routeState: MutableState<T> = mutableStateOf(initialRoute)
     private val _previousState: MutableState<T> = mutableStateOf(initialRoute)
-    fun popStack() {
+    fun popStack(animate: Boolean = false) {
         navigationStackState.value.lastOrNull()?.let { navigationStackState.value -= it }
         if (navigationStackState.value.isEmpty()) {
             navigationStackState.value += initialRoute
@@ -108,13 +109,13 @@ class NavigationStack<T>(private val initialRoute: T) {
         _routeState.value = navigationStackState.value.last()
     }
 
-    fun navigateTo(route: T) {
+    fun navigateTo(route: T, animate: Boolean = false) {
         navigationStackState.value += route
         _previousState.value = _routeState.value
         _routeState.value = route
     }
 
-    fun clearStack(initialRoute: T) {
+    fun clearStack(initialRoute: T, animate: Boolean = false) {
         navigationStackState.value = listOf(initialRoute)
         _previousState.value = _routeState.value
         _routeState.value = initialRoute
