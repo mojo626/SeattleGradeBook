@@ -40,7 +40,6 @@ class AndroidPlatform(private val context: Context) : Platform {
     override fun livingInFearOfBackGestures(): Boolean {
         //https://www.b4x.com/android/forum/threads/solved-how-to-determine-users-system-navigation-mode-back-button-or-side-swipe.159347/
         val navigationMode = Settings.Secure.getInt(context.contentResolver, "navigation_mode")
-        Log.d("Navigation", "navigation mode: $navigationMode")
         return (navigationMode == 2)
     }
 

@@ -80,7 +80,7 @@ fun LoginScreen(done: () -> Unit) {
     var error by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
 
-    Box(Modifier.imePadding()) {
+    Box(Modifier.fillMaxSize().imePadding()) {
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Source log in", style = MaterialTheme.typography.titleLarge, modifier = Modifier.fillMaxWidth(0.7f), textAlign = TextAlign.Center)
             Spacer(Modifier.height(20.dp))
@@ -252,27 +252,29 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
 fun OnboardingScreen() {
     val navHost = LocalNavHost.current
     val platform = LocalPlatform.current
-    var done by remember { mutableStateOf(false) }
-    LaunchedEffect(done) {
-//        if (done) {
-//            navHost?.graph?.setStartDestination(NavScreen.Home.name)
-//            if (platform.livingInFearOfBackGestures()) {
-//                var doneBacking: Boolean
-//                do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
-//            } else {
-//                navHost?.navigate(NavScreen.Home.name)
-//            }
-//        }
-        navHost?.clearStack(NavScreen.Home)
-    }
-    var loggedIn by remember { mutableStateOf(false) }
-    if (!loggedIn) {
-        LoginScreen {
-            loggedIn = true
-        }
-    } else {
-        NotificationsScreen {
-            done = true
+//    var done by remember { mutableStateOf(false) }
+//    LaunchedEffect(done) {
+////        if (done) {
+////            navHost?.graph?.setStartDestination(NavScreen.Home.name)
+////            if (platform.livingInFearOfBackGestures()) {
+////                var doneBacking: Boolean
+////                do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
+////            } else {
+////                navHost?.navigate(NavScreen.Home.name)
+////            }
+////        }
+//
+//    }
+    Box(Modifier.fillMaxSize()) {
+        var loggedIn by remember { mutableStateOf(false) }
+        if (!loggedIn) {
+            LoginScreen {
+                loggedIn = true
+            }
+        } else {
+            NotificationsScreen {
+                navHost?.clearStack(NavScreen.Home)
+            }
         }
     }
 }

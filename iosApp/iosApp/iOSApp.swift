@@ -15,7 +15,9 @@ struct iOSApp: App {
         UNUserNotificationCenter.current().delegate = notificationDelegate
         BackgroundTaskManager.shared.register()
         BackgroundTaskManager.shared.scheduleAppRefresh()
-        MainViewControllerKt.debugBuild()
+        #if DEBUG
+            MainViewControllerKt.debugBuild()
+        #endif
     }
 }
 

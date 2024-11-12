@@ -1,8 +1,6 @@
 package com.chrissytopher.source
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,62 +32,58 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.outlined.ChevronLeft
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.filled.Chair
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.IncompleteCircle
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.Chair
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.HideSource
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
+import io.github.aakira.napier.Napier
 import kotlinx.serialization.encodeToString
 import net.sergeych.sprintf.*
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GradesScreen() {
     val currentClass by ClassForGradePage.current
-    val assignmentForPage = AssignmentForPage.current
     val platform = LocalPlatform.current
     val kvault = LocalKVault.current
     val json = LocalJson.current
 
     LaunchedEffect(currentClass) {
-        val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<ArrayList<String>>(it) } ?: arrayListOf()
-        currentClass?.name?.let { updateClasses.remove(it) }
+        var updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
+        currentClass?.name?.let { currentName -> updateClasses = updateClasses.filter { it != currentName } }
         kvault?.set(CLASS_UPDATES_KEY, json.encodeToString(updateClasses))
     }
 
     val navHost = LocalNavHost.current
 
-    var goToAssignment by remember { mutableStateOf<AssignmentSection?>(null) }
-
-    var openedAssignment by remember { mutableStateOf(-1) }
-
-    LaunchedEffect(goToAssignment)
-    {
-        if (goToAssignment != null)
-        {
-            assignmentForPage.value = goToAssignment
-            navHost?.navigateTo(NavScreen.Assignments)
-            goToAssignment = null
-        }
-    }
+    var openedAssignment: Pair<AssignmentSection, AssignmentScore?>? by remember { mutableStateOf(null) }
 
     if (currentClass == null) {
         navHost?.popStack()
@@ -151,64 +145,111 @@ fun GradesScreen() {
             remember { currentClass?.assignments_parsed?.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
         }
         Column(Modifier.fillMaxSize()) {
-            assignmentsSorted?.forEachIndexed {index, assignment ->
-                val newestSection =
-                    assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
-                val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-                if (newestSection != null) {
-                    val themeModifier = darkModeColorModifier()
-                    val colors = if (newestSection.iscountedinfinalgrade) {
-                        newestScore?.scorelettergrade?.firstOrNull()?.let {
-                            gradeColors[it.toString()]?.let {
-                                CardDefaults.cardColors(
-                                    containerColor = it*themeModifier
-                                )
-                            }
-                        } ?: CardDefaults.cardColors()
-                    } else {
-                        CardDefaults.cardColors()
-                    }
-                    Card(modifier = Modifier.padding(5.dp).clickable { openedAssignment = index }, colors = colors) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
-                            val localDensity = LocalDensity.current
-                            Text(newestScore?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
-                            Text(newestSection.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                            Text(
-                                if (showPercent) {
-                                    newestScore?.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
-                                } else {
-                                    newestScore?.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"
-                                },
-                                style = MaterialTheme.typography.titleLarge)
-                        }
-
-                    }
+            assignmentsSorted?.forEach { assignment ->
+                AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {
+                    val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
+                    val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+                    openedAssignment = Pair(newestSection, newestScore)
                 }
             }
         }
 
         val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true )
 
-        if (openedAssignment != -1)
-        {
+        openedAssignment?.let { (newestSection, newestScore) ->
             ModalBottomSheet(
-                onDismissRequest = { openedAssignment = -1 },
+                onDismissRequest = { openedAssignment = null },
                 sheetState = sheetState,
             ) {
-                val assignment = assignmentsSorted?.get(openedAssignment)!!
-                val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
-                val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+                AssignmentCard(newestSection, newestScore, ScoreDisplay.Both, null)
+
+                newestScore?.scorepoints?.let {
+                    Slider(
+                        value = it,
+                        onValueChange = {
+                            val rounded = it.roundToInt().toFloat()
+                            val changedScore = newestScore.copy(scorepoints = rounded, scorelettergrade = gradeForScore((rounded/newestSection.totalpointvalue)*100f))
+                            openedAssignment = Pair(newestSection, changedScore)
+                        },
+                        valueRange = 0.0f..(newestSection.totalpointvalue),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                }
 
                 Text(
-                    newestSection.name,
-                    fontSize = 25.sp,
-                    modifier = Modifier.padding(20.dp)
+                    "Effect on Grade",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
+                    fontSize = 25.sp
                 )
 
-                Text("${newestScore?.scorepoints?.let { "${it * newestSection.weight} / ${newestSection.totalpointvalue}" } ?: "-"} (${newestScore?.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"})",
-                    modifier = Modifier.padding(20.dp, top = 0.dp, bottom = 20.dp),
+                val withoutAssignment = ClassMeta(currentClass!!, newestSection._id)
+                val withAssignment = newestScore?.scorepoints?.let {
+                    ClassMeta(currentClass!!, newestSection, newestScore)
+                } ?: withoutAssignment
+                val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
+
+                Text(
+                    "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}% ${withAssignment.finalScore?.let { "(${it}%)" } ?: ""}",
+                    modifier = Modifier.padding(20.dp, top = 10.dp),
                     fontSize = 20.sp
                 )
+
+                newestScore?.let {
+                    Text(
+                        "Flags",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
+                        fontSize = 25.sp
+                    )
+
+                    Row(Modifier.padding(20.dp, bottom = 0.dp)) {
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(iscollected = !it.iscollected)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.iscollected) greenColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Filled.Check, "Collected")
+                        }
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(islate = !it.islate)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.islate) redColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Filled.Schedule, "Late")
+                        }
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(ismissing = !it.ismissing)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.ismissing) orangeColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Outlined.Error, "Missing")
+                        }
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(isexempt = !it.isexempt)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isexempt) Color(0xffa218e7) else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Outlined.HideSource, "Exempt")
+                        }
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(isabsent = !it.isabsent)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isabsent) greenColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Filled.Chair, "Absent")
+                        }
+                        IconButton(onClick = {
+                            val changedScore = newestScore.copy(isincomplete = !it.isincomplete)
+                            openedAssignment = Pair(newestSection, changedScore)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isincomplete) blueColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Filled.IncompleteCircle, "Incomplete")
+                        }
+                        IconButton(onClick = {
+                            val changedSection = newestSection.copy(iscountedinfinalgrade = !newestSection.iscountedinfinalgrade)
+                            openedAssignment = Pair(changedSection, it)
+                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (!newestSection.iscountedinfinalgrade) orangeColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
+                            Icon(Icons.Rounded.Star, "Incomplete")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
 
                 HorizontalDivider(thickness = 2.dp)
 
@@ -221,59 +262,59 @@ fun GradesScreen() {
 
                 val date = LocalDateTime.parse("${newestSection.duedate}T12:00:00")
 
-                Text("${date.month.toString()} ${date.dayOfMonth}, ${date.year}",
+                Text("${date.month} ${date.dayOfMonth}, ${date.year}",
                     modifier = Modifier.padding(20.dp, top = 10.dp),
                     fontSize = 20.sp
                 )
 
-                Text(
-                    "Effect on Grade",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
-                    fontSize = 25.sp
-                )
+                Spacer(Modifier.height(20.dp))
+            }
+        }
+    }
+}
 
-                val withoutAssignment = ClassMeta(currentClass!!, newestSection._id)
-                val withAssignment = ClassMeta(currentClass!!)
-                val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
+enum class ScoreDisplay {
+    Percent,
+    Points,
+    Both
+}
 
-                Text(
-                    "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}%",
-                    modifier = Modifier.padding(20.dp, top = 10.dp),
-                    fontSize = 20.sp
-                )
+@Composable
+fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, onClick: (() -> Unit)?) {
+    val newestSection =
+        assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
+    val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+    if (newestSection != null) {
+        AssignmentCard(newestSection, newestScore, showPercent, onClick)
+    }
+}
 
-
-                var sliderVal by remember { mutableStateOf((newestScore?.scorepoints ?: 0.0f) * (newestSection.weight ?: 0.0f)) }
-
-                Text(
-                    "If you got ${sliderVal}/${newestSection.totalpointvalue} (${"%.2f".sprintf(sliderVal/newestSection.totalpointvalue*100.0f)}%)",
-                    modifier = Modifier.padding(20.dp, top = 20.dp),
-                    fontSize = 20.sp
-                )
-
-                Slider(
-                    value = sliderVal,
-                    onValueChange = {
-                        sliderVal = round(it*10) /10.0f
-                    },
-                    valueRange = 0.0f..(newestSection.totalpointvalue),
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-
-                val classGrade = ClassMeta(currentClass!!, newestSection._id)
-                val newGrade = (classGrade.earnedPoints + sliderVal) / (classGrade.totalPoints + newestSection.totalpointvalue)
-
-                Text(
-                    "Your grade would be ${"%.2f".sprintf(newGrade * 100.0f)}%",
-                    modifier = Modifier.padding(20.dp, top = 20.dp),
-                    fontSize = 20.sp
-                )
-
-                Spacer(
-                    modifier = Modifier.height(50.dp)
+@Composable
+fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?) {
+    val themeModifier = darkModeColorModifier()
+    val colors = if (section.iscountedinfinalgrade) {
+        score?.scorelettergrade?.firstOrNull()?.let {
+            gradeColors[it.toString()]?.let {
+                CardDefaults.cardColors(
+                    containerColor = it*themeModifier
                 )
             }
+        } ?: CardDefaults.cardColors()
+    } else {
+        CardDefaults.cardColors()
+    }
+    Card(modifier = Modifier.padding(5.dp).then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier), colors = colors) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
+            val localDensity = LocalDensity.current
+            Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
+            Text(section.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                when (showPercent) {
+                    ScoreDisplay.Percent -> score?.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
+                    ScoreDisplay.Points -> score?.scorepoints?.let { "${it * section.weight} / ${section.totalpointvalue}" } ?: "-"
+                    ScoreDisplay.Both -> score?.scorepoints?.let { "${it * section.weight} / ${section.totalpointvalue} (${"%.2f".sprintf((it * section.weight / section.totalpointvalue)*100f)}%)" } ?: "-"
+                },
+                style = MaterialTheme.typography.titleLarge)
         }
 
     }

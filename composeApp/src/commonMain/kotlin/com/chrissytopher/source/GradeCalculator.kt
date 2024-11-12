@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.key
-import io.github.aakira.napier.Napier
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
@@ -130,8 +130,6 @@ fun GradeCalculatorScreen() {
                         hidden = false,
                         assignmentId = newestSection._id
                     )
-                    Napier.d("${(newestScore?.scorepoints?.let { it * newestSection.weight }
-                        ?: -1.0f).toString()} out of ${newestSection.totalpointvalue}")
                 }
             }
 
@@ -234,7 +232,7 @@ fun GradeCalculatorScreen() {
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-                onClick = { newAssignments = newAssignments + Pair(0f, 0f); Napier.d("added new assignment")},
+                onClick = { newAssignments = newAssignments + Pair(0f, 0f) },
                 modifier = Modifier.padding(20.dp).fillMaxWidth()
             ) {
                 Text("+ Add Assignment", modifier = Modifier.padding(15.dp), fontSize = 20.sp)

@@ -90,32 +90,11 @@ fun App() {
     val navigationStack : NavigationStack<NavScreen> = remember { NavigationStack(if (loggedIn) NavScreen.Home else NavScreen.Onboarding) }
     CompositionLocalProvider(LocalNavHost provides navigationStack) {
         val localJson = LocalJson.current
-        var sourceData by LocalSourceData.current
-        val platform = LocalPlatform.current
         if (LocalSourceData.current.value == null) {
             kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
                 LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNullAndThrow()
             }
         }
-        LaunchedEffect(true) {
-            CoroutineScope(Dispatchers.IO).launch {
-                kvault?.string(USERNAME_KEY)?.let { username ->
-                    kvault.string(PASSWORD_KEY)?.let { password ->
-                        platform.getSourceData(username, password).getOrNullAndThrow()?.let { newSourceData ->
-                            kvault.set(SOURCE_DATA_KEY, localJson.encodeToString(newSourceData))
-                            val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { localJson.decodeFromString<List<String>>(it) } ?: listOf()
-                            val updatedClasses = newSourceData.classes.filter { newClass ->
-                                val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter true
-                                (oldClass.totalSections() != newClass.totalSections())
-                            }
-                            kvault.set(CLASS_UPDATES_KEY, localJson.encodeToString(currentUpdates + updatedClasses.map { it.name }))
-                            sourceData = newSourceData
-                        }
-                    }
-                }
-            }
-        }
-
         var currentTheme by remember { mutableStateOf( ThemeVariant.valueOf(kvault?.string("THEME") ?: "Classic")) }
 
         ThemeSwitcher(currentTheme) {
