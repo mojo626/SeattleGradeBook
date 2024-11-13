@@ -14,13 +14,13 @@ import platform.posix.exit
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_apple
 
-class IOSPlatform(private var filesDir: String, private var getSourceDataSwift: (String, String) -> String, private var openLinkSwift: (String) -> Unit): Platform {
+class IOSPlatform(private var filesDir: String, private var getSourceDataSwift: (String, String, String) -> String, private var openLinkSwift: (String) -> Unit): Platform() {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun getSourceData(username: String, password: String): Result<SourceData> = runCatching {
-        json.decodeFromString(getSourceDataSwift(username, password))
+    override fun getSourceData(username: String, password: String, quarter: String): Result<SourceData> = runCatching {
+        json.decodeFromString(getSourceDataSwift(username, password, quarter))
     }
 
     override fun closeApp() {

@@ -4,25 +4,50 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.IntSize
+import io.github.aakira.napier.Napier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import org.jetbrains.compose.resources.DrawableResource
 
-interface Platform {
-    val name: String
-    fun getSourceData(username: String, password: String): Result<SourceData>
+abstract class Platform {
+    abstract val name: String
+    val gradeSyncManager by lazy { GradeSyncManager(this) }
+    protected abstract fun getSourceData(username: String, password: String, quarter: String): Result<SourceData>
 
-    fun closeApp()
+    abstract fun closeApp()
 
-    fun filesDir(): String
+    abstract fun filesDir(): String
 
-    fun livingInFearOfBackGestures(): Boolean
+    abstract fun livingInFearOfBackGestures(): Boolean
 
-    fun appIcon(): DrawableResource
-    fun iconRounding(): RoundedCornerShape
+    abstract fun appIcon(): DrawableResource
+    abstract fun iconRounding(): RoundedCornerShape
 
-    fun openLink(link: String)
+    abstract fun openLink(link: String)
 
     @Composable
-    fun BackHandler(enabled: Boolean, onBack: () -> Unit)
+    abstract fun BackHandler(enabled: Boolean, onBack: () -> Unit)
+
+    class GradeSyncManager(private val platform: Platform) {
+        private var deferredResult: Deferred<Result<SourceData>>? = null
+
+        suspend fun getSourceData(username: String, password: String, quarter: String): Result<SourceData> {
+            return if (deferredResult?.isActive == true) {
+                Napier.d("deferring")
+                deferredResult!!.await()
+            } else {
+                Napier.d("running new call")
+                val newDeferred = CoroutineScope(Dispatchers.Default).async {
+                    platform.getSourceData(username, password, quarter)
+                }
+                deferredResult = newDeferred
+                newDeferred.await()
+            }
+        }
+    }
 }
 
 @Composable

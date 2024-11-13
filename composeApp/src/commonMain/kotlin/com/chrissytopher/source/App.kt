@@ -39,6 +39,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import dev.icerock.moko.permissions.PermissionsController
 import kotlinx.coroutines.IO
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
@@ -169,5 +175,27 @@ fun ThemeSwitcher(
         ThemeVariant.Classic -> AppTheme(content = content)
         ThemeVariant.Red -> RedAppTheme(content = content)
         ThemeVariant.Blue -> BlueAppTheme(content = content)
+    }
+}
+
+fun getCurrentQuarter(): String {
+    val date = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val (s1Offset, s2Offset) = if (date.month > Month.AUGUST) {
+        Pair(0, 1)
+    } else {
+        Pair(-1, 0)
+    }
+    val q4Start = LocalDate(date.year+s2Offset, Month.APRIL, 9)
+    val q3Start = LocalDate(date.year+s2Offset, Month.JANUARY, 29)
+    val q2Start = LocalDate(date.year+s1Offset, Month.NOVEMBER, 7)
+    val q1Start = LocalDate(date.year+s1Offset, Month.SEPTEMBER, 4)
+    return if (date >= q4Start) {
+        "Q4"
+    } else if (date >= q3Start) {
+        "Q3"
+    } else if (date >= q2Start) {
+        "Q2"
+    } else {
+        "Q1"
     }
 }

@@ -21,13 +21,13 @@ import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_android
 import kotlin.system.exitProcess
 
-class AndroidPlatform(private val context: Context) : Platform {
+class AndroidPlatform(private val context: Context) : Platform() {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun getSourceData(username: String, password: String): Result<SourceData> = runCatching {
-        json.decodeFromString(SourceApi.getSourceData(username, password, context.filesDir.absolutePath))
+    override fun getSourceData(username: String, password: String, quarter: String): Result<SourceData> = runCatching {
+        json.decodeFromString(SourceApi.getSourceData(username, password, context.filesDir.absolutePath, quarter))
     }
 
     override fun closeApp() {

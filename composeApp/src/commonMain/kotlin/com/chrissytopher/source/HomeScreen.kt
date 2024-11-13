@@ -1,5 +1,11 @@
 package com.chrissytopher.source
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,18 +32,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -57,20 +62,24 @@ fun HomeScreen() {
         classMetas = sourceData?.classes?.map { ClassMeta(it) }
     }
     val kvault = LocalKVault.current
+    val refreshCoroutineScope = rememberCoroutineScope()
     val refresh = {
         kvault?.string(USERNAME_KEY)?.let { username ->
             kvault.string(PASSWORD_KEY)?.let { password ->
-                CoroutineScope(Dispatchers.IO).launch {
+                val quarter = kvault.string(QUARTER_KEY) ?: getCurrentQuarter()
+                refreshCoroutineScope.launch {
                     refreshingInProgress = true
-                    val newSourceData = platform.getSourceData(username, password).getOrNullAndThrow()
+                    val newSourceData = platform.gradeSyncManager.getSourceData(username, password, quarter).getOrNullAndThrow()
                     if (newSourceData != null && !(newSourceData.classes.isEmpty() && newSourceData.past_classes.isEmpty())) {
                         kvault.set(SOURCE_DATA_KEY, json.encodeToString(newSourceData))
-                        val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
-                        val updatedClasses = newSourceData.classes.filter { newClass ->
-                            val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter false
-                            (oldClass.totalSections() != newClass.totalSections())
+                        if (quarter == getCurrentQuarter()) {
+                            val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
+                            val updatedClasses = newSourceData.classes.filter { newClass ->
+                                val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter false
+                                (oldClass.totalSections() != newClass.totalSections())
+                            }
+                            kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
                         }
-                        kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
                         sourceData = newSourceData
                         refreshSuccess = true
                     } else {
@@ -112,6 +121,32 @@ fun HomeScreen() {
 //                }
                 Spacer(Modifier.size(50.dp))
             }
+            val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
+            Row(Modifier.alpha(selectionDisabledAlpha)) {
+                val quarters = listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")
+                var selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
+                for (quarter in quarters) {
+                    Box(Modifier.weight(1f).padding(5.dp, 0.dp)) {
+                        Box(Modifier
+                            .fillMaxWidth()
+                            .background(if (selectedQuarter == quarter) CardDefaults.cardColors().containerColor else CardDefaults.cardColors().disabledContainerColor, CardDefaults.outlinedShape)
+                            .border(CardDefaults.outlinedCardBorder(selectedQuarter == quarter), CardDefaults.outlinedShape)
+                            .clickable(remember { MutableInteractionSource() }, null, enabled = !refreshingInProgress) {
+                                if (quarter == getCurrentQuarter()) {
+                                    kvault?.deleteObject(QUARTER_KEY)
+                                } else {
+                                    kvault?.set(QUARTER_KEY, quarter)
+                                }
+                                selectedQuarter = quarter
+                                refresh()
+                            }
+                        ) {
+                            Text(quarter, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                        }
+                    }
+
+                }
+            }
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
                 val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
@@ -124,10 +159,13 @@ fun HomeScreen() {
                 }
                 //converting to a hashmap saves looping through the list for each of the ui cards below
                 val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }
-                val updateClassesMap = hashMapOf(
+                var updateClassesMap = hashMapOf(
                     *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
                 )
-                updateClasses?.forEach { updateClassesMap[it] = true }
+//                updateClasses?.forEach { updateClassesMap[it] = true }
+                if (getCurrentQuarter() != kvault?.string(QUARTER_KEY)) {
+                    updateClassesMap = hashMapOf()
+                }
                 filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
                     Row(modifier = Modifier.fillMaxWidth()) {
                         it.forEachIndexed { column, it ->
@@ -179,7 +217,14 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, onClick: (() -
     }
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
-    val colors = meta?.grade?.first()?.toString()?.let {gradeColors[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
+    val kvault = LocalKVault.current
+    val isGeorge = remember { kvault?.string(USERNAME_KEY) == "1gdschneider" }
+    val colorsList = if (isGeorge) {
+        georgeGradeColors
+    } else {
+        gradeColors
+    }
+    val colors = meta?.grade?.first()?.toString()?.let {colorsList[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
         if (updates) {
             Badge(Modifier.size(15.dp))

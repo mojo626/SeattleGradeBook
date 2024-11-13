@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.liftric.kvault.KVault
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class BackgroundSyncWorker(private val appContext: Context, workerParams: WorkerParameters):
@@ -16,7 +17,7 @@ class BackgroundSyncWorker(private val appContext: Context, workerParams: Worker
         val json = Json { ignoreUnknownKeys = true }
         val notificationSender = AndroidNotificationSender(appContext)
         val platform = AndroidPlatform(appContext)
-        doBackgroundSync(kvault, json, notificationSender, platform)
+        runBlocking { doBackgroundSync(kvault, json, notificationSender, platform) }
         return Result.success()
     }
 }

@@ -31,8 +31,8 @@ func filesDir() -> String {
 }
 
 
-func getSourceData(username: String, password: String) -> String {
-    let cchar = get_source_data(username, password, filesDir().removingPercentEncoding!.replacingOccurrences(of: " ", with: "\\ "))
+func getSourceData(username: String, password: String, quarter: String) -> String {
+    let cchar = get_source_data(username, password, filesDir().removingPercentEncoding!.replacingOccurrences(of: " ", with: "\\ "), quarter)
     return String(cString: cchar!)
 }
 

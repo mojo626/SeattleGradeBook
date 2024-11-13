@@ -292,9 +292,16 @@ fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, onClick: (
 @Composable
 fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?) {
     val themeModifier = darkModeColorModifier()
+    val kvault = LocalKVault.current
+    val isGeorge = remember { kvault?.string(USERNAME_KEY) == "1gdschneider" }
+    val colorsList = if (isGeorge) {
+        georgeGradeColors
+    } else {
+        gradeColors
+    }
     val colors = if (section.iscountedinfinalgrade) {
         score?.scorelettergrade?.firstOrNull()?.let {
-            gradeColors[it.toString()]?.let {
+            colorsList[it.toString()]?.let {
                 CardDefaults.cardColors(
                     containerColor = it*themeModifier
                 )

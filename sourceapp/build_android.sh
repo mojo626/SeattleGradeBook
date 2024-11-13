@@ -1,0 +1,1 @@
+cargo ndk -o ../composeApp/src/androidMain/jniLibs build --lib

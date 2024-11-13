@@ -88,7 +88,7 @@ pub enum SourceError {
     DOMParseError(#[from] tl::ParseError)
 }
 
-pub fn get_source_data(username: &str, password: &str, download_path: &str) -> Result<String, SourceError> {
+pub fn get_source_data(username: &str, password: &str, download_path: &str, quarter: &str) -> Result<String, SourceError> {
     let client = ClientBuilder::new().cookie_store(true).build()?;
     let session_res = client.get("https://ps.seattleschools.org").send()?;
     let login_body  = [
@@ -128,7 +128,7 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
         let full_score_url = Url::parse(&format!("https://ps.seattleschools.org/guardian/{}", score_url))?;
         let Some((_, class_frn)) = full_score_url.query_pairs().into_iter().find(|(key, _)| key == "frn") else { continue; };
         let Some((_, store_code)) = full_score_url.query_pairs().into_iter().find(|(key, _)| key == "fg") else { continue; };
-        if store_code != "S1" && store_code != "S2" {
+        if store_code != quarter {
             continue;
         }
         class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string()));
@@ -155,7 +155,7 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str) -> R
         let student_frn = &student_frn_match.as_str()[student_frn_match.as_str().len()-6..];
         println!("section_id: {section_id}, student_frn: {student_frn}, store_code: {store_code}");
         let assignments_res = client.post(format!("https://ps.seattleschools.org/ws/xte/assignment/lookup"))
-            .body(format!("{{\"section_ids\":[{section_id}],\"student_ids\":[{student_frn}], \"store_codes\": [\"{store_code}\"]}}"))
+            .body(format!("{{\"section_ids\":[{section_id}],\"student_ids\":[{student_frn}], \"store_codes\": [\"{quarter}\"]}}"))
             .header("Content-Type", "application/json;charset=UTF-8")
             .header("Referer", &full_score_url)
             .header("Accept", "application/json, text/plain, */*")

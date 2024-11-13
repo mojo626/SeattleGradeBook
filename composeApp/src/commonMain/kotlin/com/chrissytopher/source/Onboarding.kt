@@ -107,7 +107,8 @@ fun LoginScreen(done: () -> Unit) {
                 CoroutineScope(Dispatchers.IO).launch {
                     loading = true
                     error = false
-                    val sourceDataRes = platform.getSourceData(username, password)
+                    val quarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
+                    val sourceDataRes = platform.gradeSyncManager.getSourceData(username, password, quarter)
                     val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
                         changeLogin(kvault, username, password, json.encodeToString(sourceData))

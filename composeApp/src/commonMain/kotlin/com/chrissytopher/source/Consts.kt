@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 const val SOURCE_DATA_KEY = "SOURCE_DATA"
 const val USERNAME_KEY = "USERNAME"
 const val PASSWORD_KEY = "PASSWORD"
+const val QUARTER_KEY = "QUARTER"
 const val HIDE_MENTORSHIP_KEY = "HIDE_MENTORSHIP"
 const val CLASS_UPDATES_KEY = "CLASS_UPDATES"
 const val NEW_ASSIGNMENTS_NOTIFICATIONS_KEY = "NEW_ASSIGNMENTS_NOTIFICATIONS"
@@ -27,9 +28,20 @@ val yellowColor = Color(0xffdcc927)
 val orangeColor = Color(0xffe76918)
 val redColor = Color(0xffee2323)
 
+val georgeGreenColor = Color(0xff428820)
+val georgeBlueColor = Color(0xff1d92ba)
+
 val gradeColors = mapOf(
     "A" to greenColor,
     "B" to blueColor,
+    "C" to yellowColor,
+    "D" to orangeColor,
+    "E" to redColor,
+)
+
+val georgeGradeColors = mapOf(
+    "A" to georgeGreenColor,
+    "B" to georgeBlueColor,
     "C" to yellowColor,
     "D" to orangeColor,
     "E" to redColor,
