@@ -2,6 +2,7 @@ package com.chrissytopher.source
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,10 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import coil3.compose.AsyncImage
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -57,34 +60,40 @@ fun HomeScreen() {
     var sourceData by LocalSourceData.current
     val json = LocalJson.current
     val platform = LocalPlatform.current
-    var classMetas: List<ClassMeta>? by remember { mutableStateOf(sourceData?.classes?.map { ClassMeta(it) }) }
-    LaunchedEffect(sourceData) {
-        classMetas = sourceData?.classes?.map { ClassMeta(it) }
-    }
     val kvault = LocalKVault.current
+    val quarters = listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")
+    var selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
+    var classMetas: List<ClassMeta>? by remember { mutableStateOf(sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }) }
+    LaunchedEffect(sourceData, selectedQuarter) {
+        classMetas = sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }
+    }
     val refreshCoroutineScope = rememberCoroutineScope()
+    var refreshedAlready by RefreshedAlready.current
     val refresh = {
         kvault?.string(USERNAME_KEY)?.let { username ->
             kvault.string(PASSWORD_KEY)?.let { password ->
                 val quarter = kvault.string(QUARTER_KEY) ?: getCurrentQuarter()
                 refreshCoroutineScope.launch {
                     refreshingInProgress = true
-                    val newSourceData = platform.gradeSyncManager.getSourceData(username, password, quarter).getOrNullAndThrow()
+                    val newSourceData = platform.gradeSyncManager.getSourceData(username, password, quarter, false).getOrNullAndThrow()
                     if (newSourceData != null && !(newSourceData.classes.isEmpty() && newSourceData.past_classes.isEmpty())) {
-                        kvault.set(SOURCE_DATA_KEY, json.encodeToString(newSourceData))
                         if (quarter == getCurrentQuarter()) {
                             val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
                             val updatedClasses = newSourceData.classes.filter { newClass ->
-                                val oldClass = sourceData?.classes?.find { it.name == newClass.name} ?: return@filter false
+                                val oldClass = sourceData?.get(quarter)?.classes?.find { it.name == newClass.name} ?: return@filter false
                                 (oldClass.totalSections() != newClass.totalSections())
                             }
                             kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
                         }
-                        sourceData = newSourceData
+                        sourceData = HashMap(sourceData ?: HashMap()).apply {
+                            set(quarter, newSourceData)
+                        }
+                        kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
                         refreshSuccess = true
                     } else {
                         refreshSuccess = false
                     }
+                    refreshedAlready = true
                     refreshingInProgress = false
                     delay(500)
                     refreshSuccess = null
@@ -93,7 +102,9 @@ fun HomeScreen() {
         }
     }
     LaunchedEffect(true) {
-        refresh()
+        if (!refreshedAlready) {
+            refresh()
+        }
     }
     val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { refresh() } )
     Box {
@@ -104,6 +115,7 @@ fun HomeScreen() {
         ) {
             Row(Modifier.fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
                 val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
+                Napier.d("pfp path: $pfpImage")
                 AsyncImage(
                     pfpImage,
                     "Content",
@@ -111,7 +123,16 @@ fun HomeScreen() {
                     alignment = Alignment.Center,
                     contentScale = ContentScale.FillWidth
                 )
-                Text(text = "${sourceData?.student_name}", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
+                var showMiddleName by ShowMiddleName.current
+                if (showMiddleName == null) {
+                    showMiddleName = kvault?.bool(SHOW_MIDDLE_NAME_KEY)
+                }
+                if (showMiddleName != true) {
+                    val names = studentName.split(" ")
+                    studentName = "${names.first()} ${names.last()}"
+                }
+                Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
 //                if (!refreshingInProgress) {
 //                    Icon(if (!refreshError) Icons.Outlined.Refresh else Icons.Outlined.Error , "Refresh grades", modifier = Modifier.size(50.dp).clickable {
 //                        refresh()
@@ -119,12 +140,25 @@ fun HomeScreen() {
 //                } else {
 //                    CircularProgressIndicator(modifier = Modifier.size(50.dp))
 //                }
-                Spacer(Modifier.size(50.dp))
+                val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
+                if (isLincoln) {
+                    val navHost = LocalNavHost.current
+                    Box(Modifier.size(50.dp).background(MaterialTheme.colorScheme.surfaceContainer, CircleShape).clickable {
+                        navHost?.navigateTo(NavScreen.Settings)
+                    }) {
+                        Image(
+                            imageVector = NavScreen.Settings.unselectedIcon,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(40.dp).align(Alignment.Center),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.size(50.dp))
+                }
             }
             val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
             Row(Modifier.alpha(selectionDisabledAlpha)) {
-                val quarters = listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")
-                var selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
                 for (quarter in quarters) {
                     Box(Modifier.weight(1f).padding(5.dp, 0.dp)) {
                         Box(Modifier
@@ -150,12 +184,12 @@ fun HomeScreen() {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
                 val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
-                    val mentorshipIndex = sourceData?.classes?.indexOfFirst {
+                    val mentorshipIndex = sourceData?.get(selectedQuarter)?.classes?.indexOfFirst {
                         it.name == MENTORSHIP_NAME
                     }
-                    Pair(sourceData?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
+                    Pair(sourceData?.get(selectedQuarter)?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
                 } else {
-                    Pair(sourceData?.classes, classMetas)
+                    Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
                 //converting to a hashmap saves looping through the list for each of the ui cards below
                 val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }

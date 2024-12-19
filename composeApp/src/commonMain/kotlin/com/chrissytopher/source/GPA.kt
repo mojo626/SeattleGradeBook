@@ -39,11 +39,13 @@ import androidx.compose.runtime.State
 @Composable
 fun GPAScreen() {
     val sourceDataState = LocalSourceData.current
+    val kvault = LocalKVault.current
+    val selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
 
-    val currClasses = sourceDataState.value?.classes
+    val currClasses = sourceDataState.value?.get(selectedQuarter)?.classes
 
     //PastClass(date_completed=01/2020, grade_level=6, school=Robert Eagle Staff MS, course_id=HWL1275, course_name=JAPANESE 1A, credit_earned=0.25, credit_attempted=0.25, grade=A <b></b>)
-    val pastClasses = sourceDataState.value?.past_classes
+    val pastClasses = sourceDataState.value?.get(selectedQuarter)?.past_classes
     var ignoreClasses: List<String> by remember { mutableStateOf(listOf()) }
 
     var gpaSelector by remember { mutableStateOf(0) }
@@ -64,11 +66,11 @@ fun GPAScreen() {
         }
 
         val grades = key(currClasses) { remember { currClasses?.map { ClassMeta(it).grade } } }
-        val highestGrade = remember { pastClasses?.mapNotNull { it.grade_level.toIntOrNull() }?.maxOrNull() }
+        val currentGrade = sourceDataState.value?.get(selectedQuarter)?.grade_level
 
         currClasses?.forEachIndexed { i, it ->
             val disabled = remember { mutableStateOf(false) }
-            GradeCard(it.name, grades?.getOrNull(i) ?: "",highestGrade?.let { (it+1).toString() } ?: "", disabled) {
+            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled) {
                 disabled.value = !disabled.value
                 if (ignoreClasses.contains(it.frn)) {
                     ignoreClasses = ignoreClasses - it.frn

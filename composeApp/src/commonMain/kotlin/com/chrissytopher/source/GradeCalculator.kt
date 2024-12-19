@@ -80,8 +80,9 @@ data class ChangedAssignment (
 fun GradeCalculatorScreen() {
     
     val sourceDataState = LocalSourceData.current
-
-    val currClasses = remember { sourceDataState.value?.classes }
+    val kvault = LocalKVault.current
+    val selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
+    val currClasses = remember { sourceDataState.value?.get(selectedQuarter)?.classes }
 
     val currentClass by ClassForGradePage.current
 
@@ -135,7 +136,7 @@ fun GradeCalculatorScreen() {
 
             Row( verticalAlignment = Alignment.CenterVertically ) {
                 Box(modifier = Modifier.aspectRatio(1f).weight(1f).padding(15.dp)) {
-                    var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
+                    var currClass = sourceDataState.value?.get(selectedQuarter)?.classes?.first { it.name == selectedClassName }!!
                     ClassCard(
                         currClass,
                         ClassMeta(currClass),
@@ -146,7 +147,7 @@ fun GradeCalculatorScreen() {
                 Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "Right arrow", modifier = Modifier.fillMaxHeight().weight(0.3f).size(50.dp))
 
                 Box(modifier = Modifier.aspectRatio(1f).weight(1f).padding(15.dp)) {
-                    var currClass = sourceDataState.value?.classes?.first { it.name == selectedClassName }!!
+                    var currClass = sourceDataState.value?.get(selectedQuarter)?.classes?.first { it.name == selectedClassName }!!
                     ClassCard(
                         currClass,
                         ClassMeta(currClass, newAssignments, changedAssignments),

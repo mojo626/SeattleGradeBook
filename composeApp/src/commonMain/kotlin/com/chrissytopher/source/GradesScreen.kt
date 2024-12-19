@@ -114,7 +114,9 @@ fun GradesScreen() {
                     Row {
                         Text(currentClass?.teacher_name ?: "Contact Teacher", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Outlined.OpenInNew, "Open teacher contact", modifier = Modifier.size(40.dp).clickable {
-                            currentClass?.teacher_contact?.let { platform.openLink(it) }
+                            kotlin.runCatching {
+                                currentClass?.teacher_contact?.let { platform.openLink(it) }
+                            }
                         })
                     }
                 }

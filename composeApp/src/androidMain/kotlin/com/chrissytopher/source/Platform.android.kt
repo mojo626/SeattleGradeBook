@@ -26,8 +26,8 @@ class AndroidPlatform(private val context: Context) : Platform() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun getSourceData(username: String, password: String, quarter: String): Result<SourceData> = runCatching {
-        json.decodeFromString(SourceApi.getSourceData(username, password, context.filesDir.absolutePath, quarter))
+    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
+        json.decodeFromString(SourceApi.getSourceData(username, password, context.filesDir.absolutePath, quarter, loadPfp))
     }
 
     override fun closeApp() {

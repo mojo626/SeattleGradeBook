@@ -108,11 +108,14 @@ fun LoginScreen(done: () -> Unit) {
                     loading = true
                     error = false
                     val quarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
-                    val sourceDataRes = platform.gradeSyncManager.getSourceData(username, password, quarter)
+                    val sourceDataRes = platform.gradeSyncManager.getSourceData(username, password, quarter, true)
+                    Napier.d("got data: $sourceDataRes")
                     val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
-                        changeLogin(kvault, username, password, json.encodeToString(sourceData))
-                        sourceDataState.value = sourceData
+                        sourceDataState.value = HashMap<String, SourceData>().apply {
+                            set(quarter, sourceData)
+                        }
+                        changeLogin(kvault, username, password, json.encodeToString(sourceDataState.value))
                         done()
                     } else {
                         error = true

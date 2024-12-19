@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.icerock.moko.permissions.Permission
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,6 +51,18 @@ fun SettingsScreen(
             Switch(hideMentorship, onCheckedChange = {
                 hideMentorship = it
                 kvault?.set(HIDE_MENTORSHIP_KEY, it)
+            })
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(20.dp)) {
+            var showMiddleName by ShowMiddleName.current
+            if (showMiddleName == null) {
+                showMiddleName = kvault?.bool(SHOW_MIDDLE_NAME_KEY)
+            }
+            Text("Show middle name", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            Switch(showMiddleName == true, onCheckedChange = {
+                kvault?.set(SHOW_MIDDLE_NAME_KEY, it)
+                showMiddleName = it
             })
         }
 

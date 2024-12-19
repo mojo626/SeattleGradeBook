@@ -10,13 +10,15 @@ suspend fun doBackgroundSync(kvault: KVault, json: Json, notificationSender: Not
     kvault.string(USERNAME_KEY)?.let { username ->
         kvault.string(PASSWORD_KEY)?.let { password ->
             val quarter = getCurrentQuarter()
-            platform.gradeSyncManager.getSourceData(username, password, quarter).getOrNullAndThrow()?.let { newSourceData ->
-                val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { json.decodeFromString<SourceData>(it) }
-                kvault.set(SOURCE_DATA_KEY, json.encodeToString(newSourceData))
+            platform.gradeSyncManager.getSourceData(username, password, quarter, true).getOrNullAndThrow()?.let { newSourceData ->
+                val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { json.decodeFromString<HashMap<String, SourceData>>(it) }
+                kvault.set(SOURCE_DATA_KEY, json.encodeToString(HashMap(sourceData ?: HashMap()).apply {
+                    set(quarter, newSourceData)
+                }))
                 val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
                 val newAssignments = arrayListOf<Pair<AssignmentSection, Pair<Class, Class?>>>()
                 val updatedClasses = newSourceData.classes.filter { newClass ->
-                    val oldClass = sourceData?.classes?.find { it.name == newClass.name}
+                    val oldClass = sourceData?.get(quarter)?.classes?.find { it.name == newClass.name}
                     if (oldClass == null) {
                         newClass.assignments_parsed.flatMap { it._assignmentsections }.forEach {
                             newAssignments += Pair(it, Pair(newClass, null))

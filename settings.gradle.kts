@@ -11,7 +11,6 @@ pluginManagement {
             }
         }
         mavenCentral()
-        
 
         gradlePluginPortal()
     }
@@ -28,6 +27,7 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         maven("https://maven.universablockchain.com/")
+        maven("https://repo.repsy.io/mvn/chrynan/public")
     }
 }
 

@@ -41,8 +41,6 @@ import androidx.compose.material.contentColorFor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.pullrefresh.PullRefreshDefaults
-import androidx.compose.material.pullrefresh.PullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.SideEffect

@@ -14,7 +14,7 @@ androidx-test-junit = "1.2.1"
 compose-plugin = "1.6.11"
 junit = "4.13.2"
 kotlin = "2.0.20"
-kotlinx-coroutines = "1.9.0"
+coroutines = "1.9.0"
 kotlinxDatetime = "0.6.1"
 kotlinxSerializationJson = "1.7.3"
 kvault = "1.12.0"
@@ -23,7 +23,9 @@ napier = "2.7.1"
 navigationCompose = "2.7.0-alpha07"
 coilComposeVersion = "3.0.0-alpha07"
 permissionsCompose = "0.18.0"
+uriCore = "0.4.0"
 workRuntimeKtx = "2.9.1"
+ktor = "3.0.1"
 
 [libraries]
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
@@ -39,7 +41,6 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
-kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kvault = { module = "com.liftric:kvault", version.ref = "kvault" }
@@ -48,6 +49,12 @@ napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 coil3-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilComposeVersion" }
 permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "permissionsCompose" }
+uri-core = { module = "com.chrynan.uri:uri-core", version.ref = "uriCore" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -2,7 +2,11 @@
 
 package com.chrissytopher.source
 
-import io.github.aakira.napier.Napier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import com.chrynan.uri.core.Uri
+import com.chrynan.uri.core.fromStringOrNull
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
@@ -10,6 +14,7 @@ import kotlin.math.roundToInt
 @Serializable
 data class SourceData(
     var classes: List<Class>,
+    var grade_level: String?,
     var student_name: String,
     var past_classes: List<PastClass>,
 )
@@ -304,4 +309,11 @@ fun gradeForScore(score: Float): String {
     } else {
         "E"
     }
+}
+
+@Composable
+fun rememberSchoolFromClasses(sourceData: SourceData): List<String> {
+    return key(sourceData) {remember { sourceData.classes.mapNotNull {
+        Uri.fromStringOrNull(it.url)?.query?.split("&")?.map { it.split("=") }?.find { it.first() == "schoolid" }?.getOrNull(1)
+    } } }
 }

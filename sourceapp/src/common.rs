@@ -1,7 +1,7 @@
-use std::{fs, io::{self, Write}, path::Path};
+use std::{collections::HashMap, fs, io::{self, Write}, path::Path};
 
 use regex::Regex;
-use reqwest::blocking::{Client, ClientBuilder};
+use reqwest::{Client, ClientBuilder};
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -11,6 +11,7 @@ use url::Url;
 #[derive(Deserialize, Serialize, Debug)]
 struct SourceData {
     student_name: String,
+    grade_level: Option<String>,
     classes: Vec<Class>,
     past_classes: Vec<PastClass>,
 }
@@ -85,12 +86,12 @@ pub enum SourceError {
     #[error("Detected Login Failure")]
     LoginFailureError,
     #[error("DOM parse error {0}")]
-    DOMParseError(#[from] tl::ParseError)
+    DOMParseError(#[from] tl::ParseError),
 }
 
-pub fn get_source_data(username: &str, password: &str, download_path: &str, quarter: &str) -> Result<String, SourceError> {
+pub async fn get_source_data(username: &str, password: &str, download_path: &str, quarter: &str, load_pfp: bool) -> Result<String, SourceError> {
     let client = ClientBuilder::new().cookie_store(true).build()?;
-    let session_res = client.get("https://ps.seattleschools.org").send()?;
+    let session_res = client.get("https://ps.seattleschools.org").send().await?;
     let login_body  = [
         ("dbpw", password), 
         ("serviceName", "PS Parent Portal"),
@@ -101,22 +102,24 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str, quar
         ("pw", password),
     ];
     session_res.error_for_status()?;
-    let login_res = client.post("https://ps.seattleschools.org/guardian/home.html").form(&login_body).send()?.error_for_status()?;
-    let home_html = login_res.text()?;
+    let login_res = client.post("https://ps.seattleschools.org/guardian/home.html").form(&login_body).send().await?.error_for_status()?;
+    let home_html = login_res.text().await?;
     // fs::File::create("home.html").unwrap().write(home_html.as_bytes()).unwrap();
-    get_img_url(&client, download_path)?;
+    if load_pfp {
+        get_img_url(&client, download_path).await?;
+    }
 
     let scores_html_regex = Regex::new("<a href=\"scores.html\\?frn=[^\\\"]*\"")?;
     let name_regex = Regex::new("<span id=\"firstlast\">[^<]*")?;
     let student_name = name_regex.find(&home_html).map(|name_match| name_match.as_str()["<span id=\"firstlast\">".len()..].to_string());
     let student_name = student_name.ok_or(SourceError::LoginFailureError)?;
     let score_url_regex = Regex::new("\"s[^\"]*")?;
-    let class_header_regex = Regex::new("<td class=\"table-element-text-align-start\">[^&]*")?;
-    let class_headers = class_header_regex.find_iter(&home_html).map(|class_header_match| {
-        class_header_match.as_str()["<td class=\"table-element-text-align-start\">".len()..].to_string()
-    }).collect::<Vec<_>>();
+    // let class_header_regex = Regex::new("<td class=\"table-element-text-align-start\">[^&]*")?;
+    // let class_headers = class_header_regex.find_iter(&home_html).map(|class_header_match| {
+        // class_header_match.as_str()["<td class=\"table-element-text-align-start\">".len()..].to_string()
+    // }).collect::<Vec<_>>();
 
-    let teachers = get_teachers(&client, &home_html)?;
+    let teachers: HashMap<String, String> = get_teachers(&client, &home_html).await?.into_iter().collect();
 
     let mut class_frns = Vec::new();
     for score_href in scores_html_regex.find_iter(&home_html) {
@@ -134,55 +137,81 @@ pub fn get_source_data(username: &str, password: &str, download_path: &str, quar
         class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string()));
         
     }
-    
-    let data_ng_regex: Regex = Regex::new("data-ng-init=\"[^\"]*")?;
-    let student_frn_regex: Regex = Regex::new("studentFRN = '[^']*")?;
-    let section_id_regex: Regex = Regex::new("data-sectionid=\"[^\"]*")?;
 
-    let mut assignments: Vec<Class> = Vec::new();
+    println!("{teachers:?}");
 
-    for (i, (full_score_url, class_frn, store_code)) in class_frns.into_iter().enumerate() {
-        let scores_html_res = client.get(&full_score_url).send()?;
-        let scores_text = scores_html_res.text()?;
-        let Some(data_ng) = data_ng_regex.find(&scores_text) else {
-            println!("no data_ng found at {full_score_url}");
-            continue;
-        };
+    let assignments_futures = class_frns.into_iter().map(|(full_score_url, class_frn, store_code)| {
+        get_class(full_score_url, class_frn, store_code, &client, quarter, teachers.clone())
+    });
 
-        let Some(section_id_match) = section_id_regex.find(&scores_text) else { continue; };
-        let section_id = &section_id_match.as_str()["data-sectionid=\"".len()..];
-        let Some(student_frn_match) = student_frn_regex.find(data_ng.as_str()) else { continue; };
-        let student_frn = &student_frn_match.as_str()[student_frn_match.as_str().len()-6..];
-        println!("section_id: {section_id}, student_frn: {student_frn}, store_code: {store_code}");
-        let assignments_res = client.post(format!("https://ps.seattleschools.org/ws/xte/assignment/lookup"))
-            .body(format!("{{\"section_ids\":[{section_id}],\"student_ids\":[{student_frn}], \"store_codes\": [\"{quarter}\"]}}"))
-            .header("Content-Type", "application/json;charset=UTF-8")
-            .header("Referer", &full_score_url)
-            .header("Accept", "application/json, text/plain, */*")
-            .send()?;
-        let assignments_json = assignments_res.text()?;
-        assignments.push(Class {
-            frn: class_frn.into(),
-            assignments: serde_json::from_str(&assignments_json)?, 
-            assignments_parsed: serde_json::from_str(&assignments_json)?, 
-            url: full_score_url, 
-            store_code, 
-            name: class_headers[i].clone(),
-            teacher_name: teachers[i].0.clone(),
-            teacher_contact: teachers[i].1.clone(),
-        });
-    }
-    let past_classes = get_past_grades(&client)?;
+    let assignments = futures::future::try_join_all(assignments_futures).await?.into_iter().flatten().collect();
+
+    let grade_level_regex = Regex::new("<tr><td class=\"lbl\">Grade Level:<\\/td><td>[^<]*")?;
+    let grade_level = grade_level_regex.find(&home_html).map(|it| it.as_str()["<tr><td class=\"lbl\">Grade Level:<\\/td><td".len()..].to_string());
+
+    let past_classes = get_past_grades(&client).await?;
     let source_data = SourceData {
         classes: assignments,
         student_name,
         past_classes,
+        grade_level,
     };
     Ok(serde_json::to_string_pretty(&source_data)?)
 }
 
-fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> {
-    let photo_html = client.get("https://ps.seattleschools.org/guardian/student_photo.html").send()?.text()?;
+async fn get_class(full_score_url: String, class_frn: String, store_code: String, client: &Client, quarter: &str, teachers: HashMap<String, String>) -> Result<Option<Class>, SourceError> {
+    let data_ng_regex: Regex = Regex::new("data-ng-init=\"[^\"]*")?;
+    let student_frn_regex: Regex = Regex::new("studentFRN = '[^']*")?;
+    let section_id_regex: Regex = Regex::new("data-sectionid=\"[^\"]*")?;
+
+    let scores_html_res = client.get(&full_score_url).send().await?;
+    let scores_text = scores_html_res.text().await?;
+    let Some(data_ng) = data_ng_regex.find(&scores_text) else {
+        println!("no data_ng found at {full_score_url}");
+        return Ok(None);
+    };
+
+    let Some(section_id_match) = section_id_regex.find(&scores_text) else { return Ok(None); };
+    let section_id = &section_id_match.as_str()["data-sectionid=\"".len()..];
+    let Some(student_frn_match) = student_frn_regex.find(data_ng.as_str()) else { return Ok(None); };
+    let student_frn = &student_frn_match.as_str()[student_frn_match.as_str().len()-6..];
+    println!("section_id: {section_id}, student_frn: {student_frn}, store_code: {store_code}");
+    let assignments_res = client.post(format!("https://ps.seattleschools.org/ws/xte/assignment/lookup"))
+        .body(format!("{{\"section_ids\":[{section_id}],\"student_ids\":[{student_frn}], \"store_codes\": [\"{quarter}\"]}}"))
+        .header("Content-Type", "application/json;charset=UTF-8")
+        .header("Referer", &full_score_url)
+        .header("Accept", "application/json, text/plain, */*")
+        .send().await?;
+    let assignments_json = assignments_res.text().await?;
+    println!("{full_score_url}");
+
+    let (class_name, teacher_name) = get_class_name_and_teacher(&scores_text).await?;
+    let name_split: Vec<&str> = teacher_name.split(" ").collect();
+    let mut first_name = name_split.get(1).cloned().unwrap_or_default();
+    if first_name.ends_with(",") {
+        first_name = &first_name[..first_name.len()-1];
+    }
+    let mut last_name = name_split.get(0).cloned().unwrap_or_default();
+    if last_name.ends_with(",") {
+        last_name = &last_name[..last_name.len()-1];
+    }
+    let teacher_name = format!("{first_name} {last_name}");
+    println!("{teacher_name}");
+
+    Ok(Some(Class {
+        frn: class_frn.into(),
+        assignments: serde_json::from_str(&assignments_json)?, 
+        assignments_parsed: serde_json::from_str(&assignments_json)?, 
+        url: full_score_url, 
+        store_code, 
+        name: class_name,
+        teacher_contact: teachers.get(&teacher_name).cloned().unwrap_or_default(),
+        teacher_name,
+    }))
+}
+
+async fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> {
+    let photo_html = client.get("https://ps.seattleschools.org/guardian/student_photo.html").send().await?.text().await?;
     let photo_dom = tl::parse(&photo_html, tl::ParserOptions::default())?;
     let parser = photo_dom.parser();
     if let Some(photo_container_handle) = photo_dom.get_elements_by_class_name("user-photo").next() {
@@ -192,7 +221,7 @@ fn get_img_url(client: &Client, download_path: &str) -> Result<(), SourceError> 
                     if let Some(image_tag) = image_node.as_tag() {
                         if let Some(Some(src)) = image_tag.attributes().get("src") {
                             if let Ok(src_string) = String::from_utf8(src.as_bytes().into()) {
-                                let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", src_string)).send()?.bytes()?;
+                                let pfp_bytes = client.get(format!("https://ps.seattleschools.org{}", src_string)).send().await?.bytes().await?;
                                 if !Path::new(download_path).exists() {
                                     fs::create_dir(download_path)?;
                                 }
@@ -219,8 +248,8 @@ struct PastClass {
     grade: String,
 }
 
-fn get_past_grades(client: &Client) -> Result<Vec<PastClass>, SourceError> {
-    let grades_html = client.get("https://ps.seattleschools.org/guardian/termgrades.html").send()?.text()?;
+async fn get_past_grades(client: &Client) -> Result<Vec<PastClass>, SourceError> {
+    let grades_html = client.get("https://ps.seattleschools.org/guardian/termgrades.html").send().await?.text().await?;
     let grades_dom = Html::parse_document(&grades_html);
     let table_body_selector = Selector::parse("tbody").unwrap();
     if let Some(table_body) = grades_dom.select(&table_body_selector).next() {
@@ -263,14 +292,44 @@ fn get_past_grades(client: &Client) -> Result<Vec<PastClass>, SourceError> {
     Ok(vec![])
 }
 
-fn get_teachers(client: &Client, home_html: &str) -> Result<Vec<(String, String)>, SourceError>{
+async fn get_class_name_and_teacher(class_html: &str) -> Result<(String, String), SourceError> {
+    let grades_dom = Html::parse_document(class_html);
+    let table_body_selector = Selector::parse("tbody").unwrap();
+    if let Some(table_body) = grades_dom.select(&table_body_selector).next() {
+        let table_row = table_body.child_elements().nth(1);
+        if let Some(table_row) = table_row {
+            if table_row.value().name() == "tr" {
+                let table_data = table_row.child_elements().map(|child| {
+                    child.inner_html()
+                }).collect::<Vec<String>>();
+                if table_data.len() == 6 {
+                    let class_name = table_data[0].clone();
+                    let class_teacher = table_data[1].clone();
+                    return Ok((class_name, class_teacher));
+                } else {
+                    println!("table data is not 6 it is {}", table_data.len());
+                }
+            } else {
+                println!("found child but not tr {}", table_row.value().name());
+            }
+        } else {
+            println!("didn't find the table row");
+        }
+    } else {
+        println!("no tbody");
+    }
+    Ok(("Unknown Class".into(), "Unknown Teacher".into()))
+}
+
+async fn get_teachers(client: &Client, home_html: &str) -> Result<Vec<(String, String)>, SourceError>{
     let mut teachers: Vec<(String, String)> = vec![];
     let teacher_url_regex = Regex::new("<a href=\"teacherinfo.html\\?frn=[^\"]*\"")?;
     for teacher_url_match in teacher_url_regex.find_iter(&home_html) {
         let teacher_url = &teacher_url_match.as_str()["<a href=\"".len()..teacher_url_match.len()-1];
         let full_url = format!("https://ps.seattleschools.org/guardian/{teacher_url}");
-        let res = client.get(full_url).send()?;
-        let teacher_html = res.text()?;
+        let res = client.get(full_url).send().await?;
+        let teacher_html = res.text().await?;
+        println!("{teacher_url}");
         let teacher_name_regex = Regex::new("<p><strong>Name:</strong>[^<]*")?;
         let Some(teacher_name_match) = teacher_name_regex.find(&teacher_html) else {
             teachers.push(("".into(), "".into()));

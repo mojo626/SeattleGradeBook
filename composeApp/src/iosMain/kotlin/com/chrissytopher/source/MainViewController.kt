@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import platform.UIKit.UIViewController
 
-fun MainViewController(getSourceData: (String, String, String) -> String, filesDir: String, sendNotification: (String, String) -> Unit, openLink: (String) -> Unit): UIViewController {
+fun MainViewController(getSourceData: (String, String, String, Boolean) -> String, filesDir: String, sendNotification: (String, String) -> Unit, openLink: (String) -> Unit): UIViewController {
     val platform = IOSPlatform(filesDir, getSourceData, openLink)
     val kvault = KVault()
     val permissionsController = PermissionsController()
@@ -38,7 +38,7 @@ fun debugBuild() {
     Napier.d("started napier!")
 }
 
-fun runBackgroundSync(sendNotification: (String, String) -> Unit, getSourceData: (String, String, String) -> String, filesDir: String) {
+fun runBackgroundSync(sendNotification: (String, String) -> Unit, getSourceData: (String, String, String, Boolean) -> String, filesDir: String) {
     Napier.base(DebugAntilog())
     val kvault = KVault()
     val json = Json { ignoreUnknownKeys = true }

@@ -18,7 +18,9 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -49,17 +51,20 @@ import kotlinx.datetime.toLocalDateTime
 
 val LocalKVault = compositionLocalOf<KVault?> { null }
 val LocalJson = compositionLocalOf { Json { ignoreUnknownKeys = true } }
-val LocalSourceData = compositionLocalOf<MutableState<SourceData?>> { mutableStateOf(null) }
+val LocalSourceData = compositionLocalOf<MutableState<HashMap<String, SourceData>?>> { mutableStateOf(null) }
 val LocalNavHost = compositionLocalOf<NavigationStack<NavScreen>?> { null }
 val ClassForGradePage = compositionLocalOf<MutableState<Class?>> { mutableStateOf(null) }
 val LocalPermissionsController = compositionLocalOf<PermissionsController> { error("no permissions controller provided") }
 val AssignmentForPage = compositionLocalOf<MutableState<AssignmentSection?>> { mutableStateOf(null) }
 val LocalNotificationSender = compositionLocalOf<NotificationSender?> { null }
 val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided") }
+val RefreshedAlready = compositionLocalOf { mutableStateOf(false) }
+val ShowMiddleName = compositionLocalOf<MutableState<Boolean?>> { mutableStateOf(null) }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
+    School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
-    Settings(Icons.Filled.Settings, Icons.Outlined.Settings),
+    Settings(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false),
     Home(Icons.Filled.Home, Icons.Outlined.Home),
     Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
@@ -98,7 +103,7 @@ fun App() {
         val localJson = LocalJson.current
         if (LocalSourceData.current.value == null) {
             kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
-                LocalSourceData.current.value = runCatching { localJson.decodeFromString<SourceData>(gradeData) }.getOrNullAndThrow()
+                LocalSourceData.current.value = runCatching { localJson.decodeFromString<HashMap<String, SourceData>>(gradeData) }.getOrNullAndThrow()
             }
         }
         var currentTheme by remember { mutableStateOf( ThemeVariant.valueOf(kvault?.string("THEME") ?: "Classic")) }
@@ -150,6 +155,9 @@ fun App() {
                     }
                     composable(route = NavScreen.Assignments) {
                         AssignmentScreen()
+                    }
+                    composable(route = NavScreen.School) {
+                        SchoolScreen()
                     }
                 }
             }

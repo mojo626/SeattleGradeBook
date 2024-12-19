@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.util.Log
 import android.widget.RemoteViews
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.CardDefaults
@@ -23,11 +22,10 @@ class WidgetProvider : AppWidgetProvider() {
     ) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         appWidgetIds.forEachIndexed{ i, appWidgetId ->
-
-
             val kvault = KVault(context)
-            val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { Json.decodeFromString<SourceData>(it) } ?: return@onUpdate
-            val widgetClass = sourceData.classes.find { it.frn == kvault.string(WIDGET_CLASS_KEY+appWidgetId) } ?: sourceData.classes.getOrNull(i) ?: sourceData.classes.lastOrNull() ?: return@forEachIndexed
+            val quarter = getCurrentQuarter()
+            val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { Json.decodeFromString<HashMap<String, SourceData>>(it) } ?: return@onUpdate
+            val widgetClass = sourceData[quarter]?.classes?.find { it.frn == kvault.string(WIDGET_CLASS_KEY+appWidgetId) } ?: sourceData.get(quarter)?.classes?.getOrNull(i) ?: sourceData[quarter]?.classes?.lastOrNull() ?: return@forEachIndexed
             val meta = ClassMeta(widgetClass)
             updateWidgetContent(appWidgetId, widgetClass, meta, appWidgetManager, context)
         }

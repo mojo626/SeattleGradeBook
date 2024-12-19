@@ -43,7 +43,8 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.work.runtime.ktx)
-
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.kotlinx.coroutines.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -64,6 +65,12 @@ kotlin {
             implementation(libs.mp.stools)
             implementation(libs.napier)
             implementation(libs.permissions.compose)
+            implementation(libs.uri.core)
+            implementation(libs.ktor.client.core)
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)
