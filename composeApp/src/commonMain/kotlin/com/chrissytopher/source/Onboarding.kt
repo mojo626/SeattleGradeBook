@@ -90,7 +90,7 @@ fun LoginScreen(done: () -> Unit) {
                 onValueChange = { username = it },
                 label = { Text("Username") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions.Default.copy(capitalization = KeyboardCapitalization.None, autoCorrect = false, keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
+                keyboardOptions = KeyboardOptions.Default.copy(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
             )
             OutlinedTextField(
                 value = password,
@@ -98,7 +98,7 @@ fun LoginScreen(done: () -> Unit) {
                 visualTransformation = PasswordVisualTransformation(),
                 label = { Text("Password") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions.Default.copy(capitalization = KeyboardCapitalization.None, autoCorrect = false, keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
+                keyboardOptions = KeyboardOptions.Default.copy(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false, keyboardType = KeyboardType.Password, imeAction = ImeAction.Done)
             )
             if (error) {
                 Text("Failed to log in", color = MaterialTheme.colorScheme.error)
