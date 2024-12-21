@@ -145,7 +145,11 @@ class ClassMeta {
 
     //constructor for adding new assignments to see new grade, score is list of pairs that are <points earned, points possible>
     constructor(classData : Class, newScores : List<Pair<Float, Float>>, changedAssignments : List<ChangedAssignment>) {
-        classData.assignments_parsed.forEachIndexed() { index, assignment ->
+        classData.assignments_parsed.forEachIndexed { index, assignment ->
+            if (changedAssignments.getOrNull(index) == null) {
+                //@Ben what is it supposed to do in this case
+                return@forEachIndexed
+            }
             if (changedAssignments[index].hidden) {
                 return@forEachIndexed
             }

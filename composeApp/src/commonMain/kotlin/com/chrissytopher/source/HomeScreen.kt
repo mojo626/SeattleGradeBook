@@ -48,6 +48,11 @@ import coil3.compose.AsyncImage
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
 import kotlin.math.roundToInt
 
@@ -115,13 +120,12 @@ fun HomeScreen() {
         ) {
             Row(Modifier.fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
                 val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
-                Napier.d("pfp path: $pfpImage")
                 AsyncImage(
                     pfpImage,
                     "Content",
                     Modifier.size(50.dp).clip(CircleShape),
                     alignment = Alignment.Center,
-                    contentScale = ContentScale.FillWidth
+                    contentScale = ContentScale.FillWidth,
                 )
                 var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
                 var showMiddleName by ShowMiddleName.current
@@ -235,6 +239,11 @@ fun HomeScreen() {
             failureColor = redColor,
             statusContentColor = MaterialTheme.colorScheme.surfaceContainer,
         )
+    }
+    val now = Clock.System.now()
+    val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
+    if (today.month == Month.DECEMBER && today.dayOfMonth == 25) {
+        Snow()
     }
 }
 

@@ -1,6 +1,8 @@
 package com.chrissytopher.source
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,10 +58,16 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import io.github.aakira.napier.Napier
 import kotlinx.serialization.encodeToString
@@ -312,7 +320,21 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
     } else {
         CardDefaults.cardColors()
     }
-    Card(modifier = Modifier.padding(5.dp).then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier), colors = colors) {
+
+    val iconColor = score?.let {
+        when (true) {
+            score.islate -> redColor
+            score.ismissing -> orangeColor
+            score.isexempt -> Color(0xffa218e7)
+            score.isincomplete -> blueColor
+            !section.iscountedinfinalgrade -> orangeColor
+            else -> null
+        }
+    }
+    val iconModifier = iconColor?.let {
+        Modifier.dashedBorder(3.dp, iconColor, 12.0.dp)
+    } ?: Modifier
+    Card(modifier = Modifier.padding(5.dp).then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier).then(iconModifier), colors = colors) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
             Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
@@ -328,3 +350,28 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
 
     }
 }
+
+fun Modifier.dashedBorder(strokeWidth: Dp, color: Color, cornerRadiusDp: Dp) = composed(
+    factory = {
+        val density = LocalDensity.current
+        val strokeWidthPx = density.run { strokeWidth.toPx() }
+        val cornerRadiusPx = density.run { cornerRadiusDp.toPx() }
+
+        this.then(
+            Modifier.drawWithCache {
+                onDrawBehind {
+                    val stroke = Stroke(
+                        width = strokeWidthPx,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    )
+
+                    drawRoundRect(
+                        color = color,
+                        style = stroke,
+                        cornerRadius = CornerRadius(cornerRadiusPx)
+                    )
+                }
+            }
+        )
+    }
+)

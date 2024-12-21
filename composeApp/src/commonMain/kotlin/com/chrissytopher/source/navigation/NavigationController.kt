@@ -106,7 +106,7 @@ class NavigationStack<T>(private val initialRoute: T) {
             navigationStackState.value += initialRoute
         }
         _previousState.value = navigationStackState.value.getOrNull(navigationStackState.value.size-2) ?: initialRoute
-        _routeState.value = navigationStackState.value.last()
+        _routeState.value = navigationStackState.value.lastOrNull() ?: initialRoute
     }
 
     fun navigateTo(route: T, animate: Boolean = false) {

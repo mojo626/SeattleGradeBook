@@ -32,7 +32,7 @@ func filesDir() -> String {
 
 
 func getSourceData(username: String, password: String, quarter: String, loadPfp: KotlinBoolean) -> String {
-    let cchar = get_source_data(username, password, filesDir().removingPercentEncoding!.replacingOccurrences(of: " ", with: "\\ "), quarter, loadPfp.boolValue)
+    let cchar = get_source_data(username, password, filesDir().removingPercentEncoding!.replacingOccurrences(of: " ", with: " "), quarter, loadPfp.boolValue)
     return String(cString: cchar!)
 }
 

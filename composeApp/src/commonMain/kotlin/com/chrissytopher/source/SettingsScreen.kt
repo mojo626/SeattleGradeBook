@@ -29,14 +29,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.icerock.moko.permissions.Permission
-import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(
     currentTheme: ThemeVariant,
@@ -126,12 +127,14 @@ fun SettingsScreen(
             }
         }
 
-        val platform = LocalPlatform.current
+        val navHost = LocalNavHost.current
         Button(onClick = {
-            kvault?.deleteObject(USERNAME_KEY)
-            kvault?.deleteObject(PASSWORD_KEY)
-            kvault?.deleteObject(SOURCE_DATA_KEY)
-            platform.closeApp()
+            navHost?.let {
+                kvault?.deleteObject(USERNAME_KEY)
+                kvault?.deleteObject(PASSWORD_KEY)
+                kvault?.deleteObject(SOURCE_DATA_KEY)
+                navHost.clearStack(NavScreen.Onboarding)
+            }
         }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(20.dp)) {
             Text("Log out", fontSize = 20.sp)
         }

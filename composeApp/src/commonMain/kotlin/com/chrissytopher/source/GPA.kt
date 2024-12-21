@@ -185,7 +185,7 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
 
     currClasses?.forEachIndexed { i, it ->
         if (ignoreClasses.contains(it.frn)) return@forEachIndexed
-        if (metas?.get(i)?.grade != null) {
+        if (metas?.getOrNull(i)?.grade != null) {
             unweightedGpa += when (metas[i].grade.toString()) {
                 "A" -> { 4.0 }
                 "A-" -> { 3.7 }

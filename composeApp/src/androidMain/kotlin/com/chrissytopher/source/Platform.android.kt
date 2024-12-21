@@ -19,6 +19,8 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.DrawableResource
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_android
+import source2.composeapp.generated.resources.snowflake_android
+import source2.composeapp.generated.resources.snowflake_apple
 import kotlin.system.exitProcess
 
 class AndroidPlatform(private val context: Context) : Platform() {
@@ -46,6 +48,7 @@ class AndroidPlatform(private val context: Context) : Platform() {
 
 
     override fun appIcon() = Res.drawable.icon_android
+    override fun snowFlake() = Res.drawable.snowflake_android
     override fun iconRounding() = CircleShape
 
     override fun openLink(link: String) {

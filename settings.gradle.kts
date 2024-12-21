@@ -28,6 +28,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://maven.universablockchain.com/")
         maven("https://repo.repsy.io/mvn/chrynan/public")
+        maven("https://jitpack.io")
     }
 }
 

@@ -13,6 +13,7 @@ import platform.UIKit.UIDevice
 import platform.posix.exit
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_apple
+import source2.composeapp.generated.resources.snowflake_apple
 
 class IOSPlatform(private var filesDir: String, private var getSourceDataSwift: (String, String, String, Boolean) -> String, private var openLinkSwift: (String) -> Unit): Platform() {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
@@ -34,6 +35,7 @@ class IOSPlatform(private var filesDir: String, private var getSourceDataSwift: 
     override fun livingInFearOfBackGestures(): Boolean = false
 
     override fun appIcon() = Res.drawable.icon_apple
+    override fun snowFlake() = Res.drawable.snowflake_apple
     override fun iconRounding() = RoundedCornerShape(20)
 
     override fun openLink(link: String) {

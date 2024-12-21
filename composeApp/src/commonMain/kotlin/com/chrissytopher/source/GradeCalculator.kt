@@ -91,7 +91,7 @@ fun GradeCalculatorScreen() {
     var expanded by remember { mutableStateOf(false) }
     var selectedClassName by remember { mutableStateOf(currentClass.let { it?.name } ?: "Select a Class") }
 
-    var selectedClass by remember { mutableStateOf<Class?>(currentClass) }
+    var selectedClass by remember { mutableStateOf(currentClass) }
 
     var newAssignments by remember { mutableStateOf(emptyList<Pair<Float, Float>>()) }
     var changedAssignments by remember { mutableStateOf( emptyList<ChangedAssignment>()) }

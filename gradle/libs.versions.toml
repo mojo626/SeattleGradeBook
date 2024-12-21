@@ -21,7 +21,7 @@ kvault = "1.12.0"
 mp_stools = "1.5.1"
 napier = "2.7.1"
 navigationCompose = "2.7.0-alpha07"
-coilComposeVersion = "3.0.0-alpha07"
+coilComposeVersion = "3.0.4"
 permissionsCompose = "0.18.0"
 uriCore = "0.4.0"
 workRuntimeKtx = "2.9.1"
@@ -55,6 +55,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilComposeVersion" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

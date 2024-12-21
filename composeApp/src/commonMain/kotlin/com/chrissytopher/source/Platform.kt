@@ -24,6 +24,7 @@ abstract class Platform {
     abstract fun livingInFearOfBackGestures(): Boolean
 
     abstract fun appIcon(): DrawableResource
+    abstract fun snowFlake(): DrawableResource
     abstract fun iconRounding(): RoundedCornerShape
 
     abstract fun openLink(link: String)
