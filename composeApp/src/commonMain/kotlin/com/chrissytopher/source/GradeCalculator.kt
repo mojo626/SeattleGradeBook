@@ -108,7 +108,8 @@ fun GradeCalculatorScreen() {
             val navHost = LocalNavHost.current
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(20.dp))
-                IconButton({ navHost?.popStack() }) {
+                val screenSize = getScreenSize()
+                IconButton({ navHost?.popStack(screenSize.width.toFloat()) }) {
                     Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
                 }
             }

@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -42,12 +43,17 @@ import androidx.compose.ui.util.lerp
 import com.chrissytopher.source.LocalPlatform
 import com.chrissytopher.source.getScreenSize
 import io.github.aakira.napier.Napier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
 fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modifier = Modifier, contents: @Composable NavigationControllerScope<T>.() -> Unit) {
+    var coroutineScope = rememberCoroutineScope()
+    navigationStack.coroutineScope = coroutineScope
     val scope = remember { NavigationControllerScope(navigationStack) }
     val previousScope = remember { NavigationControllerScope(navigationStack, previous = true) }
     val platform = LocalPlatform.current
@@ -55,28 +61,30 @@ fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modi
     Box(modifier) {
         val stack by navigationStack.stackState
         val canGoBack by derivedStateOf { stack.size > 1 }
+        val coroutineScope = rememberCoroutineScope()
         platform.BackHandler(canGoBack) {
-            navigationStack.popStack()
+            coroutineScope.launch {
+                navigationStack.popStack(animateWidth = screenSize.width.toFloat())
+            }
         }
-        var dragOffset = remember { Animatable(0f) }
-        Box(Modifier.offset { IntOffset((max(dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(dragOffset.value/(screenSize.width.toFloat()/1.5f))) {
+        Box(Modifier.offset { IntOffset((max(navigationStack.dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(navigationStack.dragOffset.value/(screenSize.width.toFloat()/1.5f))) {
             contents(previousScope)
         }
-        Box(Modifier.offset { IntOffset(max(dragOffset.value, 0f).roundToInt(), 0) }.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Box(Modifier.offset { IntOffset(max(navigationStack.dragOffset.value, 0f).roundToInt(), 0) }.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
             contents(scope)
         }
         if (!platform.livingInFearOfBackGestures() && canGoBack) {
             Box(Modifier.fillMaxHeight().width(30.dp).align(Alignment.CenterStart)
                 .draggable(
-                    rememberDraggableState { runBlocking { dragOffset.snapTo(dragOffset.value + it) } },
+                    rememberDraggableState { runBlocking { navigationStack.dragOffset.snapTo(navigationStack.dragOffset.value + it) } },
                     orientation = Orientation.Horizontal,
                     onDragStopped = {
-                        if (dragOffset.value > 0.33f*screenSize.width) {
-                            dragOffset.animateTo(screenSize.width.toFloat())
-                            dragOffset.snapTo(0f)
+                        if (navigationStack.dragOffset.value > 0.33f*screenSize.width) {
+                            navigationStack.dragOffset.animateTo(screenSize.width.toFloat())
+                            navigationStack.dragOffset.snapTo(0f)
                             navigationStack.popStack()
                         } else {
-                            dragOffset.animateTo(0f)
+                            navigationStack.dragOffset.animateTo(0f)
                         }
                     }
                 )
@@ -100,25 +108,42 @@ class NavigationStack<T>(private val initialRoute: T) {
     private val navigationStackState = mutableStateOf(listOf(initialRoute))
     private val _routeState: MutableState<T> = mutableStateOf(initialRoute)
     private val _previousState: MutableState<T> = mutableStateOf(initialRoute)
-    fun popStack(animate: Boolean = false) {
-        navigationStackState.value.lastOrNull()?.let { navigationStackState.value -= it }
-        if (navigationStackState.value.isEmpty()) {
-            navigationStackState.value += initialRoute
+    var dragOffset = Animatable(0f)
+    var coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+    fun popStack(animateWidth: Float = 0f) {
+        coroutineScope.launch {
+            doTransition(0f, animateWidth)
+            navigationStackState.value.lastOrNull()?.let { navigationStackState.value -= it }
+            if (navigationStackState.value.isEmpty()) {
+                navigationStackState.value += initialRoute
+            }
+            _previousState.value = navigationStackState.value.getOrNull(navigationStackState.value.size-2) ?: initialRoute
+            _routeState.value = navigationStackState.value.lastOrNull() ?: initialRoute
+            doTransition(0f, 0f)
         }
-        _previousState.value = navigationStackState.value.getOrNull(navigationStackState.value.size-2) ?: initialRoute
-        _routeState.value = navigationStackState.value.lastOrNull() ?: initialRoute
     }
 
-    fun navigateTo(route: T, animate: Boolean = false) {
+    fun navigateTo(route: T, animateWidth: Float = 0f) {
         navigationStackState.value += route
         _previousState.value = _routeState.value
         _routeState.value = route
+        coroutineScope.launch { doTransition(animateWidth, 0f) }
     }
 
-    fun clearStack(initialRoute: T, animate: Boolean = false) {
+    fun clearStack(initialRoute: T, animateWidth: Float = 0f) {
         navigationStackState.value = listOf(initialRoute)
         _previousState.value = _routeState.value
         _routeState.value = initialRoute
+        coroutineScope.launch { doTransition(animateWidth, 0f) }
+    }
+
+    suspend fun doTransition(start: Float, end: Float) {
+        if (start != end) {
+            dragOffset.snapTo(start)
+            dragOffset.animateTo(end)
+        } else {
+            dragOffset.snapTo(end)
+        }
     }
 
     val stackState: State<List<T>>

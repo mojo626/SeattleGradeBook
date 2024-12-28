@@ -70,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import io.github.aakira.napier.Napier
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import net.sergeych.sprintf.*
 import kotlin.math.round
@@ -84,9 +85,11 @@ fun GradesScreen() {
     val json = LocalJson.current
 
     LaunchedEffect(currentClass) {
-        var updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
-        currentClass?.name?.let { currentName -> updateClasses = updateClasses.filter { it != currentName } }
-        kvault?.set(CLASS_UPDATES_KEY, json.encodeToString(updateClasses))
+        launch {
+            var updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
+            currentClass?.name?.let { currentName -> updateClasses = updateClasses.filter { it != currentName } }
+            kvault?.set(CLASS_UPDATES_KEY, json.encodeToString(updateClasses))
+        }
     }
 
     val navHost = LocalNavHost.current
@@ -94,18 +97,24 @@ fun GradesScreen() {
     var openedAssignment: Pair<AssignmentSection, AssignmentScore?>? by remember { mutableStateOf(null) }
 
     if (currentClass == null) {
-        navHost?.popStack()
+        navHost?.popStack(getScreenSize().width.toFloat())
         return
     }
-    val meta = key(currentClass) {
-        remember { ClassMeta(currentClass!!) }
+
+    var meta: ClassMeta? by remember { mutableStateOf(null) }
+
+    LaunchedEffect(currentClass) {
+        launch {
+            meta = ClassMeta(currentClass!!)
+        }
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(20.dp))
-                IconButton({ navHost?.popStack() }) {
+                val screenSize = getScreenSize()
+                IconButton({ navHost?.popStack(screenSize.width.toFloat()) }) {
                     Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
                 }
             }
@@ -128,8 +137,9 @@ fun GradesScreen() {
                         })
                     }
                 }
+                val screenSize = getScreenSize()
                 Box(Modifier.background(MaterialTheme.colorScheme.primaryContainer, CardDefaults.shape).padding(10.dp).fillMaxWidth().clickable {
-                    navHost?.navigateTo(NavScreen.Calculator)
+                    navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
                 }) {
                     Text("Grade Calculator", style = MaterialTheme.typography.titleLarge)
                 }
@@ -151,9 +161,14 @@ fun GradesScreen() {
             )
 
         }
-        val assignmentsSorted = key(currentClass) {
-            remember { currentClass?.assignments_parsed?.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } } }
+
+        var assignmentsSorted: List<Assignment>? by remember { mutableStateOf(null) }
+        LaunchedEffect(currentClass) {
+            launch {
+                assignmentsSorted = currentClass?.assignments_parsed?.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } }
+            }
         }
+
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach { assignment ->
                 AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {

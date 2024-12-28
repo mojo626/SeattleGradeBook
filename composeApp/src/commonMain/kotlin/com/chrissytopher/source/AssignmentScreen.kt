@@ -44,20 +44,14 @@ fun AssignmentScreen() {
     val currentAssignment by AssignmentForPage.current
     val currentClass by ClassForGradePage.current
     val navHost = LocalNavHost.current
-
-    var goBack by remember { mutableStateOf(false) }
-    LaunchedEffect (goBack) {
-        if (goBack) {
-            navHost?.popStack()
-        }
-    }
+    val screenSize = getScreenSize()
 
     val newestScore = currentAssignment?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
 
     Column (Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
         Row( verticalAlignment = Alignment.CenterVertically ) {
-            IconButton({ goBack = true }) {
+            IconButton({ navHost?.popStack(animateWidth = screenSize.width.toFloat()) }) {
                 Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
             }
 

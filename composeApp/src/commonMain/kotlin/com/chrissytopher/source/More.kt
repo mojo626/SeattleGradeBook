@@ -36,25 +36,7 @@ fun MoreScreen() {
     val sourceDataState = LocalSourceData.current
     val navHost = LocalNavHost.current
     var currentClass by ClassForGradePage.current
-
-    var goToGPA by remember { mutableStateOf(false) }
-    var goToGradeCalculator by remember { mutableStateOf(false) }
-
-    LaunchedEffect (goToGPA)
-    {
-        if (goToGPA)
-        {
-            navHost?.navigateTo(NavScreen.GPA)
-        }
-    }
-
-    LaunchedEffect (goToGradeCalculator)
-    {
-        if (goToGradeCalculator)
-        {
-            navHost?.navigateTo(NavScreen.Calculator)
-        }
-    }
+    val screenSize = getScreenSize()
 
     Column {
         OutlinedCard (
@@ -62,7 +44,7 @@ fun MoreScreen() {
                 containerColor = MaterialTheme.colorScheme.surface,
             ),
             border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-            modifier = Modifier.padding(20.dp).clickable {goToGPA = true}
+            modifier = Modifier.padding(20.dp).clickable { navHost?.navigateTo(NavScreen.GPA, animateWidth = screenSize.width.toFloat()) }
         ) {
             Row ( modifier = Modifier
                     .padding(15.dp)
@@ -81,7 +63,7 @@ fun MoreScreen() {
             border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
             modifier = Modifier.padding(20.dp).clickable {
                 currentClass = null
-                goToGradeCalculator = true
+                navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
             }
         ) {
             Row ( modifier = Modifier

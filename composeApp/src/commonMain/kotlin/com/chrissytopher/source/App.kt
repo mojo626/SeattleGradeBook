@@ -60,6 +60,7 @@ val LocalNotificationSender = compositionLocalOf<NotificationSender?> { null }
 val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided") }
 val RefreshedAlready = compositionLocalOf { mutableStateOf(false) }
 val ShowMiddleName = compositionLocalOf<MutableState<Boolean?>> { mutableStateOf(null) }
+val LastClassMeta = compositionLocalOf<MutableState<List<ClassMeta>?>> { mutableStateOf(null) }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),

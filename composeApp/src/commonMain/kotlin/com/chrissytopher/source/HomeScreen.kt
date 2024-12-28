@@ -68,9 +68,11 @@ fun HomeScreen() {
     val kvault = LocalKVault.current
     val quarters = listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")
     var selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
-    var classMetas: List<ClassMeta>? by remember { mutableStateOf(sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }) }
+    val lastClassMeta = LastClassMeta.current
+    var classMetas: List<ClassMeta>? by remember { mutableStateOf(lastClassMeta.value) }
     LaunchedEffect(sourceData, selectedQuarter) {
         classMetas = sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }
+        lastClassMeta.value = classMetas
     }
     val refreshCoroutineScope = rememberCoroutineScope()
     var refreshedAlready by RefreshedAlready.current
@@ -147,8 +149,9 @@ fun HomeScreen() {
                 val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
                 if (isLincoln) {
                     val navHost = LocalNavHost.current
+                    val screenSize = getScreenSize()
                     Box(Modifier.size(50.dp).background(MaterialTheme.colorScheme.surfaceContainer, CircleShape).clickable {
-                        navHost?.navigateTo(NavScreen.Settings)
+                        navHost?.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat())
                     }) {
                         Image(
                             imageVector = NavScreen.Settings.unselectedIcon,
@@ -211,11 +214,12 @@ fun HomeScreen() {
                             val meta = filteredClassMetas?.getOrNull(index)
                             val classForGradePage = ClassForGradePage.current
                             val navHost = LocalNavHost.current
+                            val screenSize = getScreenSize()
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
                                     ClassCard(it, meta, updateClassesMap[it.name] ?: false) {
                                         classForGradePage.value = it
-                                        navHost?.navigateTo(NavScreen.Grades)
+                                        navHost?.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
                                 }
                             }
