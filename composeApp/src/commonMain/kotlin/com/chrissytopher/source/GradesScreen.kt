@@ -50,6 +50,7 @@ import androidx.compose.material.icons.outlined.Chair
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.HideSource
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -183,6 +184,16 @@ fun GradesScreen() {
         }
 
         val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true )
+        var flagInfoOpen by remember { mutableStateOf(false) }
+        val infoSheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true )
+        if (flagInfoOpen) {
+            ModalBottomSheet(
+                onDismissRequest = { flagInfoOpen = false },
+                sheetState = infoSheetState,
+            ) {
+                FlagsExplanation()
+            }
+        }
 
         openedAssignment?.let { (newestSection, newestScore) ->
             ModalBottomSheet(
@@ -226,12 +237,19 @@ fun GradesScreen() {
                 )
 
                 newestScore?.let {
-                    Text(
-                        "Flags",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
-                        fontSize = 25.sp
-                    )
+                    Row(Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Flags",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 25.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        IconButton(onClick = {
+                            flagInfoOpen = true
+                        }) {
+                            Icon(Icons.Outlined.Info, "Flag info")
+                        }
+                    }
                     val gradeColors by LocalGradeColors.current
                     Row(Modifier.padding(20.dp, bottom = 0.dp)) {
                         FlagIcon(gradeColors.AColor, it.iscollected, Icons.Filled.Check, "Collected") {
@@ -291,7 +309,7 @@ fun GradesScreen() {
 
 @Composable
 fun FlagIcon(color: Color, selected: Boolean, icon: ImageVector, contentDescription: String?, onClick: (() -> Unit)) {
-    IconButton(onClick, colors = IconButtonDefaults.iconButtonColors(containerColor = if (selected) color else CardDefaults.cardColors().containerColor, contentColor = if (selected) MaterialTheme.colorScheme.inverseOnSurface else CardDefaults.cardColors().containerColor)) {
+    IconButton(onClick, colors = if (selected) IconButtonDefaults.iconButtonColors(containerColor = color, contentColor = MaterialTheme.colorScheme.inverseOnSurface) else IconButtonDefaults.iconButtonColors(containerColor = CardDefaults.cardColors().containerColor)) {
         Icon(icon, contentDescription)
     }
 }

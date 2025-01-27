@@ -47,11 +47,11 @@ data class GradeColors(
 
         fun fionaMode(): GradeColors {
             return GradeColors(
-                Color(0xff428820),
-                Color(0xff1d92ba),
-                Color(0xffdcc927),
-                Color(0xffe76918),
-                Color(0xffee2323),
+                Color(0xffc178f5),
+                Color(0xfff578ef),
+                Color(0xffff7aa2),
+                Color(0xffff7a7a),
+                Color(0xfffa2f2f),
             )
         }
     }

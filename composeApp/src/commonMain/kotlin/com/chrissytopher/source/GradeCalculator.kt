@@ -58,6 +58,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Chair
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.IncompleteCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.Close
@@ -65,6 +66,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.HideSource
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Recycling
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Visibility
@@ -76,9 +78,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -199,8 +203,8 @@ fun GradeCalculatorScreen() {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row {
-                Box (modifier = Modifier.weight(1f).padding(10.dp)) {
-                    Row( modifier = Modifier.clickable{ expanded = true }.border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp)) ) {
+                Box (modifier = Modifier.weight(1f).padding(10.dp).clickable{ expanded = true }.border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))) {
+                    Row {
                         Text(selectedClassName, modifier = Modifier.padding(15.dp), fontSize = 20.sp)
 //                        Spacer(modifier = Modifier.weight(1f))
 //                        Icon(if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = "", modifier = Modifier.padding(10.dp))
@@ -602,6 +606,7 @@ fun GradeCalculatorCard (
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, updateAssignment: (Pair<AssignmentSection, AssignmentScore?>) -> Unit, removeAssignment: (() -> Unit)? = null) {
     val grade = score?.scorelettergrade?.first()?.toString()
@@ -680,13 +685,30 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                 colors = SliderDefaults.colors(thumbColor = sliderColor, activeTrackColor = sliderColor, activeTickColor = sliderColor)
             )
 
-            Text(
-                "Flags",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
-                fontSize = 25.sp
-            )
-            val gradeColors by LocalGradeColors.current
+            var flagInfoOpen by remember { mutableStateOf(false) }
+            val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true )
+            if (flagInfoOpen) {
+                ModalBottomSheet(
+                    onDismissRequest = { flagInfoOpen = false },
+                    sheetState = sheetState,
+                ) {
+                    FlagsExplanation()
+                }
+            }
+
+            Row(Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Flags",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 25.sp,
+                    textAlign = TextAlign.Center
+                )
+                IconButton(onClick = {
+                    flagInfoOpen = true
+                }) {
+                    Icon(Icons.Outlined.Info, "Flag info")
+                }
+            }
             Row(Modifier.padding(20.dp, bottom = 0.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row {
                     score?.let {
@@ -731,7 +753,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                         val changedSection = section.copy(iscountedinfinalgrade = !section.iscountedinfinalgrade)
                         updateAssignment(Pair(changedSection, score))
                     }, colors = if (!section.iscountedinfinalgrade) IconButtonDefaults.iconButtonColors(containerColor = gradeColors.DColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface) else IconButtonDefaults.iconButtonColors(containerColor = CardDefaults.cardColors().containerColor)) {
-                        Icon(Icons.Rounded.Star, "Incomplete")
+                        Icon(Icons.Rounded.Star, "Excluded")
                     }
                 }
                 Box {
@@ -746,4 +768,87 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
     }
 }
 
-
+@Composable
+fun FlagsExplanation() {
+    Column(Modifier.fillMaxWidth().padding(20.dp)) {
+        val gradeColors by LocalGradeColors.current
+        Text("Flags", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.AColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Filled.Check, "Collected")
+            }
+            Text("Collected", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.EColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Filled.Schedule, "Late")
+            }
+            Text("Late", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.DColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Outlined.Error, "Missing")
+            }
+            Text("Missing", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color(0xffa218e7),
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Outlined.HideSource, "Exempt")
+            }
+            Text("Exempt", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.AColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Filled.Chair, "Absent")
+            }
+            Text("Absent", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.BColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Filled.IncompleteCircle, "Incomplete")
+            }
+            Text("Incomplete", fontSize = 20.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = {},
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = gradeColors.DColor,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            ) {
+                Icon(Icons.Rounded.Star, "Incomplete")
+            }
+            Text("Excluded", fontSize = 20.sp)
+        }
+    }
+}
