@@ -64,6 +64,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -124,7 +125,7 @@ fun GradesScreen() {
         
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                ClassCard(currentClass!!, meta, false)
+                ClassCard(currentClass!!, meta, false, true)
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -171,10 +172,12 @@ fun GradesScreen() {
 
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach { assignment ->
-                AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {
-                    val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
-                    val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-                    openedAssignment = Pair(newestSection, newestScore)
+                Box(Modifier.padding(5.dp)) {
+                    AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {
+                        val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
+                        val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
+                        openedAssignment = Pair(newestSection, newestScore)
+                    }
                 }
             }
         }
@@ -186,7 +189,9 @@ fun GradesScreen() {
                 onDismissRequest = { openedAssignment = null },
                 sheetState = sheetState,
             ) {
-                AssignmentCard(newestSection, newestScore, ScoreDisplay.Both, null)
+                Box(Modifier.padding(5.dp)) {
+                    AssignmentCard(newestSection, newestScore, ScoreDisplay.Both, null)
+                }
 
                 newestScore?.scorepoints?.let {
                     Slider(
@@ -227,49 +232,35 @@ fun GradesScreen() {
                         modifier = Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp),
                         fontSize = 25.sp
                     )
-
+                    val gradeColors by LocalGradeColors.current
                     Row(Modifier.padding(20.dp, bottom = 0.dp)) {
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.AColor, it.iscollected, Icons.Filled.Check, "Collected") {
                             val changedScore = newestScore.copy(iscollected = !it.iscollected)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.iscollected) greenColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Filled.Check, "Collected")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.EColor, it.islate, Icons.Filled.Schedule, "Late") {
                             val changedScore = newestScore.copy(islate = !it.islate)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.islate) redColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Filled.Schedule, "Late")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.DColor, it.ismissing, Icons.Outlined.Error, "Missing") {
                             val changedScore = newestScore.copy(ismissing = !it.ismissing)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.ismissing) orangeColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Outlined.Error, "Missing")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(Color(0xffa218e7), it.isexempt, Icons.Outlined.HideSource, "Exempt") {
                             val changedScore = newestScore.copy(isexempt = !it.isexempt)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isexempt) Color(0xffa218e7) else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Outlined.HideSource, "Exempt")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.AColor, it.isabsent, Icons.Filled.Chair, "Absent") {
                             val changedScore = newestScore.copy(isabsent = !it.isabsent)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isabsent) greenColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Filled.Chair, "Absent")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.BColor, it.isincomplete, Icons.Filled.IncompleteCircle, "Incomplete") {
                             val changedScore = newestScore.copy(isincomplete = !it.isincomplete)
                             openedAssignment = Pair(newestSection, changedScore)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (it.isincomplete) blueColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Filled.IncompleteCircle, "Incomplete")
                         }
-                        IconButton(onClick = {
+                        FlagIcon(gradeColors.DColor, !newestSection.iscountedinfinalgrade, Icons.Rounded.Star, "Incomplete") {
                             val changedSection = newestSection.copy(iscountedinfinalgrade = !newestSection.iscountedinfinalgrade)
                             openedAssignment = Pair(changedSection, it)
-                        }, colors = IconButtonDefaults.iconButtonColors(containerColor = if (!newestSection.iscountedinfinalgrade) orangeColor else CardDefaults.cardColors().containerColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface)) {
-                            Icon(Icons.Rounded.Star, "Incomplete")
                         }
                     }
                 }
@@ -298,6 +289,13 @@ fun GradesScreen() {
     }
 }
 
+@Composable
+fun FlagIcon(color: Color, selected: Boolean, icon: ImageVector, contentDescription: String?, onClick: (() -> Unit)) {
+    IconButton(onClick, colors = IconButtonDefaults.iconButtonColors(containerColor = if (selected) color else CardDefaults.cardColors().containerColor, contentColor = if (selected) MaterialTheme.colorScheme.inverseOnSurface else CardDefaults.cardColors().containerColor)) {
+        Icon(icon, contentDescription)
+    }
+}
+
 enum class ScoreDisplay {
     Percent,
     Points,
@@ -315,18 +313,12 @@ fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, onClick: (
 }
 
 @Composable
-fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?) {
+fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?, showOutline: Boolean = true) {
     val themeModifier = darkModeColorModifier()
-    val kvault = LocalKVault.current
-    val isGeorge = remember { kvault?.string(USERNAME_KEY) == "1gdschneider" }
-    val colorsList = if (isGeorge) {
-        georgeGradeColors
-    } else {
-        gradeColors
-    }
+    val gradeColors by LocalGradeColors.current
     val colors = if (section.iscountedinfinalgrade) {
         score?.scorelettergrade?.firstOrNull()?.let {
-            colorsList[it.toString()]?.let {
+            gradeColors.gradeColor(it.toString())?.let {
                 CardDefaults.cardColors(
                     containerColor = it*themeModifier
                 )
@@ -336,20 +328,23 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
         CardDefaults.cardColors()
     }
 
-    val iconColor = score?.let {
+    var iconColor = score?.let {
         when (true) {
-            score.islate -> redColor
-            score.ismissing -> orangeColor
+            score.islate -> gradeColors.EColor
+            score.ismissing -> gradeColors.DColor
             score.isexempt -> Color(0xffa218e7)
-            score.isincomplete -> blueColor
-            !section.iscountedinfinalgrade -> orangeColor
+            score.isincomplete -> gradeColors.BColor
+            !section.iscountedinfinalgrade -> gradeColors.DColor
             else -> null
         }
+    }
+    if (!showOutline) {
+        iconColor = null
     }
     val iconModifier = iconColor?.let {
         Modifier.dashedBorder(3.dp, iconColor, 12.0.dp)
     } ?: Modifier
-    Card(modifier = Modifier.padding(5.dp).then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier).then(iconModifier), colors = colors) {
+    Card(modifier = Modifier.then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier).then(iconModifier), colors = colors) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
             Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)

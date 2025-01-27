@@ -26,6 +26,7 @@ struct Class {
     name: String,
     teacher_name: String,
     teacher_contact: String,
+    reported_grade: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -77,6 +78,8 @@ pub enum SourceError {
     HttpError(#[from] reqwest::Error),
     #[error("Regex Error {0}")]
     RegexError(#[from] regex::Error),
+    #[error("Fancy Regex Error {0}")]
+    FancyRegexError(#[from] fancy_regex::Error),
     #[error("Url Parse Error {0}")]
     UrlParseError(#[from] url::ParseError),
     #[error("Json Parse Error")]
@@ -110,6 +113,8 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
     }
 
     let scores_html_regex = Regex::new("<a href=\"scores.html\\?frn=[^\\\"]*\"")?;
+    let scores_a_html_regex = fancy_regex::Regex::new("<a href=\"scores.html\\?frn=[^\"]*\".+?(?=<\\/a>)<\\/a>")?;
+    let score_a_body_regex = fancy_regex::Regex::new(">.+?(?=<\\/a>)")?;
     let name_regex = Regex::new("<span id=\"firstlast\">[^<]*")?;
     let student_name = name_regex.find(&home_html).map(|name_match| name_match.as_str()["<span id=\"firstlast\">".len()..].to_string());
     let student_name = student_name.ok_or(SourceError::LoginFailureError)?;
@@ -122,7 +127,12 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
     let teachers: HashMap<String, String> = get_teachers(&client, &home_html).await?.into_iter().collect();
 
     let mut class_frns = Vec::new();
-    for score_href in scores_html_regex.find_iter(&home_html) {
+    for score_a in scores_a_html_regex.find_iter(&home_html) {
+        let Ok(score_a) = score_a else { continue; };
+        let Some(score_href) = scores_html_regex.find(score_a.as_str()) else {
+            println!("couldn't find inner score from a {}", score_a.as_str());
+            continue; 
+        };
         let Some(score_url_match) = score_url_regex.find(score_href.as_str()) else {
             println!("couldn't find url from href {}", score_href.as_str());
             continue; 
@@ -134,14 +144,20 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
         if store_code != quarter {
             continue;
         }
-        class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string()));
-        
+        let reported_grade = score_a_body_regex.find(score_a.as_str()).ok().flatten().map(|score_a_body| {
+            let mut reported_grade = &score_a_body.as_str()[1..];
+            if let Some(br_i) = reported_grade.find("<br>") {
+                reported_grade = &reported_grade[..br_i];
+            }
+            reported_grade.to_string()
+        });
+        class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string(), reported_grade));
     }
 
     println!("{teachers:?}");
 
-    let assignments_futures = class_frns.into_iter().map(|(full_score_url, class_frn, store_code)| {
-        get_class(full_score_url, class_frn, store_code, &client, quarter, teachers.clone())
+    let assignments_futures = class_frns.into_iter().map(|(full_score_url, class_frn, store_code, reported_grade)| {
+        get_class(full_score_url, class_frn, store_code, reported_grade, &client, quarter, teachers.clone())
     });
 
     let assignments = futures::future::try_join_all(assignments_futures).await?.into_iter().flatten().collect();
@@ -159,7 +175,7 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
     Ok(serde_json::to_string_pretty(&source_data)?)
 }
 
-async fn get_class(full_score_url: String, class_frn: String, store_code: String, client: &Client, quarter: &str, teachers: HashMap<String, String>) -> Result<Option<Class>, SourceError> {
+async fn get_class(full_score_url: String, class_frn: String, store_code: String, reported_grade: Option<String>, client: &Client, quarter: &str, teachers: HashMap<String, String>) -> Result<Option<Class>, SourceError> {
     let data_ng_regex: Regex = Regex::new("data-ng-init=\"[^\"]*")?;
     let student_frn_regex: Regex = Regex::new("studentFRN = '[^']*")?;
     let section_id_regex: Regex = Regex::new("data-sectionid=\"[^\"]*")?;
@@ -207,6 +223,7 @@ async fn get_class(full_score_url: String, class_frn: String, store_code: String
         name: class_name,
         teacher_contact: teachers.get(&teacher_name).cloned().unwrap_or_default(),
         teacher_name,
+        reported_grade,
     }))
 }
 

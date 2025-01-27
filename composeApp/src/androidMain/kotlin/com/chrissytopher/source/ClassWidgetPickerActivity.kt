@@ -1,16 +1,13 @@
 package com.chrissytopher.source
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
-import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -18,6 +15,7 @@ import com.liftric.kvault.KVault
 import dev.icerock.moko.permissions.PermissionsController
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
+import kotlinx.serialization.json.Json
 
 class ClassWidgetPickerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +42,8 @@ class ClassWidgetPickerActivity : ComponentActivity() {
                                         kvault.set(WIDGET_CLASS_KEY+appWidgetId, it.frn)
                                         val appWidgetManager = AppWidgetManager.getInstance(this@ClassWidgetPickerActivity)
                                         val meta = ClassMeta(it)
-                                        updateWidgetContent(appWidgetId, it, meta, appWidgetManager, this@ClassWidgetPickerActivity)
+                                        val gradeColors = kvault.string(GRADE_COLORS_KEY)?.let { runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
+                                        updateWidgetContent(appWidgetId, it, meta, gradeColors, appWidgetManager, this@ClassWidgetPickerActivity)
                                         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                                         setResult(RESULT_OK, resultValue)
                                         finish()

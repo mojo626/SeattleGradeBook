@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">The Source</string>
+    <string name="app_name">Seattle Gradebook</string>
     <string name="class_widget_description">Class Grade</string>
 </resources>

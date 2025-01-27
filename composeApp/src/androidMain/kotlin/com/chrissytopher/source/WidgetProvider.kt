@@ -27,12 +27,13 @@ class WidgetProvider : AppWidgetProvider() {
             val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { Json.decodeFromString<HashMap<String, SourceData>>(it) } ?: return@onUpdate
             val widgetClass = sourceData[quarter]?.classes?.find { it.frn == kvault.string(WIDGET_CLASS_KEY+appWidgetId) } ?: sourceData.get(quarter)?.classes?.getOrNull(i) ?: sourceData[quarter]?.classes?.lastOrNull() ?: return@forEachIndexed
             val meta = ClassMeta(widgetClass)
-            updateWidgetContent(appWidgetId, widgetClass, meta, appWidgetManager, context)
+            val gradeColors = kvault.string(GRADE_COLORS_KEY)?.let { runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
+            updateWidgetContent(appWidgetId, widgetClass, meta, gradeColors, appWidgetManager, context)
         }
     }
 }
 
-fun updateWidgetContent(widgetId: Int, `class`: Class, meta: ClassMeta, appWidgetManager: AppWidgetManager, context: Context) {
+fun updateWidgetContent(widgetId: Int, `class`: Class, meta: ClassMeta, gradeColors: GradeColors, appWidgetManager: AppWidgetManager, context: Context) {
     val pendingIntent: PendingIntent = PendingIntent.getActivity(
         context,
         0,
@@ -48,7 +49,7 @@ fun updateWidgetContent(widgetId: Int, `class`: Class, meta: ClassMeta, appWidge
         setTextViewText(R.id.class_name, `class`.name)
         setTextViewText(R.id.letter_grade, meta.grade ?: "-")
         setTextViewText(R.id.grade_number, meta.finalScore?.toString() ?: "-")
-        val backgroundColor = gradeColors[meta.grade?.firstOrNull()?.toString() ?: "-"] ?: if (darkMode(context)) Color(0xFF40493C) else Color(0xFFDCE6D3)
+        val backgroundColor = gradeColors.gradeColor(meta.grade?.firstOrNull()?.toString() ?: "-") ?: if (darkMode(context)) Color(0xFF40493C) else Color(0xFFDCE6D3)
         setInt(R.id.background, "setBackgroundColor", backgroundColor.toArgb())
     }
 

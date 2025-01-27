@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("plugin.serialization") version "2.1.0"
 }
 
 
@@ -69,6 +69,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.coil.network.ktor3)
+            implementation(libs.colormath)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

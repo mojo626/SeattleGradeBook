@@ -109,14 +109,8 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
         }
     }
     val disabled by disabledState
-    val kvault = LocalKVault.current
-    val isGeorge = remember { kvault?.string(USERNAME_KEY) == "1gdschneider" }
-    val colorsList = if (isGeorge) {
-        georgeGradeColors
-    } else {
-        gradeColors
-    }
-    val colors = colorsList[grade.removeSuffix(" <b></b>").firstOrNull().toString()]?.let {
+    val gradeColors by LocalGradeColors.current
+    val colors = gradeColors.gradeColor(grade.removeSuffix(" <b></b>").firstOrNull().toString())?.let {
         if (disabled) {
             null
         } else {

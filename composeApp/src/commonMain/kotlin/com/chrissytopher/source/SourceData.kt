@@ -28,6 +28,7 @@ data class Class(
     var name: String,
     var teacher_name: String,
     var teacher_contact: String,
+    var reported_grade: String? = null,
 ) {
     fun totalSections(): Int {
         return assignments_parsed.sumOf { it._assignmentsections.size }
@@ -289,7 +290,9 @@ class ClassMeta {
 }
 
 fun gradeForScore(score: Float): String {
-    val roundedScore = score.roundToInt()
+    val roundedScore = runCatching {
+        score.roundToInt()
+    }.getOrNull() ?: return "\uD83D\uDC80"
     return if (roundedScore > 92) {
         "A"
     } else if (roundedScore > 89) {

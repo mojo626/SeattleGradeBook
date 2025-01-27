@@ -54,6 +54,7 @@ import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
+import net.sergeych.sprintf.sprintf
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -114,6 +115,7 @@ fun HomeScreen() {
         }
     }
     val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { refresh() } )
+    val gradeColors by LocalGradeColors.current
     Box {
         Column (
             modifier = Modifier
@@ -164,10 +166,16 @@ fun HomeScreen() {
                     Spacer(Modifier.size(50.dp))
                 }
             }
+
+            val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }
             val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
             Row(Modifier.alpha(selectionDisabledAlpha)) {
                 for (quarter in quarters) {
-                    Box(Modifier.weight(1f).padding(5.dp, 0.dp)) {
+                    BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
+                        if (quarter == getCurrentQuarter() && updateClasses?.isNotEmpty() == true) {
+                            Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
+                        }
+                    }) {
                         Box(Modifier
                             .fillMaxWidth()
                             .background(if (selectedQuarter == quarter) CardDefaults.cardColors().containerColor else CardDefaults.cardColors().disabledContainerColor, CardDefaults.outlinedShape)
@@ -199,12 +207,11 @@ fun HomeScreen() {
                     Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
                 //converting to a hashmap saves looping through the list for each of the ui cards below
-                val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }
                 var updateClassesMap = hashMapOf(
                     *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
                 )
 //                updateClasses?.forEach { updateClassesMap[it] = true }
-                if (getCurrentQuarter() != kvault?.string(QUARTER_KEY)) {
+                if (getCurrentQuarter() != (kvault?.string(QUARTER_KEY) ?: getCurrentQuarter())) {
                     updateClassesMap = hashMapOf()
                 }
                 filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
@@ -217,7 +224,7 @@ fun HomeScreen() {
                             val screenSize = getScreenSize()
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
-                                    ClassCard(it, meta, updateClassesMap[it.name] ?: false) {
+                                    ClassCard(it, meta, updateClassesMap[it.name] ?: false, false) {
                                         classForGradePage.value = it
                                         navHost?.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
@@ -232,6 +239,7 @@ fun HomeScreen() {
                 }
             }
         }
+
         StatusPullRefreshIndicator(
             refreshing = refreshingInProgress,
             success = refreshSuccess,
@@ -239,8 +247,8 @@ fun HomeScreen() {
             modifier = Modifier.align(Alignment.TopCenter),
             backgroundColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.primary,
-            successColor = greenColor,
-            failureColor = redColor,
+            successColor = gradeColors.AColor,
+            failureColor = gradeColors.EColor,
             statusContentColor = MaterialTheme.colorScheme.surfaceContainer,
         )
     }
@@ -252,29 +260,32 @@ fun HomeScreen() {
 }
 
 @Composable
-fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, onClick: (() -> Unit)? = null) {
+fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, onClick: (() -> Unit)? = null) {
+    val reportedGrade = when (`class`.reported_grade) {
+        "[ i ]" -> null
+        else -> `class`.reported_grade
+    }
     val inner = @Composable {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(meta?.grade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
-                Text(meta?.finalScore?.roundToInt()?.toString() ?: " ", style = MaterialTheme.typography.titleLarge)
+                Text(meta?.grade ?: reportedGrade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
+                val score = if (showDecimal) {
+                    meta?.finalScore?.let { "%.2f".sprintf(it) }
+                } else {
+                    meta?.finalScore?.roundToInt()?.toString()
+                }
+                Text(score ?: " ", style = MaterialTheme.typography.titleLarge)
                 Text(`class`.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             }
         }
     }
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
-    val kvault = LocalKVault.current
-    val isGeorge = remember { kvault?.string(USERNAME_KEY) == "1gdschneider" }
-    val colorsList = if (isGeorge) {
-        georgeGradeColors
-    } else {
-        gradeColors
-    }
-    val colors = meta?.grade?.first()?.toString()?.let {colorsList[it]?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
+    val gradeColors by LocalGradeColors.current
+    val colors = (meta?.grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
         if (updates) {
-            Badge(Modifier.size(15.dp))
+            Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
         }
     }) {
         if (onClick == null) {

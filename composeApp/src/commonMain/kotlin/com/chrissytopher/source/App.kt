@@ -61,11 +61,13 @@ val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided")
 val RefreshedAlready = compositionLocalOf { mutableStateOf(false) }
 val ShowMiddleName = compositionLocalOf<MutableState<Boolean?>> { mutableStateOf(null) }
 val LastClassMeta = compositionLocalOf<MutableState<List<ClassMeta>?>> { mutableStateOf(null) }
+val LocalGradeColors = compositionLocalOf<MutableState<GradeColors>> { error("no colors provided") }
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false) {
     School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
     Settings(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false),
+    Colors(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false),
     Home(Icons.Filled.Home, Icons.Outlined.Home),
     Onboarding(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
@@ -101,64 +103,69 @@ fun App() {
     val loggedIn = remember { kvault?.existsObject(USERNAME_KEY) == true }
     val navigationStack : NavigationStack<NavScreen> = remember { NavigationStack(if (loggedIn) NavScreen.Home else NavScreen.Onboarding) }
     CompositionLocalProvider(LocalNavHost provides navigationStack) {
-        val localJson = LocalJson.current
-        if (LocalSourceData.current.value == null) {
-            kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
-                LocalSourceData.current.value = runCatching { localJson.decodeFromString<HashMap<String, SourceData>>(gradeData) }.getOrNullAndThrow()
+        CompositionLocalProvider(LocalGradeColors provides mutableStateOf(kvault?.string(GRADE_COLORS_KEY)?.let { runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default())) {
+            val localJson = LocalJson.current
+            if (LocalSourceData.current.value == null) {
+                kvault?.string(forKey = SOURCE_DATA_KEY)?.let { gradeData ->
+                    LocalSourceData.current.value = runCatching { localJson.decodeFromString<HashMap<String, SourceData>>(gradeData) }.getOrNullAndThrow()
+                }
             }
-        }
-        var currentTheme by remember { mutableStateOf( ThemeVariant.valueOf(kvault?.string("THEME") ?: "Classic")) }
+            var currentTheme by remember { mutableStateOf( ThemeVariant.valueOf(kvault?.string("THEME") ?: "Classic")) }
 
-        ThemeSwitcher(currentTheme) {
-            Scaffold(
-                bottomBar = {
-                    val currentNav by navigationStack.routeState
-                    if (!currentNav.hideNavBar) {
-                        AppBottomBar(
-                            navigationStack.routeState
-                        ) {
-                            navigationStack.clearStack(NavScreen.Home)
-                            if (it != NavScreen.Home) {
-                                navigationStack.navigateTo(it)
+            ThemeSwitcher(currentTheme) {
+                Scaffold(
+                    bottomBar = {
+                        val currentNav by navigationStack.routeState
+                        if (!currentNav.hideNavBar) {
+                            AppBottomBar(
+                                navigationStack.routeState
+                            ) {
+                                navigationStack.clearStack(NavScreen.Home)
+                                if (it != NavScreen.Home) {
+                                    navigationStack.navigateTo(it)
+                                }
                             }
                         }
                     }
-                }
-            ) { paddingValues ->
-                NavigationController(
-                    navigationStack = navigationStack,
-//                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                ) { paddingValues ->
+                    NavigationController(
+                        navigationStack = navigationStack,
+    //                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
 
-                ) {
-                    composable(route = NavScreen.Home) {
-                        HomeScreen()
-                    }
-                    composable(route = NavScreen.Grades) {
-                        GradesScreen()
-                    }
-                    composable(route = NavScreen.Settings) {
-                        SettingsScreen(currentTheme = currentTheme, onThemeChange = {newTheme -> currentTheme = newTheme})
-                    }
-                    composable(route = NavScreen.Onboarding) {
-                        OnboardingScreen()
-                    }
-                    composable(route = NavScreen.More) {
-                        MoreScreen()
-                    }
-                    composable(route = NavScreen.GPA) {
-                        GPAScreen()
-                    }
-                    composable(route = NavScreen.Calculator) {
-                        GradeCalculatorScreen()
-                    }
-                    composable(route = NavScreen.Assignments) {
-                        AssignmentScreen()
-                    }
-                    composable(route = NavScreen.School) {
-                        SchoolScreen()
+                    ) {
+                        composable(route = NavScreen.Home) {
+                            HomeScreen()
+                        }
+                        composable(route = NavScreen.Grades) {
+                            GradesScreen()
+                        }
+                        composable(route = NavScreen.Settings) {
+                            SettingsScreen()
+                        }
+                        composable(route = NavScreen.Onboarding) {
+                            OnboardingScreen()
+                        }
+                        composable(route = NavScreen.More) {
+                            MoreScreen()
+                        }
+                        composable(route = NavScreen.GPA) {
+                            GPAScreen()
+                        }
+                        composable(route = NavScreen.Calculator) {
+                            GradeCalculatorScreen()
+                        }
+                        composable(route = NavScreen.Assignments) {
+                            AssignmentScreen()
+                        }
+                        composable(route = NavScreen.School) {
+                            SchoolScreen()
+                        }
+                        composable(route = NavScreen.Colors) {
+                            ColorsScreen(currentTheme = currentTheme, onThemeChange = {newTheme -> currentTheme = newTheme})
+                        }
                     }
                 }
             }
