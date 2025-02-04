@@ -130,15 +130,15 @@ fun AssignmentScreen() {
             fontSize = 25.sp
         )
 
-        val withoutAssignment = ClassMeta(currentClass!!, currentAssignment!!._id)
+//        val withoutAssignment = ClassMeta(currentClass!!, currentAssignment!!._id)
         val withAssignment = ClassMeta(currentClass!!)
-        val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
+//        val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
 
-        Text(
-            "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}%",
-            modifier = Modifier.padding(20.dp, top = 10.dp),
-            fontSize = 20.sp
-        )
+//        Text(
+//            "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}%",
+//            modifier = Modifier.padding(20.dp, top = 10.dp),
+//            fontSize = 20.sp
+//        )
 
         var sliderVal by remember { mutableStateOf((newestScore?.scorepoints ?: 0.0f) * (currentAssignment?.weight ?: 0.0f)) }
 
@@ -157,14 +157,14 @@ fun AssignmentScreen() {
             modifier = Modifier.padding(horizontal = 20.dp)
         )
 
-        val classGrade = ClassMeta(currentClass!!, currentAssignment!!._id)
-        val newGrade = (classGrade.earnedPoints + sliderVal) / (classGrade.totalPoints + currentAssignment!!.totalpointvalue)
+//        val classGrade = ClassMeta(currentClass!!, currentAssignment!!._id)
+//        val newGrade = (classGrade.earnedPoints + sliderVal) / (classGrade.totalPoints + currentAssignment!!.totalpointvalue)
 
-        Text(
-            "Your grade would be ${"%.2f".sprintf(newGrade * 100.0f)}%",
-            modifier = Modifier.padding(20.dp, top = 20.dp),
-            fontSize = 20.sp
-        )
+//        Text(
+//            "Your grade would be ${"%.2f".sprintf(newGrade * 100.0f)}%",
+//            modifier = Modifier.padding(20.dp, top = 20.dp),
+//            fontSize = 20.sp
+//        )
     }
 
 

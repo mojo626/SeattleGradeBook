@@ -42,10 +42,14 @@ import kotlinx.serialization.json.Json
 import dev.icerock.moko.permissions.PermissionsController
 import kotlinx.coroutines.IO
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 
 
@@ -73,7 +77,7 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
     GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
     Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
-    Assignments(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
+//    Assignments(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
 }
 
 @Composable
@@ -157,9 +161,9 @@ fun App() {
                         composable(route = NavScreen.Calculator) {
                             GradeCalculatorScreen()
                         }
-                        composable(route = NavScreen.Assignments) {
-                            AssignmentScreen()
-                        }
+//                        composable(route = NavScreen.Assignments) {
+//                            AssignmentScreen()
+//                        }
                         composable(route = NavScreen.School) {
                             SchoolScreen()
                         }
@@ -201,10 +205,20 @@ fun getCurrentQuarter(): String {
     } else {
         Pair(-1, 0)
     }
+    val finalDay = LocalDate(date.year+s2Offset, Month.JUNE, 18)
     val q4Start = LocalDate(date.year+s2Offset, Month.APRIL, 9)
     val q3Start = LocalDate(date.year+s2Offset, Month.JANUARY, 29)
     val q2Start = LocalDate(date.year+s1Offset, Month.NOVEMBER, 7)
     val q1Start = LocalDate(date.year+s1Offset, Month.SEPTEMBER, 4)
+    if (date.daysUntil(finalDay) <= 7*3) {
+        return "S2"
+    }
+    if (date.daysUntil(q3Start) <= 7*3) {
+        return "S1"
+    }
+    if (date.daysUntil(q3Start) > -3) {
+        return "S1"
+    }
     return if (date >= q4Start) {
         "Q4"
     } else if (date >= q3Start) {

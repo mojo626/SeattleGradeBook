@@ -107,6 +107,7 @@ fun LoginScreen(done: () -> Unit) {
                 CoroutineScope(Dispatchers.IO).launch {
                     loading = true
                     error = false
+                    username = username.removeSuffix("@seattleschools.org")
                     val quarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
                     val sourceDataRes = platform.gradeSyncManager.getSourceData(username, password, quarter, true)
                     Napier.d("got data: $sourceDataRes")
@@ -145,7 +146,7 @@ fun NotificationsScreen(done: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f)) {
             Column(Modifier.align(Alignment.Center).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Want updates on your grades?", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*1.2f))
+                Text("Want updates on your grades?", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*1.2f), textAlign = TextAlign.Center)
                 Spacer(Modifier.height(25.dp))
                 Row(Modifier.background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(20.dp)).padding(10.dp)) {
                     Image(painterResource(platform.appIcon()), "App Icon", Modifier.clip(platform.iconRounding()).size(75.dp))
@@ -223,8 +224,8 @@ fun NotificationsScreen(done: () -> Unit) {
 }
 
 @Composable
-fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, threshold: Boolean, points: Float, setEvery: (Boolean) -> Unit, setLetter: (Boolean) -> Unit, setThreshold: (Boolean) -> Unit, setPointThreshold: (Float) -> Unit) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, threshold: Boolean, points: Float, setEvery: (Boolean) -> Unit, setLetter: (Boolean) -> Unit, setThreshold: (Boolean) -> Unit, setPointThreshold: (Float) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("When are notifications necessary?")
         FilterChip(onClick = {
             setEvery(!everyAssignment)

@@ -52,6 +52,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Divider
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -86,6 +87,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -138,47 +140,29 @@ fun GradeCalculatorScreen() {
 
     var recompose by remember { mutableStateOf(false) }
 
+    var navHost = LocalNavHost.current
+
     LaunchedEffect(addedAssignments) {
 //        Napier.d("changed addedAssignments: $addedAssignments")
     } //this is the only way that I could find to force a recompose :(
     //all g sometimes you just gotta do that
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.fillMaxWidth()) {
-            val navHost = LocalNavHost.current
+    Column(Modifier.padding(6.dp, 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.fillMaxWidth().padding(6.dp)) {
             Row(Modifier.align(Alignment.CenterStart)) {
-                Spacer(Modifier.width(20.dp))
+                Spacer(Modifier.width(8.dp))
                 val screenSize = getScreenSize()
-                IconButton({ navHost?.popStack(screenSize.width.toFloat()) }) {
-                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
-                }
+                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
+                    CircleShape
+                ).clickable { navHost?.popStack(screenSize.width.toFloat()) })
             }
-            Text("Grade Calculator", fontSize = 30.sp, modifier = Modifier.padding(20.dp).align(Alignment.Center), textAlign = TextAlign.Center)
+
+            Text("Grade Calculator", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
         }
-
         if (selectedClassName != "Select a Class") {
-
-            //this is to generate the list of ChangedAssignments so that the app won't crash
-//            selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
-//                val newestSection =
-//                    assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
-//                val newestScore =
-//                    newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-//                if (changedAssignments.size <= index) {
-//                    changedAssignments += ChangedAssignment(
-//                        totalPointValue = newestSection.totalpointvalue,
-//                        receivedPointvalue = newestScore?.scorepoints?.let { it * newestSection.weight }
-//                            ?: -1.0f,
-//                        hidden = false,
-//                        assignmentId = newestSection._id
-//                    )
-//                }
-//            }
-
             if (currentClass != null) {
-                Row( verticalAlignment = Alignment.CenterVertically ) {
-                    Box(modifier = Modifier.aspectRatio(1f).weight(1f).padding(15.dp)) {
-//                    var currClass = sourceDataState.value?.get(selectedQuarter)?.classes?.first { it.name == selectedClassName }!!
+                Row(Modifier.padding(6.dp, 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
                         ClassCard(
                             currentClass!!,
                             ClassMeta(currentClass!!),
@@ -188,13 +172,10 @@ fun GradeCalculatorScreen() {
 
                     Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "Right arrow", modifier = Modifier.weight(0.3f).size(50.dp))
 
-                    Box(modifier = Modifier.aspectRatio(1f).weight(1f).padding(15.dp)) {
-//                    var currClass = sourceDataState.value?.get(selectedQuarter)?.classes?.first { it.name == selectedClassName }!!
-
+                    Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
                         ClassCard(
                             currentClass!!,
-                            ClassMeta(currentClass!!.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments)),
-//                        ClassMeta(changedAssignments?.let { currClass.copy(assignments_parsed = it) } ?: currClass, ),
+                            ClassMeta(currentClass!!.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments), allowLessThanE = true),
                             false, true,
                         )
                     }
@@ -203,11 +184,9 @@ fun GradeCalculatorScreen() {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row {
-                Box (modifier = Modifier.weight(1f).padding(10.dp).clickable{ expanded = true }.border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp))) {
+                Box (modifier = Modifier.weight(1f).padding(4.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable{ expanded = true }.padding(10.dp)) {
                     Row {
-                        Text(selectedClassName, modifier = Modifier.padding(15.dp), fontSize = 20.sp)
-//                        Spacer(modifier = Modifier.weight(1f))
-//                        Icon(if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = "", modifier = Modifier.padding(10.dp))
+                        Text(selectedClassName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium))
                     }
 
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false })
@@ -228,193 +207,55 @@ fun GradeCalculatorScreen() {
                     }
                 }
                 if (currentClass != null) {
-                    Box (modifier = Modifier.weight(1f).padding(10.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable {
-                            addedAssignments = addedAssignments.toMutableList().apply { add(
-                                Assignment(listOf(
-                                    AssignmentSection(
-                                        duedate = Now().toLocalDateTime(TimeZone.currentSystemDefault()).date.format(LocalDate.Formats.ISO),
-                                        name = "New Assignment",
-                                        _id = Random.nextInt(),
-                                        _name = "New Assignment",
-                                        totalpointvalue = 10.0f,
-                                        iscountedinfinalgrade = true,
-                                        scoretype = "REAL_SCORE",
-                                        sectionsdcid = 0,
-                                        scoreentrypoints = 10.0f,
-                                        assignmentsectionid = 0,
-                                        weight = 1.0f,
-                                        isscorespublish = true,
-                                        isscoringneeded = false,
-                                        _assignmentscores = listOf(AssignmentScore(
-                                            _name = "assignmentscore",
-                                            authoredbyuc = false,
-                                            whenmodified = "",
-                                            studentsdcid = 0,
-                                            ismissing = false,
-                                            isincomplete = false,
-                                            iscollected = false,
-                                            islate = false,
-                                            isabsent = false,
-                                            isexempt = false,
-                                            scorepercent = 1.0f,
-                                            scorelettergrade = "A",
-                                            actualscoreentered = "10.0",
-                                            actualscorekind = "REAL_SCORE",
-                                            scoreentrydate = Now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Formats.ISO),
-                                            scorepoints = 10.0f,
-                                        ))
-                                )
-                                ))
-                            ) }
-                        }.border(2.dp, SolidColor(MaterialTheme.colorScheme.secondary), shape = RoundedCornerShape(15.dp)), horizontalArrangement = Arrangement.End) {
-                            Text("+ Assignment", modifier = Modifier.padding(15.dp), fontSize = 20.sp)
-                        }
+                    Row(modifier = Modifier.weight(1f).padding(4.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
+                        addedAssignments = addedAssignments.toMutableList().apply { add(
+                            Assignment(listOf(
+                                AssignmentSection(
+                                    duedate = Now().toLocalDateTime(TimeZone.currentSystemDefault()).date.format(LocalDate.Formats.ISO),
+                                    name = "New Assignment",
+                                    _id = Random.nextInt(),
+                                    _name = "New Assignment",
+                                    totalpointvalue = 10.0f,
+                                    iscountedinfinalgrade = true,
+                                    scoretype = "REAL_SCORE",
+                                    sectionsdcid = 0,
+                                    scoreentrypoints = 10.0f,
+                                    assignmentsectionid = 0,
+                                    weight = 1.0f,
+                                    isscorespublish = true,
+                                    isscoringneeded = false,
+                                    _assignmentscores = listOf(AssignmentScore(
+                                        _name = "assignmentscore",
+                                        authoredbyuc = false,
+                                        whenmodified = "",
+                                        studentsdcid = 0,
+                                        ismissing = false,
+                                        isincomplete = false,
+                                        iscollected = false,
+                                        islate = false,
+                                        isabsent = false,
+                                        isexempt = false,
+                                        scorepercent = 1.0f,
+                                        scorelettergrade = "A",
+                                        actualscoreentered = "10.0",
+                                        actualscorekind = "REAL_SCORE",
+                                        scoreentrydate = Now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Formats.ISO),
+                                        scorepoints = 10.0f,
+                                    ))
+                            )
+                            ))
+                        ) }
+                    }.padding(10.dp), horizontalArrangement = Arrangement.End) {
+                        Text("+ Assignment", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium))
                     }
                 }
             }
-//            if (selectedClassName != "Select a Class") {
-//                newAssignments.forEachIndexed { index, assignment ->
-//                    Box(Modifier.padding(5.dp)) {
-//                        GradeCalculatorCard(
-//                            onRemove = {
-//                                newAssignments = newAssignments.filterIndexed { i, _ -> i != index }
-//                                newAssignmentsChanged = !newAssignmentsChanged
-//                            },
-//                            onReceivedValueChange = {
-//                                if (it.length in 1..4) {
-//                                    newAssignments = (newAssignments.toMutableList().apply{
-//                                        this[index] = Pair(it.toFloat(), this[index].second)
-//                                    })
-//                                    true
-//                                } else if (it.isEmpty()) {
-//                                    true
-//                                } else {
-//                                    false
-//                                }
-//                            },
-//                            onTotalValueChanged = {
-//                                if (it.length in 1..4) {
-//                                    newAssignments = (newAssignments.toMutableList().apply{
-//                                        this[index] = Pair(this[index].first, it.toFloat())
-//                                    })
-//                                    true
-//                                } else if (it.isEmpty()) {
-//                                    true
-//                                } else {
-//                                    false
-//                                }
-//                            },
-//                            totalPointvalue = assignment.second,
-//                            receivedPointvalue = assignment.first,
-//                            onSliderChanged = { it, isDragging ->
-//                                if (isDragging)
-//                                {
-//                                    newAssignments = (newAssignments.toMutableList().apply{
-//                                        this[index] = Pair(round(this[index].second * it*10.0f)/10.0f, this[index].second)
-//                                    })
-//                                    newAssignmentsChanged = !newAssignmentsChanged
-//                                }
-//                            },
-//                            newAssignmentsChanged = newAssignmentsChanged
-//                        )
-//                    }
-//                }
-//
-//                OutlinedCard (
-//                    colors = CardDefaults.cardColors(
-//                        containerColor = MaterialTheme.colorScheme.surface,
-//                    ),
-//                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-//                    onClick = { newAssignments = newAssignments + Pair(0f, 0f) },
-//                    modifier = Modifier.padding(20.dp).fillMaxWidth()
-//                ) {
-//                    Text("+ Add Assignment", modifier = Modifier.padding(15.dp), fontSize = 20.sp)
-//                }
-//
-//
-//                var currentAssignmentsOpened by remember { mutableStateOf(false) }
-//
-//                OutlinedCard(
-//                    colors = CardDefaults.cardColors(
-//                        containerColor = MaterialTheme.colorScheme.surface,
-//                    ),
-//                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-//                    onClick = { currentAssignmentsOpened = !currentAssignmentsOpened },
-//                    modifier = Modifier.padding(20.dp).fillMaxWidth()
-//                ) {
-//                    Row( verticalAlignment = Alignment.CenterVertically ) {
-//                        Text("Current Assignments", modifier = Modifier.padding(15.dp), fontSize = 20.sp)
-//
-//                        Spacer( modifier = Modifier.weight(1f) )
-//
-//                        Icon(
-//                            if (currentAssignmentsOpened) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-//                            contentDescription = "current assignments collapse arrow",
-//                            modifier = Modifier.padding(10.dp)
-//                        )
-//                    }
-//                }
-//
-//                AnimatedVisibility( currentAssignmentsOpened ) {
-//                    Column () {
-//                        selectedClass!!.assignments_parsed.forEachIndexed { index, assignment ->
-//
-//
-//                            val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }!!
-//                            val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-//
-//
-//                            if (changedAssignments[index].receivedPointvalue == -1.0f) {
-//                                return@forEachIndexed
-//                            }
-//
-//                            var newAssignmentsChanged by remember { mutableStateOf(false) }
-//                            Box(Modifier.padding(15.dp, 5.dp)) {
-//                                GradeCalculatorCard(
-//                                    assignmentName = newestSection.name,
-//                                    isNewAssignment = false,
-//                                    totalPointvalue = changedAssignments[index].totalPointValue,
-//                                    receivedPointvalue = changedAssignments[index].receivedPointvalue,
-//                                    onRemove = {
-//
-//                                        changedAssignments[index].hidden = !changedAssignments[index].hidden
-//                                        recompose = !recompose
-//
-//                                    },
-//                                    onReceivedValueChange = {
-//                                        changedAssignments[index].receivedPointvalue = if (it.isEmpty()) 0.0f else it.toFloat()
-//                                        recompose = !recompose
-//                                        true
-//                                    },
-//                                    onTotalValueChanged = {
-//                                        changedAssignments[index].totalPointValue = it.toFloat()
-//                                        recompose = !recompose
-//                                        true
-//                                    },
-//                                    onSliderChanged = {it, isDragging ->
-//                                        if (isDragging) {
-//                                            changedAssignments[index].receivedPointvalue = round(changedAssignments[index].totalPointValue * it*10.0f)/10.0f
-//                                            recompose = !recompose
-//                                            newAssignmentsChanged = !newAssignmentsChanged
-//                                        }
-//                                    },
-//                                    newAssignmentsChanged = newAssignmentsChanged,
-//                                    shown = !changedAssignments[index].hidden
-//                                )
-//                                NewGradeCalculatorCard(newestSection, newestScore, updateAssignment = {
-//
-//                                })
-//                            }
-//                        }
-//                    }
-//                }
-//            }
+
             addedAssignments.forEachIndexed { i, assignment ->
                 val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
                 if (newestSection == null) return@forEachIndexed
                 val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-                Box(Modifier.padding(5.dp)) {
+                Box(Modifier.padding(0.dp, 5.dp)) {
                     NewGradeCalculatorCard(newestSection, newestScore, updateAssignment = { (newSection, newScore) ->
                         addedAssignments = addedAssignments.toMutableList().apply { set(i,
                             Assignment(listOf(newScore?.let { newSection.copy(_assignmentscores = listOf(newScore)) } ?: newSection))
@@ -434,7 +275,7 @@ fun GradeCalculatorScreen() {
                     val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
                     if (newestSection == null) return@forEachIndexed
                     val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
-                    Box(Modifier.padding(5.dp)) {
+                    Box(Modifier.padding(0.dp, 5.dp)) {
                         key(newestSection._id) {
                             NewGradeCalculatorCard(newestSection, newestScore, updateAssignment = {
                                 val now = Now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -612,7 +453,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
     val grade = score?.scorelettergrade?.first()?.toString()
     val themeModifier = darkModeColorModifier()
     val gradeColors by LocalGradeColors.current
-    val containerColor = if (section.iscountedinfinalgrade) {
+    val containerColor = if (section.iscountedinfinalgrade && score?.isexempt != true) {
         grade?.let { gradeColors.gradeColor(it)?.let { it*themeModifier } } ?: CardDefaults.cardColors().containerColor
     } else {
         CardDefaults.cardColors().containerColor
@@ -636,10 +477,15 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
     Card(colors = colors, modifier = iconModifier, onClick = { expanded = !expanded }) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
-            Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
-            Text(section.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleMedium.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleMedium)
+            Text(section.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            var pointsString by remember { mutableStateOf(score?.scorepoints?.toString() ?: "") }
+            if (pointsString.toFloatOrNull() != score?.scorepoints) {
+                pointsString = score?.scorepoints?.toString() ?: ""
+            }
             CustomTextField(
                 onValueChange = {
+                    pointsString = it
                     val newPoints = it.toFloatOrNull() ?: return@CustomTextField true
                     Napier.d("score: $score")
                     val percent = if (section.totalpointvalue != 0f) newPoints/section.totalpointvalue else Float.NaN
@@ -647,11 +493,11 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                     updateAssignment(Pair(section, changedScore))
                     return@CustomTextField true
                 },
-                fontSize = MaterialTheme.typography.titleLarge.fontSize,
-                value = score?.scorepoints?.toString() ?: "",
+                fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                value = pointsString,
                 modifier = Modifier.align(Alignment.CenterVertically),
             )
-            Text(" / ", style = MaterialTheme.typography.titleLarge)
+            Text(" / ", style = MaterialTheme.typography.titleMedium)
             CustomTextField(
                 onValueChange = {
                     val newTotalPoints = it.toFloatOrNull() ?: return@CustomTextField true
@@ -661,14 +507,14 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                     updateAssignment(Pair(changedSection, changedScore))
                     return@CustomTextField true
                 },
-                fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                fontSize = MaterialTheme.typography.titleMedium.fontSize,
                 value = section.totalpointvalue.toString(),
                 modifier = Modifier.align(Alignment.CenterVertically),
             )
 
             score?.scorepoints?.let {
                 val percent = if (section.totalpointvalue != 0f) it * section.weight/section.totalpointvalue else Float.NaN
-                Text("(${"%.2f".sprintf(percent*100f)}%)", style = MaterialTheme.typography.titleLarge)
+                Text("(${"%.2f".sprintf(percent*100f)}%)", style = MaterialTheme.typography.titleMedium)
             }
         }
         AnimatedVisibility(expanded) { Column {
@@ -696,11 +542,11 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                 }
             }
 
-            Row(Modifier.padding(20.dp, top = 20.dp, bottom = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(10.dp, 0.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Flags",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = MaterialTheme.typography.titleLarge.fontSize,
                     textAlign = TextAlign.Center
                 )
                 IconButton(onClick = {
@@ -709,7 +555,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                     Icon(Icons.Outlined.Info, "Flag info")
                 }
             }
-            Row(Modifier.padding(20.dp, bottom = 0.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row {
                     score?.let {
                         IconButton(onClick = {
@@ -752,7 +598,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                     IconButton(onClick = {
                         val changedSection = section.copy(iscountedinfinalgrade = !section.iscountedinfinalgrade)
                         updateAssignment(Pair(changedSection, score))
-                    }, colors = if (!section.iscountedinfinalgrade) IconButtonDefaults.iconButtonColors(containerColor = gradeColors.DColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface) else IconButtonDefaults.iconButtonColors(containerColor = CardDefaults.cardColors().containerColor)) {
+                    }, colors = if (!section.iscountedinfinalgrade && score?.isexempt != true) IconButtonDefaults.iconButtonColors(containerColor = gradeColors.DColor, contentColor = MaterialTheme.colorScheme.inverseOnSurface) else IconButtonDefaults.iconButtonColors(containerColor = CardDefaults.cardColors().containerColor)) {
                         Icon(Icons.Rounded.Star, "Excluded")
                     }
                 }

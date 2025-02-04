@@ -41,6 +41,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.filled.Chair
 import androidx.compose.material.icons.filled.Check
@@ -111,7 +112,7 @@ fun GradesScreen() {
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(6.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(20.dp))
@@ -130,7 +131,7 @@ fun GradesScreen() {
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(currentClass?.teacher_name ?: "Contact Teacher", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Outlined.OpenInNew, "Open teacher contact", modifier = Modifier.size(40.dp).clickable {
                             kotlin.runCatching {
@@ -140,15 +141,15 @@ fun GradesScreen() {
                     }
                 }
                 val screenSize = getScreenSize()
-                Box(Modifier.background(MaterialTheme.colorScheme.primaryContainer, CardDefaults.shape).padding(10.dp).fillMaxWidth().clickable {
+                Box(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp)).padding(10.dp).fillMaxWidth().clickable {
                     navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
                 }) {
-                    Text("Grade Calculator", style = MaterialTheme.typography.titleLarge)
+                    Text("Grade Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
                 }
             }
         }
         var showPercent by remember { mutableStateOf(true) }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(5.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(12.dp, 5.dp)) {
             Text("Assignments", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             Switch(
                 checked = showPercent,
@@ -173,7 +174,7 @@ fun GradesScreen() {
 
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach { assignment ->
-                Box(Modifier.padding(5.dp)) {
+                Box(Modifier.padding(0.dp, 5.dp)) {
                     AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {
                         val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
                         val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
@@ -224,9 +225,14 @@ fun GradesScreen() {
                     fontSize = 25.sp
                 )
 
-                val withoutAssignment = ClassMeta(currentClass!!, newestSection._id)
+                val withoutAssignment = ClassMeta(currentClass!!.copy(assignments_parsed = currentClass!!.assignments_parsed.filter { !it._assignmentsections.any { it._id == newestSection._id } }))
                 val withAssignment = newestScore?.scorepoints?.let {
-                    ClassMeta(currentClass!!, newestSection, newestScore)
+                    ClassMeta(currentClass!!.copy(assignments_parsed = currentClass!!.assignments_parsed.map {
+                        if (it._assignmentsections.any { it._id == newestSection._id })  {
+                            return@map it.copy(_assignmentsections = listOf(newestSection.copy(_assignmentscores = listOf(newestScore))))
+                        }
+                        return@map it
+                    }), allowLessThanE = true)
                 } ?: withoutAssignment
                 val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
 
@@ -334,7 +340,7 @@ fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, onClick: (
 fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?, showOutline: Boolean = true) {
     val themeModifier = darkModeColorModifier()
     val gradeColors by LocalGradeColors.current
-    val colors = if (section.iscountedinfinalgrade) {
+    val colors = if (section.iscountedinfinalgrade && score?.isexempt != true) {
         score?.scorelettergrade?.firstOrNull()?.let {
             gradeColors.gradeColor(it.toString())?.let {
                 CardDefaults.cardColors(
@@ -365,15 +371,15 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
     Card(modifier = Modifier.then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier).then(iconModifier), colors = colors) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
-            Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleLarge.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleLarge)
-            Text(section.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleMedium.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleMedium)
+            Text(section.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 when (showPercent) {
                     ScoreDisplay.Percent -> score?.scorepercent?.let {"${"%.2f".sprintf(it)}%"} ?: "-"
                     ScoreDisplay.Points -> score?.scorepoints?.let { "${it * section.weight} / ${section.totalpointvalue}" } ?: "-"
                     ScoreDisplay.Both -> score?.scorepoints?.let { "${it * section.weight} / ${section.totalpointvalue} (${"%.2f".sprintf((it * section.weight / section.totalpointvalue)*100f)}%)" } ?: "-"
                 },
-                style = MaterialTheme.typography.titleLarge)
+                style = MaterialTheme.typography.titleMedium)
         }
 
     }

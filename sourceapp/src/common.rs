@@ -27,6 +27,7 @@ struct Class {
     teacher_name: String,
     teacher_contact: String,
     reported_grade: Option<String>,
+    reported_score: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -146,10 +147,12 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
         }
         let reported_grade = score_a_body_regex.find(score_a.as_str()).ok().flatten().map(|score_a_body| {
             let mut reported_grade = &score_a_body.as_str()[1..];
+            let mut reported_score = "";
             if let Some(br_i) = reported_grade.find("<br>") {
+                reported_score = &reported_grade[br_i+4..];
                 reported_grade = &reported_grade[..br_i];
             }
-            reported_grade.to_string()
+            (reported_grade.to_string(), reported_score.to_string())
         });
         class_frns.push((full_score_url.to_string(), class_frn.to_string(), store_code.to_string(), reported_grade));
     }
@@ -157,7 +160,7 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
     println!("{teachers:?}");
 
     let assignments_futures = class_frns.into_iter().map(|(full_score_url, class_frn, store_code, reported_grade)| {
-        get_class(full_score_url, class_frn, store_code, reported_grade, &client, quarter, teachers.clone())
+        get_class(full_score_url, class_frn, store_code, reported_grade.clone().map(|it| it.0), reported_grade.map(|it| it.1), &client, quarter, teachers.clone())
     });
 
     let assignments = futures::future::try_join_all(assignments_futures).await?.into_iter().flatten().collect();
@@ -175,7 +178,7 @@ pub async fn get_source_data(username: &str, password: &str, download_path: &str
     Ok(serde_json::to_string_pretty(&source_data)?)
 }
 
-async fn get_class(full_score_url: String, class_frn: String, store_code: String, reported_grade: Option<String>, client: &Client, quarter: &str, teachers: HashMap<String, String>) -> Result<Option<Class>, SourceError> {
+async fn get_class(full_score_url: String, class_frn: String, store_code: String, reported_grade: Option<String>, reported_score: Option<String>, client: &Client, quarter: &str, teachers: HashMap<String, String>) -> Result<Option<Class>, SourceError> {
     let data_ng_regex: Regex = Regex::new("data-ng-init=\"[^\"]*")?;
     let student_frn_regex: Regex = Regex::new("studentFRN = '[^']*")?;
     let section_id_regex: Regex = Regex::new("data-sectionid=\"[^\"]*")?;
@@ -224,6 +227,7 @@ async fn get_class(full_score_url: String, class_frn: String, store_code: String
         teacher_contact: teachers.get(&teacher_name).cloned().unwrap_or_default(),
         teacher_name,
         reported_grade,
+        reported_score,
     }))
 }
 

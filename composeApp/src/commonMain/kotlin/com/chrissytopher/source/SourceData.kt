@@ -29,6 +29,7 @@ data class Class(
     var teacher_name: String,
     var teacher_contact: String,
     var reported_grade: String? = null,
+    var reported_score: String? = null,
 ) {
     fun totalSections(): Int {
         return assignments_parsed.sumOf { it._assignmentsections.size }
@@ -90,28 +91,30 @@ data class PastClass (
     var grade: String,
 )
 
-class ClassMeta {
+class ClassMeta(classData: Class, allowLessThanE: Boolean = false) {
     var totalPoints: Float = 0f
     var earnedPoints: Float = 0f
     var finalScore: Float? = null
     var grade: String? = null
 
-    constructor(classData : Class) {
+    init {
         classData.assignments_parsed.forEach { assignment ->
             assignment._assignmentsections.forEach { section ->
                 if (!section.iscountedinfinalgrade) return@forEach
                 if (section._assignmentscores.isEmpty()) return@forEach
                 val possiblePoints = section.totalpointvalue
-                var newestScore = section._assignmentscores.minByOrNull {
+                val newestScore = section._assignmentscores.minByOrNull {
                     LocalDateTime.parse(it.scoreentrydate)
-                }?.scorepoints
-                
-                if (newestScore == null) return@forEach
-                newestScore *= section.weight
-                if (newestScore < possiblePoints / 2f) {
-                    newestScore = possiblePoints / 2f
                 }
-                earnedPoints += newestScore
+
+                if (newestScore?.scorepoints == null) return@forEach
+                if (newestScore.isexempt) return@forEach
+                var newestScorePoints = newestScore.scorepoints!!
+                newestScorePoints *= section.weight
+                if (newestScorePoints < possiblePoints / 2f && !allowLessThanE) {
+                    newestScorePoints = possiblePoints / 2f
+                }
+                earnedPoints += newestScorePoints
                 totalPoints += possiblePoints
             }
         }
@@ -143,150 +146,151 @@ class ClassMeta {
         }
     }
     
+//
+//    //constructor for adding new assignments to see new grade, score is list of pairs that are <points earned, points possible>
+//    constructor(classData : Class, newScores : List<Pair<Float, Float>>, changedAssignments : List<ChangedAssignment>) {
+//        classData.assignments_parsed.forEachIndexed { index, assignment ->
+//            if (changedAssignments.getOrNull(index) == null) {
+//                //@Ben what is it supposed to do in this case
+//                return@forEachIndexed
+//            }
+//            if (changedAssignments[index].hidden) {
+//                return@forEachIndexed
+//            }
+//            assignment._assignmentsections.forEach {section ->
+//
+//                if (!section.iscountedinfinalgrade) return@forEach
+//                if (section._assignmentscores.isEmpty()) return@forEach
+//                if (changedAssignments.getOrNull(index)?.receivedPointvalue == -1.0f) return@forEach
+//                val possiblePoints = changedAssignments.getOrNull(index)?.totalPointValue ?: return@forEach
+//                val newestScore = changedAssignments.getOrNull(index)
+//                var newestScorePoints = newestScore?.receivedPointvalue ?: return@forEach
+//
+//                if (newestScorePoints < possiblePoints / 2f) {
+//                    newestScorePoints = possiblePoints / 2f
+//                }
+//                earnedPoints += newestScorePoints
+//                totalPoints += possiblePoints
+//            }
+//        }
+//
+//        newScores.forEach { score ->
+//            earnedPoints += score.first
+//            totalPoints += score.second
+//        }
+//
+//        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
+//        finalScore?.roundToInt()?.let { roundedScore ->
+//            grade = if (roundedScore > 92) {
+//                "A"
+//            } else if (roundedScore > 89) {
+//                "A-"
+//            } else if (roundedScore > 86) {
+//                "B+"
+//            } else if (roundedScore > 82) {
+//                "B"
+//            } else if (roundedScore > 79) {
+//                "B-"
+//            } else if (roundedScore > 76) {
+//                "C+"
+//            } else if (roundedScore > 72) {
+//                "C"
+//            } else if (roundedScore > 69) {
+//                "C-"
+//            } else if (roundedScore > 66) {
+//                "D+"
+//            } else if (roundedScore > 64) {
+//                "D"
+//            } else {
+//                "E"
+//            }
+//        }
+//    }
 
-    //constructor for adding new assignments to see new grade, score is list of pairs that are <points earned, points possible>
-    constructor(classData : Class, newScores : List<Pair<Float, Float>>, changedAssignments : List<ChangedAssignment>) {
-        classData.assignments_parsed.forEachIndexed { index, assignment ->
-            if (changedAssignments.getOrNull(index) == null) {
-                //@Ben what is it supposed to do in this case
-                return@forEachIndexed
-            }
-            if (changedAssignments[index].hidden) {
-                return@forEachIndexed
-            }
-            assignment._assignmentsections.forEach {section ->
-
-                if (!section.iscountedinfinalgrade) return@forEach
-                if (section._assignmentscores.isEmpty()) return@forEach
-                if (changedAssignments[index].receivedPointvalue == -1.0f) return@forEach
-                val possiblePoints = changedAssignments[index].totalPointValue
-                var newestScore = changedAssignments[index].receivedPointvalue
-
-                if (newestScore < possiblePoints / 2f) {
-                    newestScore = possiblePoints / 2f
-                }
-                earnedPoints += newestScore
-                totalPoints += possiblePoints
-            }
-        }
-
-        newScores.forEach { score ->
-            earnedPoints += score.first
-            totalPoints += score.second
-        }
-
-        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
-        finalScore?.roundToInt()?.let { roundedScore ->
-            grade = if (roundedScore > 92) {
-                "A"
-            } else if (roundedScore > 89) {
-                "A-"
-            } else if (roundedScore > 86) {
-                "B+"
-            } else if (roundedScore > 82) {
-                "B"
-            } else if (roundedScore > 79) {
-                "B-"
-            } else if (roundedScore > 76) {
-                "C+"
-            } else if (roundedScore > 72) {
-                "C"
-            } else if (roundedScore > 69) {
-                "C-"
-            } else if (roundedScore > 66) {
-                "D+"
-            } else if (roundedScore > 64) {
-                "D"
-            } else {
-                "E"
-            }
-        }
-    }
-
-    //Constructor to get grade without certian assignment
-    constructor(classData : Class, withoutScore : Int) {
-        classData.assignments_parsed.forEach { assignment ->
-            assignment._assignmentsections.forEach { section ->
-                if (!section.iscountedinfinalgrade) return@forEach
-                if (section._assignmentscores.isEmpty()) return@forEach
-                if (section._id == withoutScore) return@forEach
-                val possiblePoints = section.totalpointvalue
-                var newestScore = section._assignmentscores.minByOrNull {
-                    LocalDateTime.parse(it.scoreentrydate)
-                }?.scorepoints
-
-                if (newestScore == null) return@forEach
-                newestScore *= section.weight
-                if (newestScore < possiblePoints / 2f) {
-                    newestScore = possiblePoints / 2f
-                }
-                earnedPoints += newestScore
-                totalPoints += possiblePoints
-            }
-        }
-
-
-        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
-        finalScore?.roundToInt()?.let { roundedScore ->
-            grade = if (roundedScore > 92) {
-                "A"
-            } else if (roundedScore > 89) {
-                "A-"
-            } else if (roundedScore > 86) {
-                "B+"
-            } else if (roundedScore > 82) {
-                "B"
-            } else if (roundedScore > 79) {
-                "B-"
-            } else if (roundedScore > 76) {
-                "C+"
-            } else if (roundedScore > 72) {
-                "C"
-            } else if (roundedScore > 69) {
-                "C-"
-            } else if (roundedScore > 66) {
-                "D+"
-            } else if (roundedScore > 64) {
-                "D"
-            } else {
-                "E"
-            }
-        }
-    }
-
-    constructor(classData : Class, changedAssignment: AssignmentSection, changedScore: AssignmentScore) {
-        classData.assignments_parsed.forEach { assignment ->
-            assignment._assignmentsections.forEach { it ->
-                var section = it
-                if (section._id == changedAssignment._id) {
-                    section = changedAssignment
-                }
-                if (!section.iscountedinfinalgrade) return@forEach
-                if (section._assignmentscores.isEmpty() && section._id != changedAssignment._id) return@forEach
-
-                val possiblePoints = section.totalpointvalue
-                var newestScore = if (section._id == changedAssignment._id) {
-                    changedScore.scorepoints
-                } else {
-                    section._assignmentscores.minByOrNull {
-                        LocalDateTime.parse(it.scoreentrydate)
-                    }?.scorepoints
-                }
-
-                if (newestScore == null) return@forEach
-                newestScore *= section.weight
-                if (newestScore < possiblePoints / 2f) {
-                    newestScore = possiblePoints / 2f
-                }
-                earnedPoints += newestScore
-                totalPoints += possiblePoints
-            }
-        }
-
-
-        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
-        finalScore?.let { gradeForScore(it) }
-    }
+//    //Constructor to get grade without certian assignment
+//    constructor(classData : Class, withoutScore : Int) {
+//        classData.assignments_parsed.forEach { assignment ->
+//            assignment._assignmentsections.forEach { section ->
+//                if (!section.iscountedinfinalgrade) return@forEach
+//                if (section._assignmentscores.isEmpty()) return@forEach
+//                if (section._id == withoutScore) return@forEach
+//                val possiblePoints = section.totalpointvalue
+//                var newestScore = section._assignmentscores.minByOrNull {
+//                    LocalDateTime.parse(it.scoreentrydate)
+//                }?.scorepoints
+//
+//                if (newestScore == null) return@forEach
+//                newestScore *= section.weight
+//                if (newestScore < possiblePoints / 2f) {
+//                    newestScore = possiblePoints / 2f
+//                }
+//                earnedPoints += newestScore
+//                totalPoints += possiblePoints
+//            }
+//        }
+//
+//
+//        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
+//        finalScore?.roundToInt()?.let { roundedScore ->
+//            grade = if (roundedScore > 92) {
+//                "A"
+//            } else if (roundedScore > 89) {
+//                "A-"
+//            } else if (roundedScore > 86) {
+//                "B+"
+//            } else if (roundedScore > 82) {
+//                "B"
+//            } else if (roundedScore > 79) {
+//                "B-"
+//            } else if (roundedScore > 76) {
+//                "C+"
+//            } else if (roundedScore > 72) {
+//                "C"
+//            } else if (roundedScore > 69) {
+//                "C-"
+//            } else if (roundedScore > 66) {
+//                "D+"
+//            } else if (roundedScore > 64) {
+//                "D"
+//            } else {
+//                "E"
+//            }
+//        }
+//    }
+//
+//    constructor(classData : Class, changedAssignment: AssignmentSection, changedScore: AssignmentScore) {
+//        classData.assignments_parsed.forEach { assignment ->
+//            assignment._assignmentsections.forEach { it ->
+//                var section = it
+//                if (section._id == changedAssignment._id) {
+//                    section = changedAssignment
+//                }
+//                if (!section.iscountedinfinalgrade) return@forEach
+//                if (section._assignmentscores.isEmpty() && section._id != changedAssignment._id) return@forEach
+//
+//                val possiblePoints = section.totalpointvalue
+//                var newestScore = if (section._id == changedAssignment._id) {
+//                    changedScore.scorepoints
+//                } else {
+//                    section._assignmentscores.minByOrNull {
+//                        LocalDateTime.parse(it.scoreentrydate)
+//                    }?.scorepoints
+//                }
+//
+//                if (newestScore == null) return@forEach
+//                newestScore *= section.weight
+//                if (newestScore < possiblePoints / 2f) {
+//                    newestScore = possiblePoints / 2f
+//                }
+//                earnedPoints += newestScore
+//                totalPoints += possiblePoints
+//            }
+//        }
+//
+//
+//        finalScore = runCatching { (earnedPoints/totalPoints * 1000f).roundToInt().toFloat() / 10f }.getOrNull()
+//        finalScore?.let { gradeForScore(it) }
+//    }
 }
 
 fun gradeForScore(score: Float): String {

@@ -1,6 +1,7 @@
 package com.chrissytopher.source
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -39,11 +41,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.round
+import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -51,7 +60,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.encodeToString
 import net.sergeych.sprintf.sprintf
 import kotlin.math.roundToInt
 
@@ -120,15 +128,25 @@ fun HomeScreen() {
                 .fillMaxSize()
                 .pullRefresh(pullState)
         ) {
-            Row(Modifier.fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
-                AsyncImage(
-                    pfpImage,
-                    "Content",
-                    Modifier.size(50.dp).clip(CircleShape),
-                    alignment = Alignment.Center,
-                    contentScale = ContentScale.FillWidth,
-                )
+            Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                var bigPfp by remember { mutableStateOf(false) }
+                var normalPfpSize by remember { mutableStateOf(IntSize.Zero) }
+                val screenSize = getScreenSize()
+                val pfpBigWidth = 0.9f
+                val bigScalar = (screenSize.width.toFloat()*pfpBigWidth)/normalPfpSize.width.toFloat()
+                val pfpScale by animateFloatAsState(if (bigPfp) bigScalar else 1f)
+                val pfpPosition by animateOffsetAsState(if (bigPfp) Offset(screenSize.width.toFloat()*pfpBigWidth/2f, screenSize.height.toFloat()*pfpBigWidth/2f) else Offset(0f, 0f))
+                Box(Modifier.zIndex(2f).onSizeChanged { if (!bigPfp) normalPfpSize = it }.offset { pfpPosition.round() }.scale(pfpScale)) {
+                    val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
+                    AsyncImage(
+                        pfpImage,
+                        "Content",
+                        Modifier.size(50.dp).clip(CircleShape).clickable { bigPfp = !bigPfp },
+                        filterQuality = FilterQuality.High,
+                        alignment = Alignment.Center,
+                        contentScale = ContentScale.FillWidth,
+                    )
+                }
                 var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
                 var showMiddleName by ShowMiddleName.current
                 if (showMiddleName == null) {
@@ -165,7 +183,12 @@ fun HomeScreen() {
                 }
             }
 
-            val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }
+            val classNames = sourceData?.get(selectedQuarter)?.classes?.map { it.name }
+            val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }?.filter { classNames?.contains(it) == true }
+            //converting to a hashmap saves looping through the list for each of the ui cards below
+            var updateClassesMap = hashMapOf(
+                *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
+            )
             val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
             Row(Modifier.alpha(selectionDisabledAlpha)) {
                 for (quarter in quarters) {
@@ -196,7 +219,7 @@ fun HomeScreen() {
             }
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
-                val (filteredClasses, filteredClassMetas) = if (hideMentorship.value) {
+                val (filteredClasses, filteredClassMetas) = if (hideMentorship.value && updateClassesMap[MENTORSHIP_NAME] != true) {
                     val mentorshipIndex = sourceData?.get(selectedQuarter)?.classes?.indexOfFirst {
                         it.name == MENTORSHIP_NAME
                     }
@@ -204,10 +227,6 @@ fun HomeScreen() {
                 } else {
                     Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
-                //converting to a hashmap saves looping through the list for each of the ui cards below
-                var updateClassesMap = hashMapOf(
-                    *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
-                )
 //                updateClasses?.forEach { updateClassesMap[it] = true }
                 if (getCurrentQuarter() != (kvault?.string(QUARTER_KEY) ?: getCurrentQuarter())) {
                     updateClassesMap = hashMapOf()
@@ -222,7 +241,7 @@ fun HomeScreen() {
                             val screenSize = getScreenSize()
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
-                                    ClassCard(it, meta, updateClassesMap[it.name] ?: false, false) {
+                                    ClassCard(it, meta, updateClassesMap[it.name] ?: false, false, preferReported = kvault?.bool(PREFER_REPORTED_KEY) ?: false) {
                                         classForGradePage.value = it
                                         navHost?.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
@@ -258,21 +277,31 @@ fun HomeScreen() {
 }
 
 @Composable
-fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, onClick: (() -> Unit)? = null) {
+fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, preferReported: Boolean = false, onClick: (() -> Unit)? = null) {
     val reportedGrade = when (`class`.reported_grade) {
         "[ i ]" -> null
         else -> `class`.reported_grade
     }
+    val grade = if (preferReported) {
+        null
+    } else {
+        meta?.grade
+    }
     val inner = @Composable {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(meta?.grade ?: reportedGrade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
-                val score = if (showDecimal) {
-                    meta?.finalScore?.let { "%.2f".sprintf(it) }
+
+                Text(grade ?: reportedGrade ?: "-", style = MaterialTheme.typography.titleLarge.copy(fontSize = MaterialTheme.typography.titleLarge.fontSize*2f, fontWeight = FontWeight.SemiBold))
+                val score = if (preferReported) {
+                    null
                 } else {
-                    meta?.finalScore?.roundToInt()?.toString()
+                    if (showDecimal) {
+                        meta?.finalScore?.let { "%.2f".sprintf(it) }
+                    } else {
+                        meta?.finalScore?.roundToInt()?.toString()
+                    }
                 }
-                Text(score ?: " ", style = MaterialTheme.typography.titleLarge)
+                Text(score ?: `class`.reported_score ?: " ", style = MaterialTheme.typography.titleLarge)
                 Text(`class`.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             }
         }
@@ -280,7 +309,7 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
     val gradeColors by LocalGradeColors.current
-    val colors = (meta?.grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
+    val colors = (grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
         if (updates) {
             Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)

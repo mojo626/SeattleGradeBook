@@ -31,6 +31,7 @@ import net.sergeych.sprintf.*
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -120,20 +121,17 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
         }
     } ?: CardDefaults.cardColors()
 
-    val border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary)
-    val modifier = Modifier.padding(10.dp)
+    val modifier = Modifier.padding(5.dp)
     if (onClick == null) {
-        OutlinedCard(
+        Card(
             colors = colors,
-            border = border,
             modifier = modifier,
         ) {
             inner()
         }
     } else {
-        OutlinedCard(
+        Card(
             colors = colors,
-            border = border,
             modifier = modifier,
             onClick = onClick
         ) {
