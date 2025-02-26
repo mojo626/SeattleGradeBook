@@ -32,6 +32,8 @@ abstract class Platform {
     @Composable
     abstract fun BackHandler(enabled: Boolean, onBack: () -> Unit)
 
+    abstract fun shareText(text: String)
+
     class GradeSyncManager(private val platform: Platform) {
         private var deferredResult: Deferred<Result<SourceData>>? = null
 

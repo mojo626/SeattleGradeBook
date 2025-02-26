@@ -27,18 +27,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun MoreScreen() {
-    val kvault = LocalKVault.current
-    val json = LocalJson.current
-    val sourceDataState = LocalSourceData.current
+    val platform = LocalPlatform.current
     val navHost = LocalNavHost.current
     var currentClass by ClassForGradePage.current
+    val sourceData by LocalSourceData.current
+    val kvault = LocalKVault.current
+    val hideMentorship = kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false
+    val selectedQuarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
     val screenSize = getScreenSize()
 
     Column(Modifier.fillMaxWidth().padding(12.dp)) {
@@ -47,7 +51,7 @@ fun MoreScreen() {
             navHost?.navigateTo(NavScreen.GPA, animateWidth = screenSize.width.toFloat())
         }.padding(10.dp)) {
             Text("GPA Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier)
+            Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.align(Alignment.CenterVertically))
         }
 
         Row (modifier = Modifier.padding(0.dp, 2.dp).clip(RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
@@ -55,7 +59,28 @@ fun MoreScreen() {
             navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
         }.padding(10.dp)) {
             Text("Grade Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier)
+            Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.align(Alignment.CenterVertically))
+        }
+
+        Text("Sharing", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
+        Row(modifier = Modifier.padding(0.dp, 2.dp).clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
+            val classMetas = sourceData?.get(selectedQuarter)?.classes?.filter { !hideMentorship || it.name != MENTORSHIP_NAME }?.map { ClassMeta(it) }
+            val gradesText = classMetas?.map {
+                when (it.grade?.first()) {
+                    'A' -> "\uD83D\uDFE9"
+                    'B' -> "\uD83D\uDFE6"
+                    'C' -> "\uD83D\uDFE8"
+                    'D' -> "\uD83D\uDFE7"
+                    'E' -> "\uD83D\uDFE5"
+                    else -> "⬛"
+                }
+            }?.chunked(2) { it.joinToString("") }?.joinToString("\n")
+            platform.shareText(
+                    "$gradesText\n" +
+                    "Look at my cool grades from the Seattle Gradebook app!")
+        }.padding(10.dp)) {
+            Text("Share grades like a wordle score", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
+            Icon(Icons.Rounded.Share, contentDescription = "share", modifier = Modifier.align(Alignment.CenterVertically))
         }
     }
 }

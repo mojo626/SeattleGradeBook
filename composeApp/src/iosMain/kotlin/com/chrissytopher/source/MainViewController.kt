@@ -1,6 +1,7 @@
 package com.chrissytopher.source
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.interop.LocalUIViewController
 import androidx.compose.ui.window.ComposeUIViewController
 import com.chrissytopher.source.Platform
 import com.liftric.kvault.KVault
@@ -12,7 +13,6 @@ import kotlinx.serialization.json.Json
 import platform.UIKit.UIViewController
 
 fun MainViewController(getSourceData: (String, String, String, Boolean) -> String, filesDir: String, sendNotification: (String, String) -> Unit, openLink: (String) -> Unit): UIViewController {
-    val platform = IOSPlatform(filesDir, getSourceData, openLink)
     val kvault = KVault()
     val permissionsController = PermissionsController()
     val notificationSender = object : NotificationSender() {
@@ -24,7 +24,7 @@ fun MainViewController(getSourceData: (String, String, String, Boolean) -> Strin
         CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
             CompositionLocalProvider(LocalKVault provides kvault) {
                 CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
-                    CompositionLocalProvider(LocalPlatform provides platform) {
+                    CompositionLocalProvider(LocalPlatform provides IOSPlatform(LocalUIViewController.current, filesDir, getSourceData, openLink)) {
                         App()
                     }
                 }
@@ -47,7 +47,7 @@ fun runBackgroundSync(sendNotification: (String, String) -> Unit, getSourceData:
             sendNotification(title, body)
         }
     }
-    val platform = IOSPlatform(filesDir, getSourceData) {
+    val platform = IOSPlatform(null, filesDir, getSourceData) {
         Napier.e("tried to open a link but openLink is null!")
     }
     runBlocking { doBackgroundSync(kvault, json, notificationSender, platform) }

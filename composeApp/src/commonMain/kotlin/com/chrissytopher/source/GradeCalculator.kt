@@ -90,6 +90,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -474,15 +475,19 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
         Modifier.dashedBorder(3.dp, iconColor, 12.0.dp)
     } ?: Modifier
     var expanded by remember { mutableStateOf(false) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(expanded) {
+        if (!expanded) {
+            keyboard?.hide()
+        }
+    }
+    var pointsString by remember { mutableStateOf(score?.scorepoints?.toString() ?: "") }
+    var totalPointsString by remember { mutableStateOf(section.totalpointvalue.toString()) }
     Card(colors = colors, modifier = iconModifier, onClick = { expanded = !expanded }) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
             Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleMedium.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleMedium)
             Text(section.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            var pointsString by remember { mutableStateOf(score?.scorepoints?.toString() ?: "") }
-            if (pointsString.toFloatOrNull() != score?.scorepoints) {
-                pointsString = score?.scorepoints?.toString() ?: ""
-            }
             CustomTextField(
                 onValueChange = {
                     pointsString = it
@@ -500,15 +505,20 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
             Text(" / ", style = MaterialTheme.typography.titleMedium)
             CustomTextField(
                 onValueChange = {
+                    totalPointsString = it
+                    Napier.d("it: $it, float: ${it.toFloatOrNull()}")
                     val newTotalPoints = it.toFloatOrNull() ?: return@CustomTextField true
                     val changedSection = section.copy(totalpointvalue = newTotalPoints)
                     val newPoints = if (section.totalpointvalue != 0f) score?.scorepoints?.let { it/section.totalpointvalue * newTotalPoints } else score?.scorepoints
-                    val changedScore = score?.copy(scorepoints = newPoints, scorelettergrade = newPoints?.let { gradeForScore(((newPoints/newTotalPoints)*100f)) } )
+                    newPoints?.toString()?.let { pointsString = it }
+                    val percent = if (newTotalPoints != 0f && newPoints != null) newPoints/newTotalPoints else Float.NaN
+                    Napier.d("percent: $percent, newPoints: $newPoints, newtotalPoints: $newTotalPoints")
+                    val changedScore = score?.copy(scorepoints = newPoints, scorepercent = percent, scorelettergrade = newPoints?.let { gradeForScore(percent*100f) } )
                     updateAssignment(Pair(changedSection, changedScore))
                     return@CustomTextField true
                 },
                 fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                value = section.totalpointvalue.toString(),
+                value = totalPointsString,
                 modifier = Modifier.align(Alignment.CenterVertically),
             )
 
@@ -523,6 +533,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                 value = score?.scorepoints ?: section.totalpointvalue,
                 onValueChange = {
                     val rounded = it.roundToInt().toFloat()
+                    pointsString = rounded.toString()
                     val changedScore = (score ?: AssignmentScore("", "", "", true, false, false, false, false, false, false, "", "", rounded/section.totalpointvalue, rounded, 0, "")).copy(scorepoints = rounded, scorelettergrade = gradeForScore((rounded/section.totalpointvalue)*100f))
                     updateAssignment(Pair(section, changedScore))
                 },

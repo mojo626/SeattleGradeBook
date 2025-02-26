@@ -64,7 +64,16 @@ class AndroidPlatform(private val context: Context) : Platform() {
         androidx.activity.compose.BackHandler(enabled, onBack)
     }
 
+    override fun shareText(text: String) {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, text)
+            type = "text/plain"
+        }
 
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        context.startActivity(shareIntent)
+    }
 }
 
 @Composable
