@@ -58,7 +58,7 @@ data class GradeColors(
 
     fun gradeColor(letter: String): Color? {
         return when(letter) {
-            "A" -> AColor
+            "A", "P" -> AColor
             "B" -> BColor
             "C" -> CColor
             "D" -> DColor

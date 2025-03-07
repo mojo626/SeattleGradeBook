@@ -1,40 +1,39 @@
 package com.chrissytopher.source
 
 import android.os.Bundle
-import android.provider.Settings
-import android.window.OnBackInvokedDispatcher
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
+import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.os.BuildCompat
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.WorkRequest
-import com.liftric.kvault.KVault
-import dev.icerock.moko.permissions.PermissionsController
+import com.chrissytopher.source.themes.theme.AppTheme
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
-import java.time.Duration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         Napier.base(DebugAntilog())
-        val kvault = KVault(this)
         super.onCreate(savedInstanceState)
         val platform = AndroidPlatform(this)
-        val permissionsController = PermissionsController(this)
-        permissionsController.bind(this)
+        val viewModel: AndroidAppViewModel by viewModels { AndroidAppViewModel.factory(this.applicationContext) }
+        viewModel.permissionsController.bind(this)
         createNotificationChannel(ASSIGNMENTS_NOTIFICATION_CHANNEL, "Grade Updates", "Updates to grades and assignments")
-        val notificationSender = AndroidNotificationSender(this)
         val backgroundSyncRequest: PeriodicWorkRequest =
             PeriodicWorkRequestBuilder<BackgroundSyncWorker>(2, TimeUnit.HOURS)
                 .build()
@@ -42,22 +41,19 @@ class MainActivity : ComponentActivity() {
             .getInstance(this)
             .enqueueUniquePeriodicWork(WORK_MANAGER_BACKGROUND_SYNC_ID, ExistingPeriodicWorkPolicy.KEEP, backgroundSyncRequest)
 
-        setContent {
-            CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
-                CompositionLocalProvider(LocalKVault provides kvault) {
-                    CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
-                        CompositionLocalProvider(LocalPlatform provides platform) {
-                            App()
+        CoroutineScope(Dispatchers.Main).launch {
+            setContent {
+                CompositionLocalProvider(LocalPlatform provides platform) {
+                    AppTheme {
+                        val viewModelInitialized by viewModel.initializedFlows.collectAsState()
+                        if (!viewModelInitialized) {
+                            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+                            return@AppTheme
                         }
+                        App(viewModel)
                     }
                 }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    App()
 }

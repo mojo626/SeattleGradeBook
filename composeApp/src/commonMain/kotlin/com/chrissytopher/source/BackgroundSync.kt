@@ -5,12 +5,12 @@ import io.github.aakira.napier.Napier
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-suspend fun doBackgroundSync(kvault: KVault, json: Json, notificationSender: NotificationSender?, platform: Platform): Boolean {
+fun doBackgroundSync(kvault: KVault, json: Json, notificationSender: NotificationSender?, getSourceData: (String, String, String, Boolean) -> Result<SourceData>): Boolean {
     println("background sync started")
     kvault.string(USERNAME_KEY)?.let { username ->
         kvault.string(PASSWORD_KEY)?.let { password ->
             val quarter = getCurrentQuarter()
-            platform.gradeSyncManager.getSourceData(username, password, quarter, true).getOrNullAndThrow()?.let { newSourceData ->
+            getSourceData(username, password, quarter, true).getOrNullAndThrow()?.let { newSourceData ->
                 val sourceData = kvault.string(SOURCE_DATA_KEY)?.let { json.decodeFromString<HashMap<String, SourceData>>(it) }
                 kvault.set(SOURCE_DATA_KEY, json.encodeToString(HashMap(sourceData ?: HashMap()).apply {
                     set(quarter, newSourceData)

@@ -35,15 +35,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chrissytopher.source.navigation.NavigationStack
 import kotlinx.datetime.LocalDateTime
 import net.sergeych.sprintf.sprintf
 import kotlin.math.round
 
 @Composable
-fun AssignmentScreen() {
-    val currentAssignment by AssignmentForPage.current
-    val currentClass by ClassForGradePage.current
-    val navHost = LocalNavHost.current
+fun AssignmentScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+    val currentAssignment by viewModel.assignmentForPage
+    val currentClass by viewModel.classForGradePage
     val screenSize = getScreenSize()
 
     val newestScore = currentAssignment?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,65 +17,45 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Chip
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material3.Slider
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.liftric.kvault.KVault
-import dev.icerock.moko.permissions.Permission
-import dev.icerock.moko.permissions.PermissionsController
-import dev.icerock.moko.permissions.compose.PermissionsControllerFactory
-import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
+import com.chrissytopher.source.navigation.NavigationStack
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.roundToInt
 
 @Composable
-fun LoginScreen(done: () -> Unit) {
-    val kvault = LocalKVault.current
-    val json = LocalJson.current
-    val sourceDataState = LocalSourceData.current
-    val platform = LocalPlatform.current
-    var username by remember { mutableStateOf(kvault?.string(forKey = USERNAME_KEY) ?: "") }
-    var password by remember { mutableStateOf(kvault?.string(forKey = PASSWORD_KEY) ?: "") }
+fun LoginScreen(viewModel: AppViewModel, done: () -> Unit) {
+    val sourceDataState by viewModel.sourceData()
+    val selectedQuarter by viewModel.selectedQuarter()
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
 
@@ -108,15 +87,14 @@ fun LoginScreen(done: () -> Unit) {
                     loading = true
                     error = false
                     username = username.removeSuffix("@seattleschools.org")
-                    val quarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
-                    val sourceDataRes = platform.gradeSyncManager.getSourceData(username, password, quarter, true)
+                    val sourceDataRes = viewModel.gradeSyncManager.getSourceData(username, password, selectedQuarter, true)
                     Napier.d("got data: $sourceDataRes")
                     val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
-                        sourceDataState.value = HashMap<String, SourceData>().apply {
-                            set(quarter, sourceData)
-                        }
-                        changeLogin(kvault, username, password, json.encodeToString(sourceDataState.value))
+                        viewModel.setSourceData(HashMap<String, SourceData>().apply {
+                            set(selectedQuarter, sourceData)
+                        })
+                        viewModel.changeLogin(username, password, sourceDataState!!)
                         done()
                     } else {
                         error = true
@@ -139,9 +117,7 @@ fun LoginScreen(done: () -> Unit) {
 }
 
 @Composable
-fun NotificationsScreen(done: () -> Unit) {
-    val permissionsController = LocalPermissionsController.current
-    val coroutineScope = rememberCoroutineScope()
+fun NotificationsScreen(viewModel: AppViewModel, done: () -> Unit) {
     val platform = LocalPlatform.current
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f)) {
@@ -159,37 +135,24 @@ fun NotificationsScreen(done: () -> Unit) {
             }
         }
         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            var permissionGranted by remember { mutableStateOf(false) }
-            LaunchedEffect(true) {
-                launch {
-                    permissionGranted = permissionsController.isPermissionGranted(Permission.REMOTE_NOTIFICATION)
-                }
-            }
-            var everyAssignment by remember { mutableStateOf(false) }
-            var letterGradeChange by remember { mutableStateOf(false) }
-            var threshold by remember { mutableStateOf(false) }
-            var points by remember { mutableStateOf(100f) }
+            val permissionGranted by viewModel.notificationsAllowed()
+            val everyAssignment by viewModel.notificationsEveryAssignment()
+            val letterGradeChange by viewModel.notificationsLetterGradeChange()
+            val threshold by viewModel.notificationsThreshold()
+            val points by viewModel.notificationsPoints()
             AnimatedVisibility(permissionGranted) {
                 NotificationSettings(
                     everyAssignment, letterGradeChange, threshold, points,
-                    setEvery = { everyAssignment = it },
-                    setLetter = { letterGradeChange = it },
-                    setThreshold = { threshold = it },
-                    setPointThreshold = { points = it }
+                    setEvery = { viewModel.setNotificationsEveryAssignment(it) },
+                    setLetter = { viewModel.setNotificationsLetterGradeChanged(it) },
+                    setThreshold = { viewModel.setNotificationsThreshold(it) },
+                    setPointThreshold = { viewModel.setNotificationsThresholdPoints(it) }
                 )
             }
             if (!permissionGranted) {
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            try {
-                                permissionsController.providePermission(Permission.REMOTE_NOTIFICATION)
-                                permissionGranted = true
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                done()
-                            }
-                        }
+                        viewModel.requestNotificationPermissions()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.inversePrimary,
@@ -199,12 +162,7 @@ fun NotificationsScreen(done: () -> Unit) {
                     Text(text = "Allow Notifications")
                 }
             } else {
-                val kvault = LocalKVault.current
                 Button(onClick = {
-                    kvault?.set(NEW_ASSIGNMENTS_NOTIFICATIONS_KEY, everyAssignment)
-                    kvault?.set(LETTER_GRADE_CHANGES_NOTIFICATIONS_KEY, letterGradeChange)
-                    kvault?.set(THRESHOLD_NOTIFICATIONS_KEY, threshold)
-                    kvault?.set(THRESHOLD_VALUE_NOTIFICATIONS_KEY, points)
                     done()
                 }, colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.inversePrimary,
@@ -254,38 +212,17 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
 }
 
 @Composable
-fun OnboardingScreen() {
-    val navHost = LocalNavHost.current
-    val platform = LocalPlatform.current
-//    var done by remember { mutableStateOf(false) }
-//    LaunchedEffect(done) {
-////        if (done) {
-////            navHost?.graph?.setStartDestination(NavScreen.Home.name)
-////            if (platform.livingInFearOfBackGestures()) {
-////                var doneBacking: Boolean
-////                do doneBacking = navHost?.navigateUp() == true while (!doneBacking)
-////            } else {
-////                navHost?.navigate(NavScreen.Home.name)
-////            }
-////        }
-//
-//    }
+fun OnboardingScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
     Box(Modifier.fillMaxSize()) {
         var loggedIn by remember { mutableStateOf(false) }
         if (!loggedIn) {
-            LoginScreen {
+            LoginScreen(viewModel) {
                 loggedIn = true
             }
         } else {
-            NotificationsScreen {
-                navHost?.clearStack(NavScreen.Home)
+            NotificationsScreen(viewModel) {
+                navHost.clearStack(NavScreen.Home)
             }
         }
     }
-}
-
-fun changeLogin(kvault : KVault?, username : String, password : String, sourceData: String) {
-    kvault?.set(key = USERNAME_KEY, stringValue = username)
-    kvault?.set(key = PASSWORD_KEY, stringValue = password)
-    kvault?.set(key = SOURCE_DATA_KEY, stringValue = sourceData)
 }

@@ -1,11 +1,18 @@
 package com.chrissytopher.source
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.LocalUIViewController
 import androidx.compose.ui.window.ComposeUIViewController
-import com.chrissytopher.source.Platform
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.chrissytopher.source.themes.theme.AppTheme
 import com.liftric.kvault.KVault
-import dev.icerock.moko.permissions.ios.PermissionsController
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
@@ -13,21 +20,21 @@ import kotlinx.serialization.json.Json
 import platform.UIKit.UIViewController
 
 fun MainViewController(getSourceData: (String, String, String, Boolean) -> String, filesDir: String, sendNotification: (String, String) -> Unit, openLink: (String) -> Unit): UIViewController {
-    val kvault = KVault()
-    val permissionsController = PermissionsController()
     val notificationSender = object : NotificationSender() {
         override fun sendNotification(title: String, body: String) {
             sendNotification(title, body)
         }
     }
     return ComposeUIViewController {
-        CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
-            CompositionLocalProvider(LocalKVault provides kvault) {
-                CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
-                    CompositionLocalProvider(LocalPlatform provides IOSPlatform(LocalUIViewController.current, filesDir, getSourceData, openLink)) {
-                        App()
-                    }
+        val viewModel = viewModel { IosAppViewModel(notificationSender, getSourceData, createDataStore(filesDir)) }
+        CompositionLocalProvider(LocalPlatform provides IOSPlatform(LocalUIViewController.current, filesDir, openLink)) {
+            AppTheme {
+                val viewModelInitialized by viewModel.initializedFlows.collectAsState()
+                if (!viewModelInitialized) {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+                    return@AppTheme
                 }
+                App(viewModel)
             }
         }
     }
@@ -47,8 +54,7 @@ fun runBackgroundSync(sendNotification: (String, String) -> Unit, getSourceData:
             sendNotification(title, body)
         }
     }
-    val platform = IOSPlatform(null, filesDir, getSourceData) {
-        Napier.e("tried to open a link but openLink is null!")
-    }
-    runBlocking { doBackgroundSync(kvault, json, notificationSender, platform) }
+    runBlocking { doBackgroundSync(kvault, json, notificationSender, { username: String, password: String, quarter: String, pfp: Boolean ->
+        runCatching { Json.decodeFromString<SourceData>(getSourceData(username, password, quarter, pfp)) }
+    }) }
 }

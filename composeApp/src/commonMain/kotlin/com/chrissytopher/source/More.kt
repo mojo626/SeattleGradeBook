@@ -33,22 +33,21 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import com.chrissytopher.source.navigation.NavigationStack
 
 @Composable
-fun MoreScreen() {
+fun MoreScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
     val platform = LocalPlatform.current
-    val navHost = LocalNavHost.current
-    var currentClass by ClassForGradePage.current
-    val sourceData by LocalSourceData.current
-    val kvault = LocalKVault.current
-    val hideMentorship = kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false
-    val selectedQuarter = kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()
+    var currentClass by viewModel.classForGradePage
+    val sourceData by viewModel.sourceData()
+    val hideMentorship by viewModel.hideMentorship()
+    val selectedQuarter by viewModel.selectedQuarter()
     val screenSize = getScreenSize()
 
     Column(Modifier.fillMaxWidth().padding(12.dp)) {
         Text("Grade Analysis", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         Row (modifier = Modifier.padding(0.dp, 2.dp).clip(RoundedCornerShape(15.dp, 15.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
-            navHost?.navigateTo(NavScreen.GPA, animateWidth = screenSize.width.toFloat())
+            navHost.navigateTo(NavScreen.GPA, animateWidth = screenSize.width.toFloat())
         }.padding(10.dp)) {
             Text("GPA Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
             Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.align(Alignment.CenterVertically))
@@ -56,7 +55,7 @@ fun MoreScreen() {
 
         Row (modifier = Modifier.padding(0.dp, 2.dp).clip(RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
             currentClass = null
-            navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
+            navHost.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
         }.padding(10.dp)) {
             Text("Grade Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
             Icon(Icons.Outlined.ChevronRight, contentDescription = "right arrow", modifier = Modifier.align(Alignment.CenterVertically))

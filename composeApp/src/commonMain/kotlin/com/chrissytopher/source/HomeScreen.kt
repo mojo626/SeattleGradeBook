@@ -32,6 +32,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,8 +55,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.chrissytopher.source.navigation.NavigationStack
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -65,63 +65,29 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun HomeScreen() {
-    var refreshingInProgress by remember { mutableStateOf(false) }
-    var refreshSuccess: Boolean? by remember { mutableStateOf(null) }
+fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+    val refreshingInProgress by viewModel.refreshingInProgress
+    val refreshSuccess: Boolean? by viewModel.refreshSuccess
 
-    var sourceData by LocalSourceData.current
-    val json = LocalJson.current
+    val sourceData by viewModel.sourceData()
+//    val json = LocalJson.current
     val platform = LocalPlatform.current
-    val kvault = LocalKVault.current
+//    val kvault = LocalKVault.current
     val quarters = listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")
-    var selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
-    val lastClassMeta = LastClassMeta.current
-    var classMetas: List<ClassMeta>? by remember { mutableStateOf(lastClassMeta.value) }
+    val selectedQuarter by viewModel.selectedQuarter()
+//    val lastClassMeta = LastClassMeta.current
+    var classMetas: List<ClassMeta>? by viewModel.lastClassMeta
     LaunchedEffect(sourceData, selectedQuarter) {
         classMetas = sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }
-        lastClassMeta.value = classMetas
     }
-    val refreshCoroutineScope = rememberCoroutineScope()
-    var refreshedAlready by RefreshedAlready.current
-    val refresh = {
-        kvault?.string(USERNAME_KEY)?.let { username ->
-            kvault.string(PASSWORD_KEY)?.let { password ->
-                val quarter = kvault.string(QUARTER_KEY) ?: getCurrentQuarter()
-                refreshCoroutineScope.launch {
-                    refreshingInProgress = true
-                    val newSourceData = platform.gradeSyncManager.getSourceData(username, password, quarter, false).getOrNullAndThrow()
-                    if (newSourceData != null && !(newSourceData.classes.isEmpty() && newSourceData.past_classes.isEmpty())) {
-                        if (quarter == getCurrentQuarter()) {
-                            val currentUpdates = kvault.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
-                            val updatedClasses = newSourceData.classes.filter { newClass ->
-                                val oldClass = sourceData?.get(quarter)?.classes?.find { it.name == newClass.name} ?: return@filter false
-                                (oldClass.totalSections() != newClass.totalSections())
-                            }
-                            kvault.set(CLASS_UPDATES_KEY, json.encodeToString(currentUpdates + updatedClasses.map { it.name }))
-                        }
-                        sourceData = HashMap(sourceData ?: HashMap()).apply {
-                            set(quarter, newSourceData)
-                        }
-                        kvault.set(SOURCE_DATA_KEY, json.encodeToString(sourceData))
-                        refreshSuccess = true
-                    } else {
-                        refreshSuccess = false
-                    }
-                    refreshedAlready = true
-                    refreshingInProgress = false
-                    delay(500)
-                    refreshSuccess = null
-                }
-            }
-        }
-    }
+    val refreshedAlready by viewModel.refreshedAlready
     LaunchedEffect(true) {
         if (!refreshedAlready) {
-            refresh()
+            viewModel.refresh()
         }
     }
-    val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { refresh() } )
-    val gradeColors by LocalGradeColors.current
+    val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { viewModel.refresh() } )
+    val gradeColors by viewModel.gradeColors()
     Box {
         Column (
             modifier = Modifier
@@ -148,28 +114,16 @@ fun HomeScreen() {
                     )
                 }
                 var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
-                var showMiddleName by ShowMiddleName.current
-                if (showMiddleName == null) {
-                    showMiddleName = kvault?.bool(SHOW_MIDDLE_NAME_KEY)
-                }
-                if (showMiddleName != true) {
+                val showMiddleName by viewModel.showMiddleName()
+                if (!showMiddleName) {
                     val names = studentName.split(" ")
                     studentName = "${names.first()} ${names.last()}"
                 }
                 Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-//                if (!refreshingInProgress) {
-//                    Icon(if (!refreshError) Icons.Outlined.Refresh else Icons.Outlined.Error , "Refresh grades", modifier = Modifier.size(50.dp).clickable {
-//                        refresh()
-//                    }.then(if (refreshError) Modifier.background(MaterialTheme.colorScheme.error, CircleShape) else Modifier).clip(CircleShape))
-//                } else {
-//                    CircularProgressIndicator(modifier = Modifier.size(50.dp))
-//                }
                 val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
                 if (isLincoln) {
-                    val navHost = LocalNavHost.current
-                    val screenSize = getScreenSize()
                     Box(Modifier.size(50.dp).background(MaterialTheme.colorScheme.surfaceContainer, CircleShape).clickable {
-                        navHost?.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat())
+                        navHost.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat())
                     }) {
                         Image(
                             imageVector = NavScreen.Settings.unselectedIcon,
@@ -183,17 +137,12 @@ fun HomeScreen() {
                 }
             }
 
-            val classNames = sourceData?.get(selectedQuarter)?.classes?.map { it.name }
-            val updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) }?.filter { classNames?.contains(it) == true }
-            //converting to a hashmap saves looping through the list for each of the ui cards below
-            var updateClassesMap = hashMapOf(
-                *(updateClasses?.map { Pair(it, true) }?.toTypedArray() ?: arrayOf())
-            )
+            val updatedClasses by viewModel.updateClasses()
             val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
             Row(Modifier.alpha(selectionDisabledAlpha)) {
                 for (quarter in quarters) {
                     BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
-                        if (quarter == getCurrentQuarter() && updateClasses?.isNotEmpty() == true) {
+                        if (quarter == getCurrentQuarter() && updatedClasses.isNotEmpty()) {
                             Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
                         }
                     }) {
@@ -202,13 +151,7 @@ fun HomeScreen() {
                             .background(if (selectedQuarter == quarter) CardDefaults.cardColors().containerColor else CardDefaults.cardColors().disabledContainerColor, CardDefaults.outlinedShape)
                             .border(CardDefaults.outlinedCardBorder(selectedQuarter == quarter), CardDefaults.outlinedShape)
                             .clickable(remember { MutableInteractionSource() }, null, enabled = !refreshingInProgress) {
-                                if (quarter == getCurrentQuarter()) {
-                                    kvault?.deleteObject(QUARTER_KEY)
-                                } else {
-                                    kvault?.set(QUARTER_KEY, quarter)
-                                }
-                                selectedQuarter = quarter
-                                refresh()
+                                viewModel.setSelectedQuarter(quarter)
                             }
                         ) {
                             Text(quarter, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
@@ -218,8 +161,8 @@ fun HomeScreen() {
                 }
             }
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                val hideMentorship = remember { mutableStateOf(kvault?.bool(HIDE_MENTORSHIP_KEY) ?: false) }
-                val (filteredClasses, filteredClassMetas) = if (hideMentorship.value && updateClassesMap[MENTORSHIP_NAME] != true) {
+                val hideMentorship by viewModel.hideMentorship()
+                val (filteredClasses, filteredClassMetas) = if (hideMentorship && updatedClasses[MENTORSHIP_NAME] != true) {
                     val mentorshipIndex = sourceData?.get(selectedQuarter)?.classes?.indexOfFirst {
                         it.name == MENTORSHIP_NAME
                     }
@@ -227,23 +170,19 @@ fun HomeScreen() {
                 } else {
                     Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
-//                updateClasses?.forEach { updateClassesMap[it] = true }
-                if (getCurrentQuarter() != (kvault?.string(QUARTER_KEY) ?: getCurrentQuarter())) {
-                    updateClassesMap = hashMapOf()
-                }
                 filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
                     Row(modifier = Modifier.fillMaxWidth()) {
                         it.forEachIndexed { column, it ->
                             val index = row*2 + column
                             val meta = filteredClassMetas?.getOrNull(index)
-                            val classForGradePage = ClassForGradePage.current
-                            val navHost = LocalNavHost.current
+                            val classForGradePage = viewModel.classForGradePage
+                            val preferReported by viewModel.preferReported()
                             val screenSize = getScreenSize()
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
-                                    ClassCard(it, meta, updateClassesMap[it.name] ?: false, false, preferReported = kvault?.bool(PREFER_REPORTED_KEY) ?: false) {
+                                    ClassCard(it, meta, updatedClasses[it.name] ?: false, false, gradeColors, preferReported = preferReported) {
                                         classForGradePage.value = it
-                                        navHost?.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
+                                        navHost.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
                                 }
                             }
@@ -272,12 +211,12 @@ fun HomeScreen() {
     val now = Clock.System.now()
     val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
     if (today.month == Month.DECEMBER && today.dayOfMonth == 25) {
-        Snow()
+        Snow(viewModel)
     }
 }
 
 @Composable
-fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, preferReported: Boolean = false, onClick: (() -> Unit)? = null) {
+fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, gradeColors: GradeColors, preferReported: Boolean = false, onClick: (() -> Unit)? = null) {
     val reportedGrade = when (`class`.reported_grade) {
         "[ i ]" -> null
         else -> `class`.reported_grade
@@ -308,7 +247,6 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
     }
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
-    val gradeColors by LocalGradeColors.current
     val colors = (grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
         if (updates) {

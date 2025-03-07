@@ -27,8 +27,10 @@ permissionsCompose = "0.18.0"
 uriCore = "0.4.0"
 workRuntimeKtx = "2.10.0"
 ktor = "3.0.1"
+datastore = "1.1.3"
 
 [libraries]
+androidx-datastore = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 colormath = { module = "com.github.ajalt.colormath:colormath", version.ref = "colormath" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

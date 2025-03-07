@@ -72,6 +72,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import com.chrissytopher.source.navigation.NavigationStack
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -81,21 +82,15 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GradesScreen() {
-    val currentClass by ClassForGradePage.current
+fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+    val currentClass by viewModel.classForGradePage
     val platform = LocalPlatform.current
-    val kvault = LocalKVault.current
-    val json = LocalJson.current
 
     LaunchedEffect(currentClass) {
         launch {
-            var updateClasses = kvault?.string(CLASS_UPDATES_KEY)?.let { json.decodeFromString<List<String>>(it) } ?: listOf()
-            currentClass?.name?.let { currentName -> updateClasses = updateClasses.filter { it != currentName } }
-            kvault?.set(CLASS_UPDATES_KEY, json.encodeToString(updateClasses))
+            currentClass?.let { viewModel.markClassRead(it) }
         }
     }
-
-    val navHost = LocalNavHost.current
 
     var openedAssignment: Pair<AssignmentSection, AssignmentScore?>? by remember { mutableStateOf(null) }
 
@@ -124,10 +119,11 @@ fun GradesScreen() {
 
             Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
         }
-        
+
+        val gradeColors by viewModel.gradeColors()
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                ClassCard(currentClass!!, meta, false, true)
+                ClassCard(currentClass!!, meta, false, true, gradeColors)
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -175,7 +171,7 @@ fun GradesScreen() {
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach { assignment ->
                 Box(Modifier.padding(0.dp, 5.dp)) {
-                    AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points) {
+                    AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points, gradeColors) {
                         val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
                         val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
                         openedAssignment = Pair(newestSection, newestScore)
@@ -192,7 +188,7 @@ fun GradesScreen() {
                 onDismissRequest = { flagInfoOpen = false },
                 sheetState = infoSheetState,
             ) {
-                FlagsExplanation()
+                FlagsExplanation(gradeColors)
             }
         }
 
@@ -202,7 +198,7 @@ fun GradesScreen() {
                 sheetState = sheetState,
             ) {
                 Box(Modifier.padding(5.dp)) {
-                    AssignmentCard(newestSection, newestScore, ScoreDisplay.Both, null)
+                    AssignmentCard(newestSection, newestScore, ScoreDisplay.Both, gradeColors, null)
                 }
 
                 newestScore?.scorepoints?.let {
@@ -256,7 +252,6 @@ fun GradesScreen() {
                             Icon(Icons.Outlined.Info, "Flag info")
                         }
                     }
-                    val gradeColors by LocalGradeColors.current
                     Row(Modifier.padding(20.dp, bottom = 0.dp)) {
                         FlagIcon(gradeColors.AColor, it.iscollected, Icons.Filled.Check, "Collected") {
                             val changedScore = newestScore.copy(iscollected = !it.iscollected)
@@ -327,19 +322,18 @@ enum class ScoreDisplay {
 }
 
 @Composable
-fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, onClick: (() -> Unit)?) {
+fun AssignmentCard(assignment: Assignment, showPercent: ScoreDisplay, gradeColors: GradeColors, onClick: (() -> Unit)?) {
     val newestSection =
         assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) }
     val newestScore = newestSection?._assignmentscores?.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
     if (newestSection != null) {
-        AssignmentCard(newestSection, newestScore, showPercent, onClick)
+        AssignmentCard(newestSection, newestScore, showPercent, gradeColors, onClick)
     }
 }
 
 @Composable
-fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, onClick: (() -> Unit)?, showOutline: Boolean = true) {
+fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPercent: ScoreDisplay, gradeColors: GradeColors, onClick: (() -> Unit)?, showOutline: Boolean = true) {
     val themeModifier = darkModeColorModifier()
-    val gradeColors by LocalGradeColors.current
     val colors = if (section.iscountedinfinalgrade && score?.isexempt != true) {
         score?.scorelettergrade?.firstOrNull()?.let {
             gradeColors.gradeColor(it.toString())?.let {

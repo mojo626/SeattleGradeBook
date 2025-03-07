@@ -96,6 +96,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import com.chrissytopher.source.navigation.NavigationStack
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -118,13 +119,13 @@ data class ChangedAssignment (
 )
 
 @Composable
-fun GradeCalculatorScreen() {
-    val sourceDataState = LocalSourceData.current
-    val kvault = LocalKVault.current
-    val selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
+fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+    val sourceDataState = viewModel.sourceData()
+    val selectedQuarter by viewModel.selectedQuarter()
     val currClasses = remember { sourceDataState.value?.get(selectedQuarter)?.classes }
+    val gradeColors by viewModel.gradeColors()
 
-    val currentClassState = ClassForGradePage.current
+    val currentClassState = viewModel.classForGradePage
     val currentClass by currentClassState
 
 //    var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
@@ -140,8 +141,6 @@ fun GradeCalculatorScreen() {
     var addedAssignments: List<Assignment> by remember { mutableStateOf(listOf()) }
 
     var recompose by remember { mutableStateOf(false) }
-
-    var navHost = LocalNavHost.current
 
     LaunchedEffect(addedAssignments) {
 //        Napier.d("changed addedAssignments: $addedAssignments")
@@ -168,6 +167,7 @@ fun GradeCalculatorScreen() {
                             currentClass!!,
                             ClassMeta(currentClass!!),
                             false, true,
+                            gradeColors,
                         )
                     }
 
@@ -178,6 +178,7 @@ fun GradeCalculatorScreen() {
                             currentClass!!,
                             ClassMeta(currentClass!!.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments), allowLessThanE = true),
                             false, true,
+                            gradeColors,
                         )
                     }
                 }
@@ -257,7 +258,7 @@ fun GradeCalculatorScreen() {
                 if (newestSection == null) return@forEachIndexed
                 val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
                 Box(Modifier.padding(0.dp, 5.dp)) {
-                    NewGradeCalculatorCard(newestSection, newestScore, updateAssignment = { (newSection, newScore) ->
+                    NewGradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = { (newSection, newScore) ->
                         addedAssignments = addedAssignments.toMutableList().apply { set(i,
                             Assignment(listOf(newScore?.let { newSection.copy(_assignmentscores = listOf(newScore)) } ?: newSection))
                         ) }
@@ -278,7 +279,7 @@ fun GradeCalculatorScreen() {
                     val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
                     Box(Modifier.padding(0.dp, 5.dp)) {
                         key(newestSection._id) {
-                            NewGradeCalculatorCard(newestSection, newestScore, updateAssignment = {
+                            NewGradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = {
                                 val now = Now().toLocalDateTime(TimeZone.currentSystemDefault())
                                 if (assignment._assignmentsections.isNotEmpty() && assignment._assignmentsections.firstOrNull()?._assignmentscores?.isNotEmpty() == true) {
                                     val newAssignment = assignment.copy()
@@ -369,12 +370,12 @@ fun GradeCalculatorCard (
     onTotalValueChanged : (String) -> Boolean,
     onSliderChanged : (Float, Boolean) -> Unit,
     newAssignmentsChanged : Boolean,
+    gradeColors: GradeColors,
     shown : Boolean = true,
 ) {
     var opened by remember { mutableStateOf(isNewAssignment) }
     val grade = gradeForScore(receivedPointvalue/totalPointvalue)
     val themeModifier = darkModeColorModifier()
-    val gradeColors by LocalGradeColors.current
     val colors = gradeColors.gradeColor(grade)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } ?: CardDefaults.cardColors()
     Card (
         colors = colors,
@@ -450,10 +451,9 @@ fun GradeCalculatorCard (
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, updateAssignment: (Pair<AssignmentSection, AssignmentScore?>) -> Unit, removeAssignment: (() -> Unit)? = null) {
+fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, gradeColors: GradeColors, updateAssignment: (Pair<AssignmentSection, AssignmentScore?>) -> Unit, removeAssignment: (() -> Unit)? = null) {
     val grade = score?.scorelettergrade?.first()?.toString()
     val themeModifier = darkModeColorModifier()
-    val gradeColors by LocalGradeColors.current
     val containerColor = if (section.iscountedinfinalgrade && score?.isexempt != true) {
         grade?.let { gradeColors.gradeColor(it)?.let { it*themeModifier } } ?: CardDefaults.cardColors().containerColor
     } else {
@@ -549,7 +549,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                     onDismissRequest = { flagInfoOpen = false },
                     sheetState = sheetState,
                 ) {
-                    FlagsExplanation()
+                    FlagsExplanation(gradeColors)
                 }
             }
 
@@ -626,9 +626,8 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
 }
 
 @Composable
-fun FlagsExplanation() {
+fun FlagsExplanation(gradeColors: GradeColors) {
     Column(Modifier.fillMaxWidth().padding(20.dp)) {
-        val gradeColors by LocalGradeColors.current
         Text("Flags", fontWeight = FontWeight.Bold, fontSize = 25.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = {},

@@ -38,10 +38,9 @@ import androidx.compose.runtime.State
 
 
 @Composable
-fun GPAScreen() {
-    val sourceDataState = LocalSourceData.current
-    val kvault = LocalKVault.current
-    val selectedQuarter by remember { mutableStateOf(kvault?.string(QUARTER_KEY) ?: getCurrentQuarter()) }
+fun GPAScreen(viewModel: AppViewModel) {
+    val sourceDataState = viewModel.sourceData()
+    val selectedQuarter by viewModel.selectedQuarter()
 
     val currClasses = sourceDataState.value?.get(selectedQuarter)?.classes
 
@@ -68,10 +67,11 @@ fun GPAScreen() {
 
         val grades = key(currClasses) { remember { currClasses?.map { ClassMeta(it).grade } } }
         val currentGrade = sourceDataState.value?.get(selectedQuarter)?.grade_level
+        val gradeColors by viewModel.gradeColors()
 
         currClasses?.forEachIndexed { i, it ->
             val disabled = remember { mutableStateOf(false) }
-            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled) {
+            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled, gradeColors) {
                 disabled.value = !disabled.value
                 if (ignoreClasses.contains(it.frn)) {
                     ignoreClasses = ignoreClasses - it.frn
@@ -84,7 +84,7 @@ fun GPAScreen() {
         pastClasses?.reversed()?.forEach {
             if (it.credit_attempted > 0 && !it.grade.endsWith("<b>*</b>")) {
                 val disabled = remember { mutableStateOf(false) }
-                GradeCard(it.course_name, it.grade, it.grade_level, disabled) {
+                GradeCard(it.course_name, it.grade, it.grade_level, disabled, gradeColors) {
                     disabled.value = !disabled.value
                     if (ignoreClasses.contains(it.course_id)) {
                         ignoreClasses = ignoreClasses - it.course_id
@@ -98,7 +98,7 @@ fun GPAScreen() {
 }
 
 @Composable
-fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledState: State<Boolean>, onClick: (() -> Unit)? = null) {
+fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledState: State<Boolean>, gradeColors: GradeColors, onClick: (() -> Unit)? = null) {
     val inner = @Composable {
         Row {
             Text(courseName, modifier = Modifier.padding(10.dp))
@@ -110,7 +110,6 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
         }
     }
     val disabled by disabledState
-    val gradeColors by LocalGradeColors.current
     val colors = gradeColors.gradeColor(grade.removeSuffix(" <b></b>").firstOrNull().toString())?.let {
         if (disabled) {
             null

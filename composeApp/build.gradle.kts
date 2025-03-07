@@ -27,7 +27,7 @@ kotlin {
     listOf(
         iosX64(),
         iosArm64(),
-        iosSimulatorArm64()
+        iosSimulatorArm64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
@@ -57,19 +57,19 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.kvault)
             implementation(compose.materialIconsExtended)
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.datetime)
             implementation(libs.coil3.coil.compose)
             implementation(libs.mp.stools)
             implementation(libs.napier)
-            implementation(libs.permissions.compose)
-            implementation(libs.uri.core)
             implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.coil.network.ktor3)
             implementation(libs.colormath)
+            implementation(libs.androidx.datastore)
+            implementation(libs.kvault)
+            implementation(libs.permissions.compose)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

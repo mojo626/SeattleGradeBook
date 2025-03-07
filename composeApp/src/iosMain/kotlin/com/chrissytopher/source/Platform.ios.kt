@@ -20,14 +20,8 @@ import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_apple
 import source2.composeapp.generated.resources.snowflake_apple
 
-class IOSPlatform(private val uiViewController: UIViewController?, private var filesDir: String, private var getSourceDataSwift: (String, String, String, Boolean) -> String, private var openLinkSwift: (String) -> Unit): Platform() {
+class IOSPlatform(private val uiViewController: UIViewController?, private var filesDir: String, private var openLinkSwift: (String) -> Unit): Platform() {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
-
-    private val json = Json { ignoreUnknownKeys = true }
-
-    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
-        json.decodeFromString(getSourceDataSwift(username, password, quarter, loadPfp))
-    }
 
     override fun closeApp() {
         exit(0)

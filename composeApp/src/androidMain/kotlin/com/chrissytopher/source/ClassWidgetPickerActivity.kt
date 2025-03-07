@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -31,14 +32,15 @@ class ClassWidgetPickerActivity : ComponentActivity() {
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        val viewModel: AndroidAppViewModel by viewModels { AndroidAppViewModel.factory(this.applicationContext) }
         setContent {
-            CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
-                CompositionLocalProvider(LocalKVault provides kvault) {
-                    CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
+//            CompositionLocalProvider(LocalPermissionsController provides permissionsController) {
+//                CompositionLocalProvider(LocalKVault provides kvault) {
+//                    CompositionLocalProvider(LocalNotificationSender provides notificationSender) {
                         CompositionLocalProvider(LocalPlatform provides platform) {
                             Scaffold { paddingValues ->
                                 Box(Modifier.padding(paddingValues)) {
-                                    ClassWidgetPicker {
+                                    ClassWidgetPicker(viewModel) {
                                         kvault.set(WIDGET_CLASS_KEY+appWidgetId, it.frn)
                                         val appWidgetManager = AppWidgetManager.getInstance(this@ClassWidgetPickerActivity)
                                         val meta = ClassMeta(it)
@@ -51,9 +53,9 @@ class ClassWidgetPickerActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    }
-                }
-            }
+//                    }
+//                }
+//            }
         }
     }
 }

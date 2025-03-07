@@ -5,8 +5,8 @@ package com.chrissytopher.source
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import com.chrynan.uri.core.Uri
-import com.chrynan.uri.core.fromStringOrNull
+import coil3.Uri
+import coil3.toUri
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.math.roundToInt
@@ -325,6 +325,6 @@ fun gradeForScore(score: Float): String {
 @Composable
 fun rememberSchoolFromClasses(sourceData: SourceData): List<String> {
     return key(sourceData) {remember { sourceData.classes.mapNotNull {
-        Uri.fromStringOrNull(it.url)?.query?.split("&")?.map { it.split("=") }?.find { it.first() == "schoolid" }?.getOrNull(1)
+        it.url.toUri().query?.split("&")?.map { it.split("=") }?.find { it.first() == "schoolid" }?.getOrNull(1)
     } } }
 }

@@ -27,9 +27,9 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 @Composable
-fun Snow() {
-    val startUpLocal = RefreshedAlready.current.value
-    var startUp = remember { startUpLocal }
+fun Snow(viewModel: AppViewModel) {
+    val startUpLocal = viewModel.refreshedAlready.value
+    val startUp = remember { startUpLocal }
     var width by remember { mutableStateOf(0f) }
     var height by remember { mutableStateOf(0f) }
     var time by remember { mutableStateOf(0f) }

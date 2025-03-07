@@ -14,8 +14,6 @@ import org.jetbrains.compose.resources.DrawableResource
 
 abstract class Platform {
     abstract val name: String
-    val gradeSyncManager by lazy { GradeSyncManager(this) }
-    protected abstract fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData>
 
     abstract fun closeApp()
 
@@ -33,24 +31,6 @@ abstract class Platform {
     abstract fun BackHandler(enabled: Boolean, onBack: () -> Unit)
 
     abstract fun shareText(text: String)
-
-    class GradeSyncManager(private val platform: Platform) {
-        private var deferredResult: Deferred<Result<SourceData>>? = null
-
-        suspend fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> {
-            return if (deferredResult?.isActive == true) {
-                Napier.d("deferring")
-                deferredResult!!.await()
-            } else {
-                Napier.d("running new call")
-                val newDeferred = CoroutineScope(Dispatchers.Default).async {
-                    platform.getSourceData(username, password, quarter, loadPfp)
-                }
-                deferredResult = newDeferred
-                newDeferred.await()
-            }
-        }
-    }
 }
 
 @Composable

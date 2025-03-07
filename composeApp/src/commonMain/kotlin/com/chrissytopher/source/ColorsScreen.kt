@@ -52,27 +52,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chrissytopher.materialme.colorpicker.ClassicColorPicker
 import com.chrissytopher.materialme.colorpicker.HsvColor
+import com.chrissytopher.source.navigation.NavigationStack
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorsScreen(
-    currentTheme: ThemeVariant,
-    onThemeChange: (ThemeVariant) -> Unit
-) {
-    val kvault = LocalKVault.current
-    var expanded by remember { mutableStateOf(false) }
-    var selectedTheme by remember { mutableStateOf(currentTheme.toString()) }
-    val navHost = LocalNavHost.current
-
+fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+    val selectedTheme by viewModel.currentTheme()
 
     Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(8.dp))
                 val screenSize = getScreenSize()
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(CircleShape).clickable { navHost?.popStack(screenSize.width.toFloat()) })
+                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(CircleShape).clickable { navHost.popStack(screenSize.width.toFloat()) })
             }
 
             Text("Colors and Themes", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
@@ -82,35 +76,11 @@ fun ColorsScreen(
 
         Row {
             for (theme in ThemeVariant.entries) {
-                ElevatedFilterChip(selected = selectedTheme == theme.toString(), onClick = {
-                    selectedTheme = theme.toString()
-                    onThemeChange(theme)
-                    kvault?.set("THEME", theme.toString())
-                }, label = { Text(theme.name) }, elevation = SelectableChipElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp))
+                ElevatedFilterChip(selected = selectedTheme == theme, onClick = { viewModel.setCurrentTheme(theme) }, label = { Text(theme.name) }, elevation = SelectableChipElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp))
                 Spacer(Modifier.width(5.dp))
             }
         }
-
-//        Box (modifier = Modifier.fillMaxWidth()) {
-//            Row( modifier = Modifier.clickable{ expanded = true }.border(2.dp, SolidColor(
-//                MaterialTheme.colorScheme.secondary),shape = RoundedCornerShape(15.dp)
-//            ) ) {
-//                Text(selectedTheme, modifier = Modifier, style = MaterialTheme.typography.titleMedium)
-//                Spacer(modifier = Modifier.weight(1f))
-//                Icon(if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown, contentDescription = "", modifier = Modifier)
-//            }
-//
-//            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false })
-//            {
-//                ThemeVariant.entries.forEach { theme ->
-//                    DropdownMenuItem (
-//                        text = { Text(theme.toString()) },
-//                        onClick = { selectedTheme = theme.toString(); onThemeChange(theme); expanded = false; kvault?.set("THEME", theme.toString())}
-//                    )
-//                }
-//            }
-//        }
-        var gradeColors by LocalGradeColors.current
+        val gradeColors by viewModel.gradeColors()
         var pendingGrade: String? by remember { mutableStateOf(null) }
         Text("Grade Colors", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         Row(Modifier.fillMaxWidth().padding(0.dp, 7.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
@@ -150,15 +120,14 @@ fun ColorsScreen(
                         else -> Color.Black
                     }
                     ClassicColorPicker(color = HsvColor.from(color)) {
-                        when (pendingGrade) {
-                            "A" -> gradeColors = gradeColors.copy(_AColor = it.toColor().value)
-                            "B" -> gradeColors = gradeColors.copy(_BColor = it.toColor().value)
-                            "C" -> gradeColors = gradeColors.copy(_CColor = it.toColor().value)
-                            "D" -> gradeColors = gradeColors.copy(_DColor = it.toColor().value)
-                            "E" -> gradeColors = gradeColors.copy(_EColor = it.toColor().value)
-                            else -> {}
-                        }
-                        kvault?.set(GRADE_COLORS_KEY, Json.encodeToString(gradeColors))
+                        viewModel.setGradeColors(when (pendingGrade) {
+                            "A" -> gradeColors.copy(_AColor = it.toColor().value)
+                            "B" -> gradeColors.copy(_BColor = it.toColor().value)
+                            "C" -> gradeColors.copy(_CColor = it.toColor().value)
+                            "D" -> gradeColors.copy(_DColor = it.toColor().value)
+                            "E" -> gradeColors.copy(_EColor = it.toColor().value)
+                            else -> gradeColors
+                        })
                     }
                 }
             }
@@ -175,8 +144,7 @@ fun ColorsScreen(
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clickable {
-                            gradeColors = GradeColors.default()
-                            kvault?.set(GRADE_COLORS_KEY, Json.encodeToString(gradeColors))
+                            viewModel.setGradeColors(GradeColors.default())
                             pendingGrade = null
                         }.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -189,8 +157,7 @@ fun ColorsScreen(
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clickable {
-                            gradeColors = GradeColors.georgeMode()
-                            kvault?.set(GRADE_COLORS_KEY, Json.encodeToString(gradeColors))
+                            viewModel.setGradeColors(GradeColors.georgeMode())
                             pendingGrade = null
                         }.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -203,8 +170,7 @@ fun ColorsScreen(
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
                         .clickable {
-                            gradeColors = GradeColors.fionaMode()
-                            kvault?.set(GRADE_COLORS_KEY, Json.encodeToString(gradeColors))
+                            viewModel.setGradeColors(GradeColors.fionaMode())
                             pendingGrade = null
                         }.padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,

@@ -26,12 +26,6 @@ import kotlin.system.exitProcess
 class AndroidPlatform(private val context: Context) : Platform() {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
 
-    private val json = Json { ignoreUnknownKeys = true }
-
-    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
-        json.decodeFromString(SourceApi.getSourceData(username, password, context.filesDir.absolutePath, quarter, loadPfp))
-    }
-
     override fun closeApp() {
         exitProcess(0)
     }
