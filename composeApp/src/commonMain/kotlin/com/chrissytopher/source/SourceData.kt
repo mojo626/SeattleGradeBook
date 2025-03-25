@@ -31,8 +31,8 @@ data class Class(
     var reported_grade: String? = null,
     var reported_score: String? = null,
 ) {
-    fun totalSections(): Int {
-        return assignments_parsed.sumOf { it._assignmentsections.size }
+    fun totalScores(): Int {
+        return assignments_parsed.sumOf { it._assignmentsections.sumOf { it._assignmentscores.size } }
     }
 }
 
@@ -322,9 +322,6 @@ fun gradeForScore(score: Float): String {
     }
 }
 
-@Composable
-fun rememberSchoolFromClasses(sourceData: SourceData): List<String> {
-    return key(sourceData) {remember { sourceData.classes.mapNotNull {
-        it.url.toUri().query?.split("&")?.map { it.split("=") }?.find { it.first() == "schoolid" }?.getOrNull(1)
-    } } }
+fun schoolFromClasses(sourceData: SourceData): List<String> = sourceData.classes.mapNotNull {
+    it.url.toUri().query?.split("&")?.map { it.split("=") }?.find { it.first() == "schoolid" }?.getOrNull(1)
 }

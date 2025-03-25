@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil3.PlatformContext
 import com.liftric.kvault.KVault
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 
 class AndroidAppViewModel(private val applicationContext: Context) : AppViewModel(createDataStore(applicationContext)) {
     val kVault = KVault(applicationContext)
+    override val platformContext: PlatformContext = applicationContext
     val permissionsController: PermissionsController = PermissionsController(applicationContext)
     override val notificationSender = AndroidNotificationSender(applicationContext)
 

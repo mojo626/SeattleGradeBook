@@ -45,6 +45,7 @@ kotlin {
             implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.kvault)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -68,11 +69,16 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.colormath)
             implementation(libs.androidx.datastore)
-            implementation(libs.kvault)
             implementation(libs.permissions.compose)
         }
         iosMain.dependencies {
+            implementation(libs.kvault)
             implementation(libs.ktor.client.darwin)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.mordant)
         }
 //        desktopMain.dependencies {
 //            implementation(compose.desktop.currentOs)

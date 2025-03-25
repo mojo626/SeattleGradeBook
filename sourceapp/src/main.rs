@@ -12,6 +12,6 @@ async fn main() {
     println!("Enter password: ");
     let mut password = String::new();
     io::stdin().read_line(&mut password).unwrap();
-    let data = get_source_data(&username.trim(), &password.trim(), ".", "Q2", false).await.unwrap();
+    let data = get_source_data(&username.trim(), &password.trim(), ".", "Q3", false).await.unwrap();
     fs::File::create("assignments.json").unwrap().write(data.as_bytes()).unwrap();
 }

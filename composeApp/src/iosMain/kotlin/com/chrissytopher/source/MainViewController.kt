@@ -12,7 +12,6 @@ import androidx.compose.ui.interop.LocalUIViewController
 import androidx.compose.ui.window.ComposeUIViewController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chrissytopher.source.themes.theme.AppTheme
-import com.liftric.kvault.KVault
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.runBlocking
@@ -47,14 +46,17 @@ fun debugBuild() {
 
 fun runBackgroundSync(sendNotification: (String, String) -> Unit, getSourceData: (String, String, String, Boolean) -> String, filesDir: String) {
     Napier.base(DebugAntilog())
-    val kvault = KVault()
     val json = Json { ignoreUnknownKeys = true }
     val notificationSender = object : NotificationSender() {
         override fun sendNotification(title: String, body: String) {
             sendNotification(title, body)
         }
     }
-    runBlocking { doBackgroundSync(kvault, json, notificationSender, { username: String, password: String, quarter: String, pfp: Boolean ->
+    val dataStore = createDataStore(filesDir)
+    val runBackgroundSync = { username: String, password: String, quarter: String, pfp: Boolean ->
         runCatching { Json.decodeFromString<SourceData>(getSourceData(username, password, quarter, pfp)) }
-    }) }
+    }
+    return runBlocking {
+        backgroundSyncDatastore(dataStore, json, notificationSender, runBackgroundSync)
+    }
 }

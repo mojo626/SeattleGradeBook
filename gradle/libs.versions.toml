@@ -19,6 +19,7 @@ coroutines = "1.10.1"
 kotlinxDatetime = "0.6.1"
 kotlinxSerializationJson = "1.8.0"
 kvault = "1.12.0"
+mordant = "3.0.2"
 mp_stools = "1.5.1"
 napier = "2.7.1"
 navigationCompose = "2.7.0-alpha07"
@@ -45,9 +46,11 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kvault = { module = "com.liftric:kvault", version.ref = "kvault" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
 mp_stools = { module = "net.sergeych:mp_stools", version.ref = "mp_stools" }
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }

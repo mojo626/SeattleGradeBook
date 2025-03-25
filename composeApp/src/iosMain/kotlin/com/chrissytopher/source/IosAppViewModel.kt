@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.viewModelScope
+import coil3.PlatformContext
 import com.liftric.kvault.KVault
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.ios.PermissionsController
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 class IosAppViewModel(override val notificationSender: NotificationSender?, val getSourceDataSwift: (String, String, String, Boolean) -> String, dataStore: DataStore<Preferences>) : AppViewModel(dataStore) {
     val permissionsController: PermissionsController = PermissionsController()
     private val kVault = KVault()
+    override val platformContext: PlatformContext = PlatformContext.INSTANCE
 
     override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
         json.decodeFromString(getSourceDataSwift(username, password, quarter, loadPfp))

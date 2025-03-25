@@ -5,11 +5,16 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.compose.asPainter
+import coil3.request.ImageRequest
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -25,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel() {
     val json = Json { ignoreUnknownKeys = true }
+    abstract val platformContext: PlatformContext
     abstract val notificationSender: NotificationSender?
 
     @Composable
@@ -53,6 +59,9 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     private lateinit var _username: StateFlow<String?>
     private lateinit var _password: StateFlow<String?>
 
+    private val _schoolTitleImagePainter: MutableState<Painter?> = mutableStateOf(null)
+    val schoolTitleImage: State<Painter?> = _schoolTitleImagePainter
+
     init {
         viewModelScope.launch {
             _sourceData = dataStore.data.map { it[SOURCE_DATA_PREFERENCE]?.let { gradeData ->
@@ -64,7 +73,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
                 json.decodeFromString<HashMap<String, Boolean>>(it)
             } ?: hashMapOf() }.stateIn(viewModelScope)
             _hideMentorship = dataStore.data.map { it[HIDE_MENTORSHIP_PREFERENCE] ?: false }.stateIn(viewModelScope)
-            _preferReported = dataStore.data.map { it[PREFER_REPORTED_PREFERENCE] ?: false }.stateIn(viewModelScope)
+            _preferReported = dataStore.data.map { it[PREFER_REPORTED_PREFERENCE] ?: true }.stateIn(viewModelScope)
             _currentTheme = dataStore.data.map { ThemeVariant.valueOf(it[THEME_PREFERENCE] ?: "Classic") }.stateIn(viewModelScope)
             _gradeColors = dataStore.data.map { it[GRADE_COLORS_PREFERENCE]?.let {
                 runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
@@ -78,6 +87,10 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             _password = dataStore.data.map { it[PASSWORD_PREFERENCE] }.stateIn(viewModelScope)
             migrations()
             initializedFlows.value = true
+
+            launch {
+                _schoolTitleImagePainter.value = ImageLoader(platformContext).execute(ImageRequest.Builder(platformContext).data(_sourceData.value?.getSchool()?.titleImageUrl).build()).image?.asPainter(platformContext)
+            }
         }
     }
 
@@ -122,7 +135,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
                             val currentUpdates = _updateClasses.value
                             val updatedClasses = newSourceData.classes.filter { newClass ->
                                 val oldClass = _sourceData.value?.get(_selectedQuarter.value)?.classes?.find { it.name == newClass.name} ?: return@filter false
-                                (oldClass.totalSections() != newClass.totalSections())
+                                (oldClass.totalScores() != newClass.totalScores())
                             }
                             val updatedClassesMap = hashMapOf(*updatedClasses.map { Pair(it.name, true) }.toTypedArray())
                             dataStore.edit {
@@ -275,3 +288,5 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
 
     open suspend fun migrations() {}
 }
+
+fun HashMap<String, SourceData>.getSchool(): School? = get(getCurrentQuarter())?.let { schoolFromClasses(it) }?.firstOrNull()?.let { id -> School.entries.find { it.id == id } }

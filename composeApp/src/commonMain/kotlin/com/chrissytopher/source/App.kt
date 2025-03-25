@@ -56,8 +56,8 @@ fun AppBottomBar(currentScreenState: State<NavScreen>, viewModel: AppViewModel, 
     val currentScreen by currentScreenState
     NavigationBar {
         var entries = NavScreen.entries.filter { it.showInNavBar }
-//        val sourceData by viewModel.sourceData()
-//        val isLincoln = sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
+        val sourceData by viewModel.sourceData()
+        val isLincoln = sourceData?.getSchool() == School.Lincoln
 //        if (isLincoln) {
 //            entries = listOf(NavScreen.School) + entries
 //        }
@@ -144,7 +144,7 @@ fun App(viewModel: AppViewModel) {
 //                            AssignmentScreen()
 //                        }
                         composable(route = NavScreen.School) {
-                            SchoolScreen()
+                            SchoolScreen(viewModel)
                         }
                         composable(route = NavScreen.Colors) {
                             ColorsScreen(viewModel, navigationStack)

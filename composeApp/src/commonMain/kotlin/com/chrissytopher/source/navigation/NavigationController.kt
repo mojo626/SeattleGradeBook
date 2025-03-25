@@ -67,8 +67,11 @@ fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modi
                 navigationStack.popStack(animateWidth = screenSize.width.toFloat())
             }
         }
-        Box(Modifier.offset { IntOffset((max(navigationStack.dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(navigationStack.dragOffset.value/(screenSize.width.toFloat()/1.5f))) {
-            contents(previousScope)
+        val previousAlpha = navigationStack.dragOffset.value/(screenSize.width.toFloat()/1.5f)
+        if (previousAlpha != 0f) {
+            Box(Modifier.offset { IntOffset((max(navigationStack.dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(previousAlpha)) {
+                contents(previousScope)
+            }
         }
         Box(Modifier.offset { IntOffset(max(navigationStack.dragOffset.value, 0f).roundToInt(), 0) }.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
             contents(scope)

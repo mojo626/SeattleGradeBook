@@ -22,6 +22,7 @@ import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -41,17 +42,24 @@ class MainActivity : ComponentActivity() {
             .getInstance(this)
             .enqueueUniquePeriodicWork(WORK_MANAGER_BACKGROUND_SYNC_ID, ExistingPeriodicWorkPolicy.KEEP, backgroundSyncRequest)
 
-        CoroutineScope(Dispatchers.Main).launch {
-            setContent {
-                CompositionLocalProvider(LocalPlatform provides platform) {
-                    AppTheme {
-                        val viewModelInitialized by viewModel.initializedFlows.collectAsState()
-                        if (!viewModelInitialized) {
-                            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
-                            return@AppTheme
-                        }
-                        App(viewModel)
+        //test background sync, caveman way no unit tests 🤢🤢🤢
+//        CoroutineScope(Dispatchers.Main).launch {
+//            delay(5000)
+//            doBackgroundSync(createDataStore(applicationContext), viewModel.json, null, { username: String, password: String, quarter: String, pfp: Boolean ->
+//                runCatching {
+//                    viewModel.json.decodeFromString<SourceData>(SourceApi.getSourceData(username, password, applicationContext.filesDir.absolutePath, quarter, pfp))
+//                }
+//            })
+//        }
+        setContent {
+            CompositionLocalProvider(LocalPlatform provides platform) {
+                AppTheme {
+                    val viewModelInitialized by viewModel.initializedFlows.collectAsState()
+                    if (!viewModelInitialized) {
+                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+                        return@AppTheme
                     }
+                    App(viewModel)
                 }
             }
         }
