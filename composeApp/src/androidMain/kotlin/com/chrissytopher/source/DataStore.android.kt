@@ -7,10 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 private var globalDataStore: DataStore<Preferences>? = null
 
 fun createDataStore(context: Context): DataStore<Preferences> {
-    if (globalDataStore == null){
-        globalDataStore = createDataStore(
+    return globalDataStore
+        ?: createDataStore(
             producePath = { context.filesDir.resolve(dataStoreFileName).absolutePath }
-        )
-    }
-    return globalDataStore!!
+        ).apply { globalDataStore = this }
 }

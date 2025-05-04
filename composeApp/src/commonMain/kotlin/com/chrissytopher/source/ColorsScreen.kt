@@ -1,14 +1,15 @@
 package com.chrissytopher.source
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,19 +18,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Chip
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronLeft
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SelectableChipElevation
@@ -44,24 +39,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.chrissytopher.materialme.colorpicker.ClassicColorPicker
 import com.chrissytopher.materialme.colorpicker.HsvColor
 import com.chrissytopher.source.navigation.NavigationStack
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import dev.chrisbanes.haze.hazeSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
     val selectedTheme by viewModel.currentTheme()
 
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+    Column(Modifier.fillMaxSize().hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(innerPadding).padding(12.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(8.dp))
@@ -76,7 +68,7 @@ fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
 
         Row {
             for (theme in ThemeVariant.entries) {
-                ElevatedFilterChip(selected = selectedTheme == theme, onClick = { viewModel.setCurrentTheme(theme) }, label = { Text(theme.name) }, elevation = SelectableChipElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp))
+                ElevatedFilterChip(selected = selectedTheme == theme, onClick = { viewModel.setCurrentTheme(theme) }, label = { Text(theme.name) }, elevation = SelectableChipElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp), colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh))
                 Spacer(Modifier.width(5.dp))
             }
         }

@@ -1,54 +1,43 @@
 package com.chrissytopher.source.navigation
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.GenericShape
-import androidx.compose.material.swipeable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import com.chrissytopher.source.LocalPlatform
 import com.chrissytopher.source.getScreenSize
-import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlin.math.max
 import kotlin.math.roundToInt
+
+val animationStyle: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMedium)
 
 @Composable
 fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modifier = Modifier, contents: @Composable NavigationControllerScope<T>.() -> Unit) {
@@ -67,27 +56,29 @@ fun <T> NavigationController(navigationStack: NavigationStack<T>, modifier: Modi
                 navigationStack.popStack(animateWidth = screenSize.width.toFloat())
             }
         }
-        val previousAlpha = navigationStack.dragOffset.value/(screenSize.width.toFloat()/1.5f)
+        val dragOffset by navigationStack.dragOffset
+        val previousAlpha = dragOffset.value/(screenSize.width.toFloat()/1.5f)
         if (previousAlpha != 0f) {
-            Box(Modifier.offset { IntOffset((max(navigationStack.dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(previousAlpha)) {
+            Box(Modifier.offset { IntOffset((max(dragOffset.value, 0f).roundToInt()-screenSize.width)/2, 0) }.alpha(previousAlpha).clickable(MutableInteractionSource(), null) {  }) {
                 contents(previousScope)
             }
         }
-        Box(Modifier.offset { IntOffset(max(navigationStack.dragOffset.value, 0f).roundToInt(), 0) }.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Box(Modifier.offset { IntOffset(max(dragOffset.value, 0f).roundToInt(), 0) }.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow)) {
             contents(scope)
         }
         if (!platform.livingInFearOfBackGestures() && canGoBack) {
+            var coroutineScope = rememberCoroutineScope()
             Box(Modifier.fillMaxHeight().width(30.dp).align(Alignment.CenterStart)
                 .draggable(
-                    rememberDraggableState { runBlocking { navigationStack.dragOffset.snapTo(navigationStack.dragOffset.value + it) } },
+                    rememberDraggableState { coroutineScope.launch { dragOffset.snapTo(dragOffset.value + it) } },
                     orientation = Orientation.Horizontal,
                     onDragStopped = {
-                        if (navigationStack.dragOffset.value > 0.33f*screenSize.width) {
-                            navigationStack.dragOffset.animateTo(screenSize.width.toFloat())
-                            navigationStack.dragOffset.snapTo(0f)
+                        if (dragOffset.value > 0.33f*screenSize.width) {
+                            dragOffset.animateTo(screenSize.width.toFloat(), animationSpec = animationStyle)
                             navigationStack.popStack()
+                            navigationStack.dragOffset.value = Animatable(0f)
                         } else {
-                            navigationStack.dragOffset.animateTo(0f)
+                            dragOffset.animateTo(0f, animationSpec = animationStyle)
                         }
                     }
                 )
@@ -111,18 +102,18 @@ class NavigationStack<T>(private val initialRoute: T) {
     private val navigationStackState = mutableStateOf(listOf(initialRoute))
     private val _routeState: MutableState<T> = mutableStateOf(initialRoute)
     private val _previousState: MutableState<T> = mutableStateOf(initialRoute)
-    var dragOffset = Animatable(0f)
+    var dragOffset = mutableStateOf(Animatable(0f))
     var coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
     fun popStack(animateWidth: Float = 0f) {
         coroutineScope.launch {
             doTransition(0f, animateWidth)
-            navigationStackState.value.lastOrNull()?.let { navigationStackState.value -= it }
+            navigationStackState.value = navigationStackState.value.toMutableList().apply { removeLastOrNull() }
             if (navigationStackState.value.isEmpty()) {
                 navigationStackState.value += initialRoute
             }
             _previousState.value = navigationStackState.value.getOrNull(navigationStackState.value.size-2) ?: initialRoute
             _routeState.value = navigationStackState.value.lastOrNull() ?: initialRoute
-            doTransition(0f, 0f)
+            dragOffset.value = Animatable(0f)
         }
     }
 
@@ -142,10 +133,10 @@ class NavigationStack<T>(private val initialRoute: T) {
 
     suspend fun doTransition(start: Float, end: Float) {
         if (start != end) {
-            dragOffset.snapTo(start)
-            dragOffset.animateTo(end)
+            dragOffset.value.snapTo(start)
+            dragOffset.value.animateTo(end, animationSpec = animationStyle)
         } else {
-            dragOffset.snapTo(end)
+            dragOffset.value.snapTo(end)
         }
     }
 

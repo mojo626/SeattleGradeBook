@@ -1,62 +1,56 @@
 package com.chrissytopher.source
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.Alignment
-import androidx.compose.runtime.key
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.hazeSource
 import net.sergeych.sprintf.*
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.CardDefaults
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
 
 
 @Composable
-fun GPAScreen(viewModel: AppViewModel) {
+fun GPAScreen(viewModel: AppViewModel, innerPadding: PaddingValues) {
     val sourceDataState = viewModel.sourceData()
     val selectedQuarter by viewModel.selectedQuarter()
 
     val currClasses = sourceDataState.value?.get(selectedQuarter)?.classes
 
-    //PastClass(date_completed=01/2020, grade_level=6, school=Robert Eagle Staff MS, course_id=HWL1275, course_name=JAPANESE 1A, credit_earned=0.25, credit_attempted=0.25, grade=A <b></b>)
     val pastClasses = sourceDataState.value?.get(selectedQuarter)?.past_classes
     var ignoreClasses: List<String> by remember { mutableStateOf(listOf()) }
 
     var gpaSelector by remember { mutableStateOf(0) }
 
-    Column ( modifier = Modifier.verticalScroll(rememberScrollState()) ) {
-        TabRow( selectedTabIndex = gpaSelector ) {
+    Column(modifier = Modifier.hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(innerPadding)) {
+        TabRow( selectedTabIndex = gpaSelector, containerColor = MaterialTheme.colorScheme.surfaceContainerLow ) {
             Tab(text = {Text("Unweighted GPA")}, selected = gpaSelector == 0, onClick = { gpaSelector = 0 })
             Tab(text = {Text("Weighted GPA")}, selected = gpaSelector == 1, onClick = { gpaSelector = 1 })
         }
-        Box( contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth() )
-        {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
             key(ignoreClasses) {
                 val (unweightedGpa, weightedGpa) = key(currClasses) {
                     remember { calculateGpas(currClasses, pastClasses, ignoreClasses) }
@@ -71,14 +65,14 @@ fun GPAScreen(viewModel: AppViewModel) {
 
         currClasses?.forEachIndexed { i, it ->
             val disabled = remember { mutableStateOf(false) }
-            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled, gradeColors) {
+            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled, gradeColors, onClick = grades?.getOrNull(i)?.let { _ -> {
                 disabled.value = !disabled.value
                 if (ignoreClasses.contains(it.frn)) {
                     ignoreClasses = ignoreClasses - it.frn
                 } else {
                     ignoreClasses = ignoreClasses + it.frn
                 }
-            }
+            }})
         }
 
         pastClasses?.reversed()?.forEach {
@@ -129,10 +123,11 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
             inner()
         }
     } else {
-        Card(
+        ElevatedCard(
             colors = colors,
             modifier = modifier,
-            onClick = onClick
+            onClick = onClick,
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
         ) {
             inner()
         }

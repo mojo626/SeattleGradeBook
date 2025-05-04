@@ -2,124 +2,99 @@ package com.chrissytopher.source
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.foundation.border
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.runtime.key
-import androidx.compose.foundation.clickable
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsDraggedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Divider
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Chair
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.IncompleteCircle
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.ChevronLeft
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Recycling
-import androidx.compose.material.icons.outlined.Remove
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.chrissytopher.source.navigation.NavigationStack
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.Serializable
 import net.sergeych.mptools.Now
 import net.sergeych.sprintf.sprintf
-import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-@Serializable
-data class ChangedAssignment (
-    var totalPointValue : Float = 0.0f,
-    var receivedPointvalue: Float = 0.0f,
-    var hidden : Boolean = false,
-    var assignmentId : Int,
-)
-
+//@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, outerPadding: PaddingValues) {
     val sourceDataState = viewModel.sourceData()
     val selectedQuarter by viewModel.selectedQuarter()
     val currClasses = remember { sourceDataState.value?.get(selectedQuarter)?.classes }
@@ -131,7 +106,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
 //    var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
 
     var expanded by remember { mutableStateOf(false) }
-    var selectedClassName by remember { mutableStateOf(currentClass.let { it?.name } ?: "Select a Class") }
+    var selectedClassName by remember { mutableStateOf(currentClass?.name ?: "Select a Class") }
 
 //    var selectedClass by remember { mutableStateOf(currentClass) }
 
@@ -146,45 +121,47 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
 //        Napier.d("changed addedAssignments: $addedAssignments")
     } //this is the only way that I could find to force a recompose :(
     //all g sometimes you just gotta do that
+    Scaffold(topBar = {
+        Column(Modifier.hazeEffect(viewModel.hazeState, hazeMaterial()).padding(bottom = 8.dp, top = outerPadding.calculateTopPadding(), start = outerPadding.calculateStartPadding(LocalLayoutDirection.current), end = outerPadding.calculateEndPadding(LocalLayoutDirection.current)).padding(6.dp)) {
+            Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                Row(Modifier.align(Alignment.CenterStart)) {
+                    Spacer(Modifier.width(8.dp))
+                    val screenSize = getScreenSize()
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
+                        CircleShape
+                    ).clickable { navHost.popStack(screenSize.width.toFloat()) })
+                }
 
-    Column(Modifier.padding(6.dp, 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.fillMaxWidth().padding(6.dp)) {
-            Row(Modifier.align(Alignment.CenterStart)) {
-                Spacer(Modifier.width(8.dp))
-                val screenSize = getScreenSize()
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
-                    CircleShape
-                ).clickable { navHost?.popStack(screenSize.width.toFloat()) })
+                Text("Grade Calculator", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
             }
+            if (selectedClassName != "Select a Class") {
+                currentClass?.let { currentClass ->
+                    Row(Modifier.padding(6.dp, 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
+                            ClassCard(
+                                currentClass,
+                                ClassMeta(currentClass),
+                                false, true,
+                                gradeColors,
+                            )
+                        }
 
-            Text("Grade Calculator", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
-        }
-        if (selectedClassName != "Select a Class") {
-            if (currentClass != null) {
-                Row(Modifier.padding(6.dp, 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
-                        ClassCard(
-                            currentClass!!,
-                            ClassMeta(currentClass!!),
-                            false, true,
-                            gradeColors,
-                        )
-                    }
+                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "Right arrow", modifier = Modifier.weight(0.3f).size(50.dp))
 
-                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "Right arrow", modifier = Modifier.weight(0.3f).size(50.dp))
-
-                    Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
-                        ClassCard(
-                            currentClass!!,
-                            ClassMeta(currentClass!!.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments), allowLessThanE = true),
-                            false, true,
-                            gradeColors,
-                        )
+                        Box(modifier = Modifier.aspectRatio(1f).weight(1f)) {
+                            ClassCard(
+                                currentClass,
+                                ClassMeta(currentClass.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments), allowLessThanE = true),
+                                false, true,
+                                gradeColors,
+                            )
+                        }
                     }
                 }
             }
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
+    }) { innerPadding ->
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize().hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(top = innerPadding.calculateTopPadding(), start = innerPadding.calculateStartPadding(LocalLayoutDirection.current), end = innerPadding.calculateEndPadding(LocalLayoutDirection.current)).padding(6.dp, 12.dp)) {
             Row {
                 Box (modifier = Modifier.weight(1f).padding(4.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable{ expanded = true }.padding(10.dp)) {
                     Row {
@@ -244,7 +221,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                                         scoreentrydate = Now().toLocalDateTime(TimeZone.currentSystemDefault()).format(LocalDateTime.Formats.ISO),
                                         scorepoints = 10.0f,
                                     ))
-                            )
+                                )
                             ))
                         ) }
                     }.padding(10.dp), horizontalArrangement = Arrangement.End) {
@@ -258,7 +235,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                 if (newestSection == null) return@forEachIndexed
                 val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
                 Box(Modifier.padding(0.dp, 5.dp)) {
-                    NewGradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = { (newSection, newScore) ->
+                    GradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = { (newSection, newScore) ->
                         addedAssignments = addedAssignments.toMutableList().apply { set(i,
                             Assignment(listOf(newScore?.let { newSection.copy(_assignmentscores = listOf(newScore)) } ?: newSection))
                         ) }
@@ -279,13 +256,13 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                     val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
                     Box(Modifier.padding(0.dp, 5.dp)) {
                         key(newestSection._id) {
-                            NewGradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = {
+                            GradeCalculatorCard(newestSection, newestScore, gradeColors, updateAssignment = {
                                 val now = Now().toLocalDateTime(TimeZone.currentSystemDefault())
                                 if (assignment._assignmentsections.isNotEmpty() && assignment._assignmentsections.firstOrNull()?._assignmentscores?.isNotEmpty() == true) {
                                     val newAssignment = assignment.copy()
                                     newAssignment._assignmentsections = newAssignment._assignmentsections.toMutableList().apply { this[0] = it.first.copy(duedate = now.date.format(LocalDate.Formats.ISO)) }
-                                    if (it.second != null) {
-                                        newAssignment._assignmentsections[0]._assignmentscores = listOf(it.second!!)
+                                    it.second?.let {
+                                        newAssignment._assignmentsections[0]._assignmentscores = listOf(it)
                                     }
                                     assignment = newAssignment
 
@@ -309,6 +286,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                     }
                 }
             }
+            Spacer(Modifier.height(outerPadding.calculateBottomPadding()))
         }
     }
 }
@@ -358,100 +336,9 @@ private fun CustomTextField(
     )
 }
 
-
-@Composable
-fun GradeCalculatorCard (
-    assignmentName : String = "New Assignment",
-    isNewAssignment : Boolean = true,
-    totalPointvalue : Float = 10.0f,
-    receivedPointvalue : Float = 10.0f,
-    onRemove : () -> Unit,
-    onReceivedValueChange : (String) -> Boolean,
-    onTotalValueChanged : (String) -> Boolean,
-    onSliderChanged : (Float, Boolean) -> Unit,
-    newAssignmentsChanged : Boolean,
-    gradeColors: GradeColors,
-    shown : Boolean = true,
-) {
-    var opened by remember { mutableStateOf(isNewAssignment) }
-    val grade = gradeForScore(receivedPointvalue/totalPointvalue)
-    val themeModifier = darkModeColorModifier()
-    val colors = gradeColors.gradeColor(grade)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } ?: CardDefaults.cardColors()
-    Card (
-        colors = colors,
-//        border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
-        modifier = Modifier.fillMaxWidth().padding(5.dp),
-        onClick = {
-            opened = !opened
-        }
-    ) {
-        Column()
-        {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(assignmentName, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                //ben the iconbutton seriously messes up the padding
-//                IconButton(onClick = { onRemove() }) {
-                    Icon(
-                        if (isNewAssignment) Icons.Outlined.Close else (if(shown) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff),
-                        contentDescription = "Close button",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(25.dp).clickable { onRemove() }
-                    )
-//                }
-            }
-            AnimatedVisibility(opened) {
-                Column {
-                    Row {
-                        Text("If you got ", fontSize = 20.sp)
-
-                        key (newAssignmentsChanged) {
-                            CustomTextField(
-                                onValueChange = {
-                                    onReceivedValueChange(it)
-                                },
-                                modifier = Modifier.height(30.dp).width(50.dp),
-                                placeholderText = "",
-                                fontSize = 20.sp,
-                                value = receivedPointvalue.toString(),
-                            )
-                        }
-
-
-
-                        Text(" out of ", fontSize = 20.sp)
-
-                        key (newAssignmentsChanged) {
-                            CustomTextField(
-                                onValueChange = { it ->
-                                    onTotalValueChanged(it)
-                                },
-                                modifier = Modifier.height(30.dp).width(50.dp),
-                                placeholderText = "",
-                                fontSize = 20.sp,
-                                value = totalPointvalue.toString()
-                            )
-                        }
-
-
-                    }
-
-                    val interaction = remember { MutableInteractionSource() }
-                    val isDragging by interaction.collectIsDraggedAsState()
-
-                    Slider( value = (if (totalPointvalue == 0.0f) 0.0f else receivedPointvalue/totalPointvalue),
-                        onValueChange = { onSliderChanged(it, isDragging) },
-                        interactionSource = interaction
-                    )
-                }
-            }
-        }
-
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, gradeColors: GradeColors, updateAssignment: (Pair<AssignmentSection, AssignmentScore?>) -> Unit, removeAssignment: (() -> Unit)? = null) {
+fun GradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, gradeColors: GradeColors, updateAssignment: (Pair<AssignmentSection, AssignmentScore?>) -> Unit, removeAssignment: (() -> Unit)? = null) {
     val grade = score?.scorelettergrade?.first()?.toString()
     val themeModifier = darkModeColorModifier()
     val containerColor = if (section.iscountedinfinalgrade && score?.isexempt != true) {
@@ -483,7 +370,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
     }
     var pointsString by remember { mutableStateOf(score?.scorepoints?.toString() ?: "") }
     var totalPointsString by remember { mutableStateOf(section.totalpointvalue.toString()) }
-    Card(colors = colors, modifier = iconModifier, onClick = { expanded = !expanded }) {
+    ElevatedCard(colors = colors, modifier = iconModifier, onClick = { expanded = !expanded }, elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
             Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleMedium.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleMedium)
@@ -539,7 +426,7 @@ fun NewGradeCalculatorCard(section: AssignmentSection, score: AssignmentScore?, 
                 },
                 valueRange = 0.0f..(section.totalpointvalue),
                 modifier = Modifier.padding(horizontal = 20.dp),
-                colors = SliderDefaults.colors(thumbColor = sliderColor, activeTrackColor = sliderColor, activeTickColor = sliderColor)
+                colors = SliderDefaults.colors(thumbColor = sliderColor, activeTrackColor = sliderColor, activeTickColor = sliderColor, inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainer)
             )
 
             var flagInfoOpen by remember { mutableStateOf(false) }

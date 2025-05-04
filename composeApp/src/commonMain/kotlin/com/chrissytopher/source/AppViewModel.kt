@@ -1,5 +1,6 @@
 package com.chrissytopher.source
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -11,10 +12,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import coil3.ImageLoader
 import coil3.PlatformContext
-import coil3.compose.asPainter
-import coil3.request.ImageRequest
+import dev.chrisbanes.haze.HazeState
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -40,6 +39,8 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     val classForGradePage: MutableState<Class?> = mutableStateOf(null)
     val assignmentForPage: MutableState<AssignmentSection?> = mutableStateOf(null)
     val refreshedAlready = mutableStateOf(false)
+    val homeScrollState = ScrollState(0)
+    val hazeState = HazeState()
     val lastClassMeta: MutableState<List<ClassMeta>?> = mutableStateOf(null)
     val initializedFlows = MutableStateFlow(false)
 
@@ -74,7 +75,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             } ?: hashMapOf() }.stateIn(viewModelScope)
             _hideMentorship = dataStore.data.map { it[HIDE_MENTORSHIP_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _preferReported = dataStore.data.map { it[PREFER_REPORTED_PREFERENCE] ?: true }.stateIn(viewModelScope)
-            _currentTheme = dataStore.data.map { ThemeVariant.valueOf(it[THEME_PREFERENCE] ?: "Classic") }.stateIn(viewModelScope)
+            _currentTheme = dataStore.data.map { ThemeVariant.valueOf(it[THEME_PREFERENCE] ?: ThemeVariant.Dynamic.name) }.stateIn(viewModelScope)
             _gradeColors = dataStore.data.map { it[GRADE_COLORS_PREFERENCE]?.let {
                 runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
             }.stateIn(viewModelScope)
@@ -89,7 +90,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             initializedFlows.value = true
 
             launch {
-                _schoolTitleImagePainter.value = ImageLoader(platformContext).execute(ImageRequest.Builder(platformContext).data(_sourceData.value?.getSchool()?.titleImageUrl).build()).image?.asPainter(platformContext)
+//                _schoolTitleImagePainter.value = ImageLoader(platformContext).execute(ImageRequest.Builder(platformContext).data(_sourceData.value?.getSchool()?.titleImageUrl).build()).image?.asPainter(platformContext)
             }
         }
     }
@@ -272,17 +273,18 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
         private var deferredResult: Deferred<Result<SourceData>>? = null
 
         suspend fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> {
-            return if (deferredResult?.isActive == true) {
-                Napier.d("deferring")
-                deferredResult!!.await()
-            } else {
-                Napier.d("running new call")
-                val newDeferred = CoroutineScope(Dispatchers.Default).async {
-                    viewModel.getSourceData(username, password, quarter, loadPfp)
+            deferredResult?.let {
+                if (it.isActive) {
+                    Napier.d("deferring")
+                    return@getSourceData it.await()
                 }
-                deferredResult = newDeferred
-                newDeferred.await()
             }
+            Napier.d("running new call")
+            val newDeferred = CoroutineScope(Dispatchers.Default).async {
+                viewModel.getSourceData(username, password, quarter, loadPfp)
+            }
+            deferredResult = newDeferred
+            return newDeferred.await()
         }
     }
 

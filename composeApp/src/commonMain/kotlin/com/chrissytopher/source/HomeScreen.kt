@@ -3,69 +3,81 @@ package com.chrissytopher.source
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Card
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.BadgedBox
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.chrissytopher.source.navigation.NavigationStack
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import net.sergeych.sprintf.sprintf
+import org.jetbrains.compose.resources.vectorResource
+import source2.composeapp.generated.resources.Res
+import source2.composeapp.generated.resources.settings_customized
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
+fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, outerPaddingValues: PaddingValues) {
     val refreshingInProgress by viewModel.refreshingInProgress
     val refreshSuccess: Boolean? by viewModel.refreshSuccess
 
@@ -86,83 +98,102 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
             viewModel.refresh()
         }
     }
-    val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { viewModel.refresh() } )
+//    val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { viewModel.refresh() } )
+    val pullState = rememberPullToRefreshState()
     val gradeColors by viewModel.gradeColors()
-    Box {
-        Column (
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullState)
-        ) {
-            Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                var bigPfp by remember { mutableStateOf(false) }
-                var normalPfpSize by remember { mutableStateOf(IntSize.Zero) }
-                val screenSize = getScreenSize()
-                val pfpBigWidth = 0.9f
-                val bigScalar = (screenSize.width.toFloat()*pfpBigWidth)/normalPfpSize.width.toFloat()
-                val pfpScale by animateFloatAsState(if (bigPfp) bigScalar else 1f)
-                val pfpPosition by animateOffsetAsState(if (bigPfp) Offset(screenSize.width.toFloat()*pfpBigWidth/2f, screenSize.height.toFloat()*pfpBigWidth/2f) else Offset(0f, 0f))
-                Box(Modifier.zIndex(2f).onSizeChanged { if (!bigPfp) normalPfpSize = it }.offset { pfpPosition.round() }.scale(pfpScale)) {
-                    val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
-                    AsyncImage(
-                        pfpImage,
-                        "Content",
-                        Modifier.size(50.dp).clip(CircleShape).clickable { bigPfp = !bigPfp },
-                        filterQuality = FilterQuality.High,
-                        alignment = Alignment.Center,
-                        contentScale = ContentScale.FillWidth,
+    val isRefreshing = refreshingInProgress || refreshSuccess != null
+    PullToRefreshBox(
+        state = pullState,
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() },
+        indicator = {
+            StatusPullRefreshIndicator(isRefreshing, refreshSuccess, pullState, gradeColors.AColor, gradeColors.EColor, modifier = Modifier.align(Alignment.TopCenter).zIndex(3f))
+        },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val updatedClasses by viewModel.updateClasses()
+        Scaffold(topBar = {
+            Column(Modifier.zIndex(1.1f).hazeEffect(state = viewModel.hazeState, style = hazeMaterial()).padding(bottom = 8.dp, top = outerPaddingValues.calculateTopPadding(), start = outerPaddingValues.calculateStartPadding(LocalLayoutDirection.current), end = outerPaddingValues.calculateEndPadding(LocalLayoutDirection.current))) {
+                Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    var bigPfp by remember { mutableStateOf(false) }
+                    var normalPfpSize by remember { mutableStateOf(IntSize.Zero) }
+                    val screenSize = getScreenSize()
+                    val pfpBigWidth = 0.9f
+                    val bigScalar = (screenSize.width.toFloat() * pfpBigWidth) / normalPfpSize.width.toFloat()
+                    val pfpScale by animateFloatAsState(if (bigPfp) bigScalar else 1f)
+                    val pfpPosition by animateOffsetAsState(
+                        if (bigPfp) Offset(
+                            screenSize.width.toFloat() * pfpBigWidth / 2f,
+                            screenSize.height.toFloat() * pfpBigWidth / 2f
+                        ) else Offset(0f, 0f)
                     )
-                }
-                var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
-                val showMiddleName by viewModel.showMiddleName()
-                if (!showMiddleName) {
-                    val names = studentName.split(" ")
-                    studentName = "${names.first()} ${names.last()}"
-                }
-                Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
-                if (isLincoln) {
-                    Box(Modifier.size(50.dp).background(MaterialTheme.colorScheme.surfaceContainer, CircleShape).clickable {
-                        navHost.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat())
-                    }) {
-                        Image(
-                            imageVector = NavScreen.Settings.unselectedIcon,
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(40.dp).align(Alignment.Center),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+                    Box(Modifier.zIndex(2f).onSizeChanged { if (!bigPfp) normalPfpSize = it }.offset { pfpPosition.round() }.scale(pfpScale)) {
+                        val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
+                        AsyncImage(
+                            pfpImage,
+                            "Content",
+                            Modifier.size(50.dp).shadow(8.dp, CircleShape).clip(CircleShape).clickable { bigPfp = !bigPfp },
+                            filterQuality = FilterQuality.High,
+                            alignment = Alignment.Center,
+                            contentScale = ContentScale.FillWidth,
                         )
                     }
-                } else {
-                    Spacer(Modifier.size(50.dp))
-                }
-            }
-
-            val updatedClasses by viewModel.updateClasses()
-            val selectionDisabledAlpha by animateFloatAsState(if (refreshingInProgress) 0.5f else 1.0f, animationSpec = tween(200))
-            Row(Modifier.alpha(selectionDisabledAlpha)) {
-                for (quarter in quarters) {
-                    BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
-                        if (quarter == getCurrentQuarter() && updatedClasses.isNotEmpty()) {
-                            Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
-                        }
-                    }) {
-                        Box(Modifier
-                            .fillMaxWidth()
-                            .background(if (selectedQuarter == quarter) CardDefaults.cardColors().containerColor else CardDefaults.cardColors().disabledContainerColor, CardDefaults.outlinedShape)
-                            .border(CardDefaults.outlinedCardBorder(selectedQuarter == quarter), CardDefaults.outlinedShape)
-                            .clickable(remember { MutableInteractionSource() }, null, enabled = !refreshingInProgress) {
-                                viewModel.setSelectedQuarter(quarter)
-                            }
+                    var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
+                    val showMiddleName by viewModel.showMiddleName()
+                    if (!showMiddleName) {
+                        val names = studentName.split(" ")
+                        studentName = "${names.first()} ${names.last()}"
+                    }
+                    Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                    val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
+                    if (isLincoln) {
+                        Box(
+                            Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .clickable { navHost.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat()) }
                         ) {
-                            Text(quarter, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                            Icon(
+                                imageVector = vectorResource(Res.drawable.settings_customized),
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(40.dp).align(Alignment.Center),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        Spacer(Modifier.size(50.dp))
+                    }
+                }
+
+                val selectionDisabledAlpha by animateFloatAsState(
+                    if (refreshingInProgress) 0.5f else 1.0f,
+                    animationSpec = tween(200)
+                )
+                Row(Modifier.alpha(selectionDisabledAlpha)) {
+                    for (quarter in quarters) {
+                        BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
+                            if (quarter == getCurrentQuarter() && updatedClasses.isNotEmpty()) {
+                                Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
+                            }
+                        }) {
+                            Box(Modifier
+                                    .fillMaxWidth()
+                                    .background(if (selectedQuarter == quarter) CardDefaults.cardColors().containerColor else CardDefaults.cardColors().disabledContainerColor, CardDefaults.outlinedShape)
+                                    .border(CardDefaults.outlinedCardBorder(selectedQuarter == quarter), CardDefaults.outlinedShape)
+                                    .clickable(remember { MutableInteractionSource() }, null, enabled = !refreshingInProgress) { viewModel.setSelectedQuarter(quarter) }
+                            ) {
+                                Text(quarter, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                            }
                         }
                     }
-
                 }
             }
-            Column(Modifier.verticalScroll(rememberScrollState())) {
+        }) { paddingValues ->
+            Column(Modifier.hazeSource(viewModel.hazeState).padding(start = 10.dp+paddingValues.calculateStartPadding(LocalLayoutDirection.current), end = 10.dp+paddingValues.calculateEndPadding(LocalLayoutDirection.current)).verticalScroll(viewModel.homeScrollState)) {
+                Spacer(Modifier.height(paddingValues.calculateTopPadding()+10.dp))
                 val hideMentorship by viewModel.hideMentorship()
-                val (filteredClasses, filteredClassMetas) = if (hideMentorship && updatedClasses[MENTORSHIP_NAME] != true) {
+                val (filteredClasses, filteredClassMetas) = if (hideMentorship && (updatedClasses[MENTORSHIP_NAME] != true || getCurrentQuarter() != selectedQuarter)) {
                     val mentorshipIndex = sourceData?.get(selectedQuarter)?.classes?.indexOfFirst {
                         it.name == MENTORSHIP_NAME
                     }
@@ -170,10 +201,15 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
                 } else {
                     Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
-                filteredClasses?.chunked(2)?.forEachIndexed {row, it ->
+                val columns = if (getScreenSize().width > getScreenSize().height) {
+                    3
+                } else {
+                    2
+                }
+                filteredClasses?.chunked(columns)?.forEachIndexed {row, it ->
                     Row(modifier = Modifier.fillMaxWidth()) {
                         it.forEachIndexed { column, it ->
-                            val index = row*2 + column
+                            val index = row*columns + column
                             val meta = filteredClassMetas?.getOrNull(index)
                             val classForGradePage = viewModel.classForGradePage
                             val preferReported by viewModel.preferReported()
@@ -188,25 +224,14 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
                             }
                         }
 
-                        if (it.size == 1) {
+                        (0 until columns-it.size).forEach {
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {}
                         }
                     }
                 }
+                Spacer(Modifier.height(outerPaddingValues.calculateBottomPadding()))
             }
         }
-
-        StatusPullRefreshIndicator(
-            refreshing = refreshingInProgress,
-            success = refreshSuccess,
-            state = pullState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.primary,
-            successColor = gradeColors.AColor,
-            failureColor = gradeColors.EColor,
-            statusContentColor = MaterialTheme.colorScheme.surfaceContainer,
-        )
     }
     val now = Clock.System.now()
     val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -241,7 +266,7 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
                     }
                 }
                 Text(score ?: `class`.reported_score ?: " ", style = MaterialTheme.typography.titleLarge)
-                Text(`class`.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                Text(`class`.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             }
         }
     }
@@ -254,11 +279,11 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
         }
     }) {
         if (onClick == null) {
-            Card(modifier, colors = colors) {
+            Card(modifier, colors = colors, shape = RoundedCornerShape(15)) {
                 inner()
             }
         } else {
-            Card(onClick, modifier = modifier, colors = colors) {
+            ElevatedCard(onClick, modifier = modifier, colors = colors, elevation = CardDefaults.elevatedCardElevation(10.dp), shape = RoundedCornerShape(10)) {
                 inner()
             }
         }

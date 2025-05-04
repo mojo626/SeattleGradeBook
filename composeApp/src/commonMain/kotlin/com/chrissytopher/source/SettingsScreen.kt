@@ -5,9 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,12 +35,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chrissytopher.source.navigation.NavigationStack
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 
 @Composable
-fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
-    Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+    Column(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().verticalScroll(rememberScrollState()).padding(innerPadding).padding(12.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(8.dp))
@@ -71,6 +75,8 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>)
         }
 
         val screenSize = getScreenSize()
+        Spacer(Modifier.height(4.dp))
+        Text("Customization", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         Row(Modifier.fillMaxWidth().padding(0.dp, 5.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
             navHost.navigateTo(NavScreen.Colors, animateWidth = screenSize.width.toFloat())
         }.padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -78,6 +84,8 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>)
             Icon(Icons.Outlined.ChevronRight, "Open")
         }
 
+        Spacer(Modifier.height(4.dp))
+        Text("Notifications", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         val notificationsAllowed by viewModel.notificationsAllowed()
         if (notificationsAllowed) {
             val everyAssignment by viewModel.notificationsEveryAssignment()

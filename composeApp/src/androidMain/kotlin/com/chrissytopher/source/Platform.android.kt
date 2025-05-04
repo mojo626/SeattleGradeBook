@@ -22,6 +22,7 @@ import source2.composeapp.generated.resources.icon_android
 import source2.composeapp.generated.resources.snowflake_android
 import source2.composeapp.generated.resources.snowflake_apple
 import kotlin.system.exitProcess
+import androidx.core.net.toUri
 
 class AndroidPlatform(private val context: Context) : Platform() {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -48,7 +49,7 @@ class AndroidPlatform(private val context: Context) : Platform() {
     override fun openLink(link: String) {
         val urlIntent = Intent(
             Intent.ACTION_VIEW,
-            Uri.parse(link)
+            link.toUri()
         )
         context.startActivity(urlIntent)
     }

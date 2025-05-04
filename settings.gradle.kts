@@ -11,7 +11,7 @@ pluginManagement {
             }
         }
         mavenCentral()
-
+        mavenLocal()
         gradlePluginPortal()
     }
 }
@@ -26,6 +26,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        mavenLocal()
         maven("https://maven.universablockchain.com/")
         maven("https://repo.repsy.io/mvn/chrynan/public")
         maven("https://jitpack.io")

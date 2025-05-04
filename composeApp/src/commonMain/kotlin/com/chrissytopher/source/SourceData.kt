@@ -2,10 +2,6 @@
 
 package com.chrissytopher.source
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
-import coil3.Uri
 import coil3.toUri
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
@@ -109,7 +105,7 @@ class ClassMeta(classData: Class, allowLessThanE: Boolean = false) {
 
                 if (newestScore?.scorepoints == null) return@forEach
                 if (newestScore.isexempt) return@forEach
-                var newestScorePoints = newestScore.scorepoints!!
+                var newestScorePoints: Float = newestScore.scorepoints ?: return@forEach
                 newestScorePoints *= section.weight
                 if (newestScorePoints < possiblePoints / 2f && !allowLessThanE) {
                     newestScorePoints = possiblePoints / 2f

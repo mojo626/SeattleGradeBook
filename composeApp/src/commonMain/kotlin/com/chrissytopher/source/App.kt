@@ -1,5 +1,8 @@
 package com.chrissytopher.source
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -11,23 +14,36 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.chrissytopher.source.navigation.NavigationController
 import com.chrissytopher.source.navigation.NavigationStack
 import com.chrissytopher.source.themes.blueTheme.BlueAppTheme
+import com.chrissytopher.source.themes.blueTheme.lightScheme
 import com.chrissytopher.source.themes.redTheme.RedAppTheme
 import com.chrissytopher.source.themes.theme.AppTheme
+import com.chrissytopher.source.themes.theme.AppTypography
+import com.github.ajalt.colormath.model.RGB
+import com.materialkolor.ktx.toHex
+import com.materialkolor.rememberDynamicColorScheme
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -38,6 +54,10 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided") }
+
+@OptIn(ExperimentalHazeMaterialsApi::class)
+@Composable
+fun hazeMaterial() = HazeMaterials.regular(MaterialTheme.colorScheme.surface)
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false, val displayName: String? = null) {
     School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),
@@ -51,10 +71,11 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
 }
 
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun AppBottomBar(currentScreenState: State<NavScreen>, viewModel: AppViewModel, select: (NavScreen) -> Unit) {
     val currentScreen by currentScreenState
-    NavigationBar {
+    NavigationBar(containerColor = Color.Transparent, modifier = Modifier.hazeEffect(viewModel.hazeState, style = hazeMaterial())) {
         var entries = NavScreen.entries.filter { it.showInNavBar }
         val sourceData by viewModel.sourceData()
         val isLincoln = sourceData?.getSchool() == School.Lincoln
@@ -93,7 +114,7 @@ fun App(viewModel: AppViewModel) {
 //            }
             val currentTheme by viewModel.currentTheme()
 
-            ThemeSwitcher(currentTheme) {
+            ThemeSwitcher(currentTheme, viewModel) {
                 Scaffold(
                     bottomBar = {
                         val currentNav by navigationStack.routeState
@@ -110,44 +131,41 @@ fun App(viewModel: AppViewModel) {
                         }
                     }
                 ) { paddingValues ->
-
                     NavigationController(
                         navigationStack = navigationStack,
     //                    startDestination = if (loggedIn) NavScreen.Home.name else NavScreen.Onboarding.name,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
-
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         composable(route = NavScreen.Home) {
-                            HomeScreen(viewModel, navigationStack)
+                            HomeScreen(viewModel, navigationStack, paddingValues)
                         }
                         composable(route = NavScreen.Grades) {
-                            GradesScreen(viewModel, navigationStack)
+                            GradesScreen(viewModel, navigationStack, paddingValues)
                         }
                         composable(route = NavScreen.Settings) {
-                            SettingsScreen(viewModel, navigationStack)
+                            SettingsScreen(viewModel, navigationStack, paddingValues)
                         }
                         composable(route = NavScreen.Onboarding) {
-                            OnboardingScreen(viewModel, navigationStack)
+                            OnboardingScreen(viewModel, navigationStack, paddingValues)
                         }
                         composable(route = NavScreen.More) {
-                            MoreScreen(viewModel, navigationStack)
+                            MoreScreen(viewModel, navigationStack, paddingValues)
                         }
                         composable(route = NavScreen.GPA) {
-                            GPAScreen(viewModel)
+                            GPAScreen(viewModel, paddingValues)
                         }
                         composable(route = NavScreen.Calculator) {
-                            GradeCalculatorScreen(viewModel, navigationStack)
+                            GradeCalculatorScreen(viewModel, navigationStack, paddingValues)
                         }
-//                        composable(route = NavScreen.Assignments) {
-//                            AssignmentScreen()
-//                        }
                         composable(route = NavScreen.School) {
-                            SchoolScreen(viewModel)
+                            Box(Modifier.padding(paddingValues)) {
+                                SchoolScreen(viewModel)
+                            }
                         }
                         composable(route = NavScreen.Colors) {
-                            ColorsScreen(viewModel, navigationStack)
+                            ColorsScreen(viewModel, navigationStack, paddingValues)
                         }
                     }
                 }
@@ -162,19 +180,49 @@ fun <T> Result<T>.getOrNullAndThrow(): T? {
 }
 
 enum class ThemeVariant {
-    Classic, Red, Blue
+    Classic, Red, Blue, Dynamic
 }
 
 @Composable
 fun ThemeSwitcher(
     themeVariant: ThemeVariant,
+    viewModel: AppViewModel,
     content: @Composable () -> Unit
 ) {
     when (themeVariant) {
         ThemeVariant.Classic -> AppTheme(content = content)
         ThemeVariant.Red -> RedAppTheme(content = content)
         ThemeVariant.Blue -> BlueAppTheme(content = content)
+        ThemeVariant.Dynamic -> run {
+            val isDark = isSystemInDarkTheme()
+            val colorScheme = rememberDynamicColorScheme(seedColor = averageGradeColor(viewModel), isDark = isDark)
+            MaterialTheme(colorScheme = if (isDark) colorScheme else colorScheme.copy(
+                onSurface = lightScheme.onSurface,
+                onSurfaceVariant = lightScheme.onSurfaceVariant,
+                onBackground = lightScheme.onBackground,
+                primaryContainer = colorScheme.primary,
+                onPrimaryContainer = colorScheme.onPrimary,
+                secondaryContainer = colorScheme.primary,
+                onSecondaryContainer = colorScheme.onPrimary,
+            ), typography = AppTypography) {
+                CompositionLocalProvider(LocalTextStyle provides LocalTextStyle.current, content = content)
+            }
+        }
     }
+}
+
+@Composable
+fun averageGradeColor(viewModel: AppViewModel): Color {
+    val metas by viewModel.lastClassMeta
+    val gradeColors by viewModel.gradeColors()
+    val nothingColor = RGB(CardDefaults.cardColors().containerColor.toHex()).toOklab()
+    val colors = (metas?.map { gradeColors.gradeColor(it.grade?.first()?.toString() ?: "")?.let { RGB(it.red, it.green, it.blue).toOklab() } ?: nothingColor } ?: listOf(nothingColor)).toMutableList()
+    var averageColor = colors.removeLast()
+    for (color in colors) {
+        averageColor = averageColor.copy(l = (averageColor.l+color.l)/2f, a = (averageColor.a+color.a)/2f, b = (averageColor.b+color.b)/2f)
+    }
+    val averageSrgb = averageColor.toSRGB()
+    return Color(averageSrgb.r, averageSrgb.g, averageSrgb.b)
 }
 
 fun getCurrentQuarter(): String {

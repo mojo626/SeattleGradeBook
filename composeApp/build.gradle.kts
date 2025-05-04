@@ -1,15 +1,18 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import com.android.build.gradle.internal.tasks.getProjectNativeLibs
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.internal.os.OperatingSystem
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("plugin.serialization") version libs.versions.kotlin
 }
 
 
@@ -34,6 +37,7 @@ kotlin {
             isStatic = true
         }
     }
+
     sourceSets {
 //        val desktopMain by getting {
 //            resources.srcDirs("src/desktopMain/jniLibs")
@@ -50,7 +54,7 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material)
+//            implementation(compose.material)
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
@@ -70,6 +74,9 @@ kotlin {
             implementation(libs.colormath)
             implementation(libs.androidx.datastore)
             implementation(libs.permissions.compose)
+            implementation(libs.material.kolor)
+            implementation(libs.haze)
+            implementation(libs.haze.materials)
         }
         iosMain.dependencies {
             implementation(libs.kvault)

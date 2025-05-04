@@ -1,144 +1,137 @@
 package com.chrissytopher.source
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.filled.Chair
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.IncompleteCircle
 import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.ChevronLeft
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.HideSource
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.outlined.ChevronLeft
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.filled.Chair
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.IncompleteCircle
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.outlined.Chair
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.HideSource
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chrissytopher.source.navigation.NavigationStack
-import io.github.aakira.napier.Napier
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import net.sergeych.sprintf.*
-import kotlin.math.round
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import net.sergeych.sprintf.sprintf
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
-    val currentClass by viewModel.classForGradePage
+fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+    val currentClassNullable by viewModel.classForGradePage
+    val currentClass = currentClassNullable ?: run {
+        navHost.popStack(getScreenSize().width.toFloat())
+        return
+    }
     val platform = LocalPlatform.current
 
     LaunchedEffect(currentClass) {
         launch {
-            currentClass?.let { viewModel.markClassRead(it) }
+            viewModel.markClassRead(currentClass)
         }
     }
 
     var openedAssignment: Pair<AssignmentSection, AssignmentScore?>? by remember { mutableStateOf(null) }
 
-    if (currentClass == null) {
-        navHost?.popStack(getScreenSize().width.toFloat())
-        return
-    }
-
     var meta: ClassMeta? by remember { mutableStateOf(null) }
 
     LaunchedEffect(currentClass) {
         launch {
-            meta = ClassMeta(currentClass!!)
+            meta = ClassMeta(currentClass)
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(6.dp)) {
+    Column(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().verticalScroll(rememberScrollState()).padding(innerPadding).padding(6.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Row(Modifier.align(Alignment.CenterStart)) {
                 Spacer(Modifier.width(20.dp))
                 val screenSize = getScreenSize()
-                IconButton({ navHost?.popStack(screenSize.width.toFloat()) }) {
+                IconButton({ navHost.popStack(screenSize.width.toFloat()) }) {
                     Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
                 }
             }
 
-            Text(currentClass!!.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
+            Text(currentClass.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
         }
 
         val gradeColors by viewModel.gradeColors()
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                ClassCard(currentClass!!, meta, false, true, gradeColors)
+                ClassCard(currentClass, meta, false, true, gradeColors)
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(currentClass?.teacher_name ?: "Contact Teacher", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        Text(currentClass.teacher_name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Outlined.OpenInNew, "Open teacher contact", modifier = Modifier.size(40.dp).clickable {
-                            kotlin.runCatching {
-                                currentClass?.teacher_contact?.let { platform.openLink(it) }
+                            runCatching {
+                                platform.openLink(currentClass.teacher_contact)
                             }
                         })
                     }
                 }
                 val screenSize = getScreenSize()
                 Box(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp)).padding(10.dp).fillMaxWidth().clickable {
-                    navHost?.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
+                    navHost.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
                 }) {
                     Text("Grade Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
                 }
@@ -164,7 +157,7 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
         var assignmentsSorted: List<Assignment>? by remember { mutableStateOf(null) }
         LaunchedEffect(currentClass) {
             launch {
-                assignmentsSorted = currentClass?.assignments_parsed?.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } }
+                assignmentsSorted = currentClass.assignments_parsed.sortedByDescending { it._assignmentsections.maxOf { LocalDate.parse(it.duedate) } }
             }
         }
 
@@ -221,9 +214,9 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
                     fontSize = 25.sp
                 )
 
-                val withoutAssignment = ClassMeta(currentClass!!.copy(assignments_parsed = currentClass!!.assignments_parsed.filter { !it._assignmentsections.any { it._id == newestSection._id } }))
+                val withoutAssignment = ClassMeta(currentClass.copy(assignments_parsed = currentClass.assignments_parsed.filter { !it._assignmentsections.any { it._id == newestSection._id } }))
                 val withAssignment = newestScore?.scorepoints?.let {
-                    ClassMeta(currentClass!!.copy(assignments_parsed = currentClass!!.assignments_parsed.map {
+                    ClassMeta(currentClass.copy(assignments_parsed = currentClass.assignments_parsed.map {
                         if (it._assignmentsections.any { it._id == newestSection._id })  {
                             return@map it.copy(_assignmentsections = listOf(newestSection.copy(_assignmentscores = listOf(newestScore))))
                         }
@@ -233,7 +226,7 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
                 val percentChange = (withAssignment.finalScore ?: 0.0f) - (withoutAssignment.finalScore ?: 0.0f)
 
                 Text(
-                    "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}% ${withAssignment.finalScore?.let { "(${it}%)" } ?: ""}",
+                    "${if (percentChange >= 0.0) "+" else {""}}${"%.2f".sprintf(percentChange)}% ${withAssignment?.finalScore?.let { "(${it}%)" } ?: ""}",
                     modifier = Modifier.padding(20.dp, top = 10.dp),
                     fontSize = 20.sp
                 )
@@ -362,7 +355,7 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
     val iconModifier = iconColor?.let {
         Modifier.dashedBorder(3.dp, iconColor, 12.0.dp)
     } ?: Modifier
-    Card(modifier = Modifier.then(onClick?.let { Modifier.clickable(onClick = onClick) } ?: Modifier).then(iconModifier), colors = colors) {
+    Card(modifier = iconModifier.then(onClick?.let { Modifier.clickable(onClick = onClick).shadow(3.dp, CardDefaults.shape) } ?: Modifier), colors = colors) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(10.dp)) {
             val localDensity = LocalDensity.current
             Text(score?.scorelettergrade ?: "", modifier = Modifier.width( with (localDensity) { MaterialTheme.typography.titleMedium.fontSize.toDp()*1.5f } ), style = MaterialTheme.typography.titleMedium)
@@ -375,7 +368,6 @@ fun AssignmentCard(section: AssignmentSection, score: AssignmentScore?, showPerc
                 },
                 style = MaterialTheme.typography.titleMedium)
         }
-
     }
 }
 

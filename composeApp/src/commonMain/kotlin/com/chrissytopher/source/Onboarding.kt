@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chrissytopher.source.navigation.NavigationStack
+import dev.chrisbanes.haze.hazeSource
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,10 +94,11 @@ fun LoginScreen(viewModel: AppViewModel, done: () -> Unit) {
                     Napier.d("got data: $sourceDataRes")
                     val sourceData = sourceDataRes.getOrNullAndThrow()
                     if (sourceData != null) {
-                        viewModel.setSourceData(HashMap<String, SourceData>().apply {
+                        val newSourceData = HashMap<String, SourceData>().apply {
                             set(selectedQuarter, sourceData)
-                        })
-                        viewModel.changeLogin(username, password, sourceDataState!!)
+                        }
+                        viewModel.setSourceData(newSourceData)
+                        viewModel.changeLogin(username, password, newSourceData)
                         done()
                     } else {
                         error = true
@@ -155,7 +159,7 @@ fun NotificationsScreen(viewModel: AppViewModel, done: () -> Unit) {
                         viewModel.requestNotificationPermissions()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.inversePrimary,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
@@ -165,7 +169,7 @@ fun NotificationsScreen(viewModel: AppViewModel, done: () -> Unit) {
                 Button(onClick = {
                     done()
                 }, colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.inversePrimary,
+                    containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )) {
                     Text("Done")
@@ -204,7 +208,7 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
             Column {
                 Text("Send notifications for assignments over ${points.roundToInt()} points", modifier = Modifier.align(Alignment.CenterHorizontally), textAlign = TextAlign.Center)
                 Box(Modifier.align(Alignment.CenterHorizontally)) {
-                    Slider(points, onValueChange = { setPointThreshold(it) }, valueRange = 0f..300f, steps = 29, modifier = Modifier.fillMaxWidth(0.75f).align(Alignment.Center))
+                    Slider(points, onValueChange = { setPointThreshold(it) }, valueRange = 0f..300f, steps = 29, modifier = Modifier.fillMaxWidth(0.75f).align(Alignment.Center), colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant))
                 }
             }
         }
@@ -212,8 +216,8 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
 }
 
 @Composable
-fun OnboardingScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>) {
-    Box(Modifier.fillMaxSize()) {
+fun OnboardingScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+    Box(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().padding(innerPadding)) {
         var loggedIn by remember { mutableStateOf(false) }
         if (!loggedIn) {
             LoginScreen(viewModel) {
