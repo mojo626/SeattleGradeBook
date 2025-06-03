@@ -1,9 +1,11 @@
 package com.chrissytopher.source
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,7 +26,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.io.Source
+import kotlinx.io.asSource
+import kotlinx.io.buffered
 import java.util.concurrent.TimeUnit
+
+var getContentCallback: (suspend (Source?) -> Unit)? = null
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +68,18 @@ class MainActivity : ComponentActivity() {
                     }
                     App(viewModel)
                 }
+            }
+        }
+    }
+
+    val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        CoroutineScope(Dispatchers.Main).launch {
+            if (uri != null) {
+                Log.d("ContentPicker", "Selected URI: $uri")
+                contentResolver.openInputStream(uri)?.asSource()?.let { getContentCallback?.invoke(it.buffered()) }
+            } else {
+                Log.d("ContentPicker", "No media selected")
+                getContentCallback?.invoke(null)
             }
         }
     }

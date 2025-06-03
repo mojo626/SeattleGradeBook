@@ -12,15 +12,12 @@ import com.liftric.kvault.KVault
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.ios.PermissionsController
 import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
 
-class IosAppViewModel(override val notificationSender: NotificationSender?, val getSourceDataSwift: (String, String, String, Boolean) -> String, dataStore: DataStore<Preferences>) : AppViewModel(dataStore) {
+class IosAppViewModel(override val notificationSender: NotificationSender?, dataStore: DataStore<Preferences>, filesDir: Path) : AppViewModel(dataStore, filesDir) {
     val permissionsController: PermissionsController = PermissionsController()
     private val kVault = KVault()
     override val platformContext: PlatformContext = PlatformContext.INSTANCE
-
-    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
-        json.decodeFromString(getSourceDataSwift(username, password, quarter, loadPfp))
-    }
 
     private suspend fun migrateFromKVault() {
         if (kVault.bool(MIGRATED_TO_DATASTORE_KEY) == true) return

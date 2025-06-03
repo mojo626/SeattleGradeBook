@@ -144,14 +144,14 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
                 checked = showPercent,
                 onCheckedChange = { showPercent = it },
                 thumbContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Percent,
-                            contentDescription = null,
-                            modifier = Modifier.size(SwitchDefaults.IconSize),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Percent,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                        tint = if (showPercent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
             )
-
         }
 
         var assignmentsSorted: List<Assignment>? by remember { mutableStateOf(null) }

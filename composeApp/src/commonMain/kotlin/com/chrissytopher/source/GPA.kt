@@ -45,6 +45,8 @@ fun GPAScreen(viewModel: AppViewModel, innerPadding: PaddingValues) {
 
     var gpaSelector by remember { mutableStateOf(0) }
 
+    val preferReported by viewModel.preferReported()
+
     Column(modifier = Modifier.hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(innerPadding)) {
         TabRow( selectedTabIndex = gpaSelector, containerColor = MaterialTheme.colorScheme.surfaceContainerLow ) {
             Tab(text = {Text("Unweighted GPA")}, selected = gpaSelector == 0, onClick = { gpaSelector = 0 })
@@ -53,7 +55,7 @@ fun GPAScreen(viewModel: AppViewModel, innerPadding: PaddingValues) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
             key(ignoreClasses) {
                 val (unweightedGpa, weightedGpa) = key(currClasses) {
-                    remember { calculateGpas(currClasses, pastClasses, ignoreClasses) }
+                    remember { calculateGpas(currClasses, pastClasses, ignoreClasses, preferReported) }
                 }
                 Text("%.3f".sprintf((if (gpaSelector == 0) unweightedGpa else weightedGpa)) + if (ignoreClasses.isEmpty()) "" else "*", fontSize = 70.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(20.dp))
             }
@@ -65,7 +67,8 @@ fun GPAScreen(viewModel: AppViewModel, innerPadding: PaddingValues) {
 
         currClasses?.forEachIndexed { i, it ->
             val disabled = remember { mutableStateOf(false) }
-            GradeCard(it.name, grades?.getOrNull(i) ?: "",currentGrade ?: "", disabled, gradeColors, onClick = grades?.getOrNull(i)?.let { _ -> {
+            val grade = (if (preferReported) currClasses.getOrNull(i)?.reported_grade else null) ?: grades?.getOrNull(i) ?: currClasses.getOrNull(i)?.reported_grade
+            GradeCard(it.name, grade ?: "",currentGrade ?: "", disabled, gradeColors, onClick = grades?.getOrNull(i)?.let { _ -> {
                 disabled.value = !disabled.value
                 if (ignoreClasses.contains(it.frn)) {
                     ignoreClasses = ignoreClasses - it.frn
@@ -134,7 +137,7 @@ fun GradeCard(courseName: String, grade: String, gradeLevel: String, disabledSta
     }
 }
 
-private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass>?, ignoreClasses: List<String>): Pair<Double, Double> {
+private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass>?, ignoreClasses: List<String>, preferReported: Boolean): Pair<Double, Double> {
     var unweightedGpa = 0.0
     var weightedAdditions = 0.0
     var totalClasses = 0
@@ -171,8 +174,9 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
 
     currClasses?.forEachIndexed { i, it ->
         if (ignoreClasses.contains(it.frn)) return@forEachIndexed
-        if (metas?.getOrNull(i)?.grade != null) {
-            unweightedGpa += when (metas[i].grade.toString()) {
+        val grade = (if (preferReported) currClasses.getOrNull(i)?.reported_grade else null) ?: metas?.getOrNull(i)?.grade ?: currClasses.getOrNull(i)?.reported_grade
+        if (grade != null) {
+            unweightedGpa += when (grade) {
                 "A" -> { 4.0 }
                 "A-" -> { 3.7 }
                 "B+" -> { 3.3 }
@@ -183,6 +187,7 @@ private fun calculateGpas(currClasses: List<Class>?, pastClasses: List<PastClass
                 "C-" -> { 1.7 }
                 "D+" -> { 1.3 }
                 "D" -> { 1.0 }
+                //TODO: E?
                 else -> {
                     return@forEachIndexed
                 }

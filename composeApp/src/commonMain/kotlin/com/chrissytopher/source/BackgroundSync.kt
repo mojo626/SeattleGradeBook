@@ -7,7 +7,7 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 
-typealias GetSourceDataLambda = (String, String, String, Boolean) -> Result<SourceData>
+typealias GetSourceDataLambda = suspend (String, String, String, Boolean) -> Result<SourceData>
 
 suspend fun doBackgroundSync(
     username: String,

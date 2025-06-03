@@ -13,6 +13,7 @@ data class SourceData(
     var grade_level: String?,
     var student_name: String,
     var past_classes: List<PastClass>,
+    var teachers: HashMap<String, String>,
 )
 
 @Serializable

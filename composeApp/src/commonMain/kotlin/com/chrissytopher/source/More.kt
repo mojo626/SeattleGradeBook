@@ -62,7 +62,7 @@ fun MoreScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, inn
             }
             val gradesText = classGrades?.map {
                 when (it?.first()) {
-                    'A' -> "\uD83D\uDFE9"
+                    'A', 'P' -> "\uD83D\uDFE9"
                     'B' -> "\uD83D\uDFE6"
                     'C' -> "\uD83D\uDFE8"
                     'D' -> "\uD83D\uDFE7"

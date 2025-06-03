@@ -15,6 +15,12 @@ import androidx.lifecycle.viewModelScope
 import coil3.PlatformContext
 import dev.chrisbanes.haze.HazeState
 import io.github.aakira.napier.Napier
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -26,9 +32,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.io.files.Path
+import kotlinx.serialization.ExperimentalSerializationApi
 
-abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel() {
-    val json = Json { ignoreUnknownKeys = true }
+abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: Path) : ViewModel() {
+    val json = json()
+    val sourceApi = sourceApi(downloadDir, json)
     abstract val platformContext: PlatformContext
     abstract val notificationSender: NotificationSender?
 
@@ -37,7 +47,6 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     abstract fun requestNotificationPermissions()
 
     val classForGradePage: MutableState<Class?> = mutableStateOf(null)
-    val assignmentForPage: MutableState<AssignmentSection?> = mutableStateOf(null)
     val refreshedAlready = mutableStateOf(false)
     val homeScrollState = ScrollState(0)
     val hazeState = HazeState()
@@ -52,6 +61,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     private lateinit var _preferReported: StateFlow<Boolean>
     private lateinit var _currentTheme: StateFlow<ThemeVariant>
     private lateinit var _gradeColors: StateFlow<GradeColors>
+    private lateinit var _autoSync: StateFlow<Boolean>
 
     private lateinit var _notificationsEveryAssignment: StateFlow<Boolean>
     private lateinit var _notificationsLetterGradeChange: StateFlow<Boolean>
@@ -62,6 +72,9 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
 
     private val _schoolTitleImagePainter: MutableState<Painter?> = mutableStateOf(null)
     val schoolTitleImage: State<Painter?> = _schoolTitleImagePainter
+
+    private var _congraduationPageContent = MutableStateFlow<String?>(null)
+    val congraduationsPageContent = _congraduationPageContent.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -79,6 +92,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             _gradeColors = dataStore.data.map { it[GRADE_COLORS_PREFERENCE]?.let {
                 runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
             }.stateIn(viewModelScope)
+            _autoSync = dataStore.data.map { it[AUTO_SYNC_PREFERENCE] ?: true }.stateIn(viewModelScope)
 
             _notificationsEveryAssignment = dataStore.data.map { it[NEW_ASSIGNMENTS_NOTIFICATIONS_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _notificationsLetterGradeChange = dataStore.data.map { it[LETTER_GRADE_CHANGES_NOTIFICATIONS_PREFERENCE] ?: false }.stateIn(viewModelScope)
@@ -111,6 +125,8 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     fun currentTheme(): State<ThemeVariant> = _currentTheme.collectAsState()
     @Composable
     fun gradeColors(): State<GradeColors> = _gradeColors.collectAsState()
+    @Composable
+    fun autoSync(): State<Boolean> = _autoSync.collectAsState()
     @Composable
     fun username(): State<String?> = _username.collectAsState()
 
@@ -159,6 +175,11 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
                 }
             }
         }
+    }
+
+    suspend fun loadCongraduationsContent() = runCatching {
+        val pageContentString = sourceApi.httpClient.get(PAGE_CONTENT_URL).bodyAsText()
+        _congraduationPageContent.value = pageContentString
     }
 
     fun changeLogin(username : String, password : String, sourceData: HashMap<String, SourceData>) = viewModelScope.launch {
@@ -227,6 +248,12 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
         }
     }
 
+    fun setAutoSync(autoSync: Boolean) = viewModelScope.launch {
+        dataStore.edit {
+            it[AUTO_SYNC_PREFERENCE] = autoSync
+        }
+    }
+
     fun markClassRead(readClass: Class) = viewModelScope.launch {
         var updateClasses: Map<String, Boolean> = _updateClasses.value
         readClass.name.let { currentName -> updateClasses = updateClasses.filter { it.key != currentName } }
@@ -268,11 +295,10 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     }
 
     val gradeSyncManager by lazy { GradeSyncManager(this) }
-    protected abstract fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData>
     class GradeSyncManager(private val viewModel: AppViewModel) {
         private var deferredResult: Deferred<Result<SourceData>>? = null
 
-        suspend fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> {
+        suspend fun getSourceData(username: String, password: String, quarter: String, loadPfpSynchronously: Boolean): Result<SourceData> {
             deferredResult?.let {
                 if (it.isActive) {
                     Napier.d("deferring")
@@ -281,7 +307,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             }
             Napier.d("running new call")
             val newDeferred = CoroutineScope(Dispatchers.Default).async {
-                viewModel.getSourceData(username, password, quarter, loadPfp)
+                viewModel.sourceApi.getSourceData(username, password, quarter, true, loadPfpSynchronously, null)
             }
             deferredResult = newDeferred
             return newDeferred.await()
@@ -292,3 +318,18 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
 }
 
 fun HashMap<String, SourceData>.getSchool(): School? = get(getCurrentQuarter())?.let { schoolFromClasses(it) }?.firstOrNull()?.let { id -> School.entries.find { it.id == id } }
+
+@OptIn(ExperimentalSerializationApi::class)
+fun json() = Json {
+    ignoreUnknownKeys = true
+    allowTrailingComma = true
+    explicitNulls = false
+}
+
+fun sourceApi(downloadDir: Path, json: Json = json()) =
+    SourceApi(HttpClient {
+        install(ContentNegotiation) {
+            json(json)
+        }
+        install(HttpCookies)
+    }, json, downloadDir)

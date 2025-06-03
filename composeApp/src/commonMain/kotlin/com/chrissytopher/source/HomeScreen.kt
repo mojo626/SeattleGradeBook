@@ -93,8 +93,9 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
         classMetas = sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }
     }
     val refreshedAlready by viewModel.refreshedAlready
+    val autoSync by viewModel.autoSync()
     LaunchedEffect(true) {
-        if (!refreshedAlready) {
+        if (!refreshedAlready && autoSync) {
             viewModel.refresh()
         }
     }
@@ -107,6 +108,7 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refresh() },
         indicator = {
+
             StatusPullRefreshIndicator(isRefreshing, refreshSuccess, pullState, gradeColors.AColor, gradeColors.EColor, modifier = Modifier.align(Alignment.TopCenter).zIndex(3f))
         },
         modifier = Modifier.fillMaxSize()
@@ -272,7 +274,7 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
     }
     val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     val themeModifier = darkModeColorModifier()
-    val colors = (grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
+    val colors = (grade ?: reportedGrade)?.firstOrNull()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
         if (updates) {
             Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)

@@ -2,27 +2,21 @@ package com.chrissytopher.source
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
-import androidx.activity.OnBackPressedDispatcher
-import androidx.compose.animation.core.SeekableTransitionState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.json.Json
-import org.jetbrains.compose.resources.DrawableResource
 import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_android
 import source2.composeapp.generated.resources.snowflake_android
-import source2.composeapp.generated.resources.snowflake_apple
 import kotlin.system.exitProcess
 import androidx.core.net.toUri
+import kotlinx.coroutines.channels.Channel
+import kotlinx.io.Source
 
 class AndroidPlatform(private val context: Context) : Platform() {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -69,6 +63,18 @@ class AndroidPlatform(private val context: Context) : Platform() {
         val shareIntent = Intent.createChooser(sendIntent, null)
         context.startActivity(shareIntent)
     }
+
+    override suspend fun pickFile(mimeType: String): Source? {
+        val channel = Channel<Source?>()
+        getContentCallback = {
+            channel.send(it)
+        }
+        (context as? MainActivity)?.getContent?.launch(mimeType)
+        return channel.receive()
+    }
+
+    override fun imageTypeDescriptor() = "image/*"
+    override fun jsonTypeDescriptor() = "application/json"
 }
 
 @Composable

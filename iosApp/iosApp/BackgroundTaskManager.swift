@@ -34,7 +34,7 @@ extension BackgroundTaskManager {
         } else {
             FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path
         }
-        MainViewControllerKt.runBackgroundSync(sendNotification: sendNotification(title:body:), getSourceData: getSourceData, filesDir: filesDir)
+        MainViewControllerKt.runBackgroundSync(sendNotification: sendNotification(title:body:), filesDir: filesDir)
         
         
         task.setTaskCompleted(success: true)

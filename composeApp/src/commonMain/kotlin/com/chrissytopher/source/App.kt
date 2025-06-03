@@ -69,6 +69,7 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
     GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
     Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
+    Congraduation(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
 }
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
@@ -167,6 +168,9 @@ fun App(viewModel: AppViewModel) {
                         composable(route = NavScreen.Colors) {
                             ColorsScreen(viewModel, navigationStack, paddingValues)
                         }
+                        composable(route = NavScreen.Congraduation) {
+                            CongraduationPage(viewModel, navigationStack, paddingValues)
+                        }
                     }
                 }
             }
@@ -214,10 +218,17 @@ fun ThemeSwitcher(
 @Composable
 fun averageGradeColor(viewModel: AppViewModel): Color {
     val metas by viewModel.lastClassMeta
+    val sourceData by viewModel.sourceData()
+    val selectedQuarter by viewModel.selectedQuarter()
+    val currentClasses = sourceData?.get(selectedQuarter)?.classes
+    val preferReported by viewModel.preferReported()
+    val grades = metas?.mapIndexed { i, it ->
+        (if (preferReported) currentClasses?.getOrNull(i)?.reported_grade else null) ?: it.grade ?: currentClasses?.getOrNull(i)?.reported_grade
+    }
     val gradeColors by viewModel.gradeColors()
     val nothingColor = RGB(CardDefaults.cardColors().containerColor.toHex()).toOklab()
-    val colors = (metas?.map { gradeColors.gradeColor(it.grade?.first()?.toString() ?: "")?.let { RGB(it.red, it.green, it.blue).toOklab() } ?: nothingColor } ?: listOf(nothingColor)).toMutableList()
-    var averageColor = colors.removeLast()
+    val colors = (grades?.map { gradeColors.gradeColor(it?.firstOrNull()?.toString() ?: "")?.let { RGB(it.red, it.green, it.blue).toOklab() } ?: nothingColor } ?: listOf(nothingColor)).toMutableList()
+    var averageColor = colors.removeLastOrNull() ?: nothingColor
     for (color in colors) {
         averageColor = averageColor.copy(l = (averageColor.l+color.l)/2f, a = (averageColor.a+color.a)/2f, b = (averageColor.b+color.b)/2f)
     }
