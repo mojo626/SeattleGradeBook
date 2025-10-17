@@ -27,17 +27,28 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chrissytopher.source.navigation.NavigationStack
 import dev.chrisbanes.haze.hazeSource
+import io.github.aakira.napier.Napier
+import io.ktor.http.decodeURLPart
+import io.ktor.utils.io.asByteWriteChannel
+import io.ktor.utils.io.writeSource
+import kotlinx.coroutines.launch
+import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readByteArray
+import kotlinx.io.readString
+import kotlinx.serialization.json.Json
 
 @Composable
 fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
@@ -60,6 +71,12 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 5.dp, 5.dp)).padding(10.dp, 5.dp)) {
             Text("Hide mentorship from home", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             Switch(hideMentorship, onCheckedChange = { viewModel.setHideMentorship(it) })
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).padding(10.dp, 5.dp)) {
+            val scrollHomeScreen by viewModel.scrollHomeScreen()
+            Text("Scroll Home Screen", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            Switch(scrollHomeScreen, onCheckedChange = { viewModel.setScrollHomeScreen(it) })
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).padding(10.dp, 5.dp)) {
@@ -106,6 +123,50 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
                 viewModel.requestNotificationPermissions()
             }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                 Text("Enable Notifications")
+            }
+        }
+        val username by viewModel.username()
+        if (username == "1cjhuntwork") {
+            Text("Developer", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 5.dp, 5.dp)).padding(10.dp, 5.dp)) {
+                val autoSync by viewModel.autoSync()
+                Text("Auto Sync", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+                Switch(autoSync, onCheckedChange = { viewModel.setAutoSync(it) })
+            }
+            val platform = LocalPlatform.current
+            val selectedQuarter by viewModel.selectedQuarter()
+            val coroutineScope = rememberCoroutineScope()
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
+                coroutineScope.launch {
+                    val sourceData = runCatching { viewModel.json.decodeFromString<SourceData>(platform.pickFile(platform.jsonTypeDescriptor())!!.buffered().readString()) }.getOrNullAndThrow() ?: return@launch
+                    val newSourceData = HashMap<String, SourceData>().apply {
+                        set(selectedQuarter, sourceData)
+                    }
+                    SystemFileSystem.delete(Path("${platform.filesDir().decodeURLPart()}/pfp.jpeg"), mustExist = false)
+                    viewModel.setSourceData(newSourceData)
+                }
+            }.padding(10.dp, 10.dp)) {
+                Text("Load SourceData From JSON", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            }
+            val sourceData by viewModel.sourceData()
+            val updatedAssignments by viewModel.updatedAssignments()
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
+                coroutineScope.launch {
+                    val assignments = sourceData?.get(getCurrentQuarter())?.classes.orEmpty().map { it.assignments_parsed }.flatten().mapNotNull { it._assignmentsections.firstOrNull()?._id }
+                    Napier.d("adding assignments $assignments")
+                    val newUpdates = updatedAssignments + hashMapOf(*assignments.map { Pair(it, true) }.toTypedArray())
+                    viewModel._setUpdatedAssignments(newUpdates)
+                }
+            }.padding(10.dp, 10.dp)) {
+                Text("Add Updates", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
+                coroutineScope.launch {
+                    val image = runCatching { platform.pickFile(platform.imageTypeDescriptor())!!.buffered() }.getOrNullAndThrow() ?: return@launch
+                    SystemFileSystem.sink(Path("${platform.filesDir().decodeURLPart()}/pfp.jpeg")).asByteWriteChannel().writeSource(image)
+                }
+            }.padding(10.dp, 10.dp)) {
+                Text("Load Pfp from Image", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
         }
         val platform = LocalPlatform.current

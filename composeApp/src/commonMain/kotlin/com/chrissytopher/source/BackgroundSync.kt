@@ -6,14 +6,16 @@ import androidx.datastore.preferences.core.edit
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
+import kotlin.collections.map
+import kotlin.collections.orEmpty
 
-typealias GetSourceDataLambda = (String, String, String, Boolean) -> Result<SourceData>
+typealias GetSourceDataLambda = suspend (String, String, String, Boolean) -> Result<SourceData>
 
 suspend fun doBackgroundSync(
     username: String,
     password: String,
     sourceData: HashMap<String, SourceData>?,
-    currentUpdates: HashMap<String, Boolean>,
+    currentUpdates: HashMap<Int, Boolean>,
     thresholdNotifications: Boolean,
     thresholdNotificationsValue: Float,
     newAssignmentNotifications: Boolean,
@@ -21,7 +23,7 @@ suspend fun doBackgroundSync(
     preferReported: Boolean,
     notificationSender: NotificationSender?,
     getSourceData: GetSourceDataLambda
-): Pair<HashMap<String, SourceData>, Map<String, Boolean>>? {
+): Pair<HashMap<String, SourceData>, Map<Int, Boolean>>? {
     println("background sync started")
 //    currentData[USERNAME_PREFERENCE]?.let { username ->
 //        currentData[PASSWORD_PREFERENCE]?.let { password ->
@@ -57,7 +59,7 @@ suspend fun doBackgroundSync(
 //                dataStore.edit {
 //                    it[CLASS_UPDATES_PREFERENCE] = json.encodeToString(currentUpdates + hashMapOf(*updatedClasses.map { Pair(it.name, true) }.toTypedArray()))
 //                }
-                val newClassUpdates = currentUpdates + hashMapOf(*updatedClasses.map { Pair(it.name, true) }.toTypedArray())
+                val newAssignmentUpdates = currentUpdates + hashMapOf(*newAssignments.map { Pair(it.first._id, true) }.toTypedArray())
                 newAssignments.forEach { (newAssignment, newClass) ->
                     if (thresholdNotifications && thresholdNotificationsValue <= newAssignment.totalpointvalue) {
                         notificationSender?.sendNotification("New Assignment in ${newClass.name}", "${newAssignment.name}, worth ${newAssignment.totalpointvalue} points - Tap to view")
@@ -86,7 +88,7 @@ suspend fun doBackgroundSync(
                         }
                     }
                 }
-                return Pair(newSourceDataMap, newClassUpdates)
+                return Pair(newSourceDataMap, newAssignmentUpdates)
             }
 //        }
 //    }
@@ -99,7 +101,7 @@ suspend fun backgroundSyncDatastore(dataStore: DataStore<Preferences>, json: Jso
     val username = preferences[USERNAME_PREFERENCE] ?: return false
     val password = preferences[PASSWORD_PREFERENCE] ?: return false
     val sourceData = preferences[SOURCE_DATA_PREFERENCE]?.let { json.decodeFromString<HashMap<String, SourceData>>(it) }
-    val currentUpdates = preferences[CLASS_UPDATES_PREFERENCE]?.let { json.decodeFromString<HashMap<String, Boolean>>(it) } ?: hashMapOf()
+    val currentUpdates = preferences[ASSIGNMENT_UPDATES_PREFERENCE]?.let { json.decodeFromString<HashMap<Int, Boolean>>(it) } ?: hashMapOf()
     val thresholdNotifications = preferences[THRESHOLD_NOTIFICATIONS_PREFERENCE] ?: false
     val thresholdNotificationsValue = preferences[THRESHOLD_VALUE_NOTIFICATIONS_PREFERENCE] ?: 100f
     val newAssignmentNotifications = preferences[NEW_ASSIGNMENTS_NOTIFICATIONS_PREFERENCE] ?: false
@@ -108,7 +110,7 @@ suspend fun backgroundSyncDatastore(dataStore: DataStore<Preferences>, json: Jso
     val result = doBackgroundSync(username, password, sourceData, currentUpdates, thresholdNotifications, thresholdNotificationsValue, newAssignmentNotifications, letterGradeChangedNotifications, preferReported, notificationSender, runBackgroundSync) ?: return false
     dataStore.edit {
         it[SOURCE_DATA_PREFERENCE] = json.encodeToString(result.first)
-        it[CLASS_UPDATES_PREFERENCE] = json.encodeToString(result.second)
+        it[ASSIGNMENT_UPDATES_PREFERENCE] = json.encodeToString(result.second)
     }
     return true
 }

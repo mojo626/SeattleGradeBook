@@ -8,8 +8,10 @@ import androidx.work.WorkerParameters
 import com.liftric.kvault.KVault
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
+import io.ktor.http.decodeURLPart
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.files.Path
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
@@ -17,12 +19,11 @@ class BackgroundSyncWorker(private val appContext: Context, workerParams: Worker
     Worker(appContext, workerParams) {
     override fun doWork(): Result {
         Napier.base(DebugAntilog())
-        val json = Json { ignoreUnknownKeys = true }
+        val json = json()
+        val sourceApi = sourceApi(Path(appContext.filesDir.absolutePath), json)
         val notificationSender = AndroidNotificationSender(appContext)
-        val runBackgroundSync = { username: String, password: String, quarter: String, pfp: Boolean ->
-            runCatching {
-                json.decodeFromString<SourceData>(SourceApi.getSourceData(username, password, applicationContext.filesDir.absolutePath, quarter, pfp))
-            }
+        val runBackgroundSync: GetSourceDataLambda = { username: String, password: String, quarter: String, pfp: Boolean ->
+            sourceApi.getSourceData(username, password, quarter, pfp, true, null)
         }
         val dataStore = createDataStore(appContext)
         return runBlocking {

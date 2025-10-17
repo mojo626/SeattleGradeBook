@@ -65,6 +65,7 @@ import coil3.compose.AsyncImage
 import com.chrissytopher.source.navigation.NavigationStack
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.aakira.napier.Napier
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
@@ -93,9 +94,18 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
         classMetas = sourceData?.get(selectedQuarter)?.classes?.map { ClassMeta(it) }
     }
     val refreshedAlready by viewModel.refreshedAlready
+    val autoSync by viewModel.autoSync()
     LaunchedEffect(true) {
-        if (!refreshedAlready) {
+        if (!refreshedAlready && autoSync) {
             viewModel.refresh()
+        }
+    }
+    LaunchedEffect(refreshSuccess) {
+        if (refreshSuccess == true) {
+            platform.successVibration()
+        }
+        if (refreshSuccess == false) {
+            platform.failureVibration()
         }
     }
 //    val pullState = rememberStatusPullRefreshState(refreshingInProgress, refreshSuccess, onRefresh = { viewModel.refresh() } )
@@ -107,11 +117,12 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
         isRefreshing = isRefreshing,
         onRefresh = { viewModel.refresh() },
         indicator = {
+
             StatusPullRefreshIndicator(isRefreshing, refreshSuccess, pullState, gradeColors.AColor, gradeColors.EColor, modifier = Modifier.align(Alignment.TopCenter).zIndex(3f))
         },
         modifier = Modifier.fillMaxSize()
     ) {
-        val updatedClasses by viewModel.updateClasses()
+        val updatedAssignments by viewModel.updatedAssignments()
         Scaffold(topBar = {
             Column(Modifier.zIndex(1.1f).hazeEffect(state = viewModel.hazeState, style = hazeMaterial()).padding(bottom = 8.dp, top = outerPaddingValues.calculateTopPadding(), start = outerPaddingValues.calculateStartPadding(LocalLayoutDirection.current), end = outerPaddingValues.calculateEndPadding(LocalLayoutDirection.current))) {
                 Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -173,7 +184,7 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                 Row(Modifier.alpha(selectionDisabledAlpha)) {
                     for (quarter in quarters) {
                         BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
-                            if (quarter == getCurrentQuarter() && updatedClasses.isNotEmpty()) {
+                            if (quarter == getCurrentQuarter() && updatedAssignments.isNotEmpty()) {
                                 Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
                             }
                         }) {
@@ -190,14 +201,16 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                 }
             }
         }) { paddingValues ->
-            Column(Modifier.hazeSource(viewModel.hazeState).padding(start = 10.dp+paddingValues.calculateStartPadding(LocalLayoutDirection.current), end = 10.dp+paddingValues.calculateEndPadding(LocalLayoutDirection.current)).verticalScroll(viewModel.homeScrollState)) {
+            val scrollHomeScreen by viewModel.scrollHomeScreen()
+            Column(Modifier.hazeSource(viewModel.hazeState).padding(start = 10.dp+paddingValues.calculateStartPadding(LocalLayoutDirection.current), end = 10.dp+paddingValues.calculateEndPadding(LocalLayoutDirection.current)).then(if (scrollHomeScreen) Modifier.verticalScroll(viewModel.homeScrollState) else Modifier)) {
                 Spacer(Modifier.height(paddingValues.calculateTopPadding()+10.dp))
                 val hideMentorship by viewModel.hideMentorship()
-                val (filteredClasses, filteredClassMetas) = if (hideMentorship && (updatedClasses[MENTORSHIP_NAME] != true || getCurrentQuarter() != selectedQuarter)) {
-                    val mentorshipIndex = sourceData?.get(selectedQuarter)?.classes?.indexOfFirst {
-                        it.name == MENTORSHIP_NAME
-                    }
-                    Pair(sourceData?.get(selectedQuarter)?.classes?.filterIndexed { index, _ -> index != mentorshipIndex }, classMetas?.filterIndexed { index, _ -> index != mentorshipIndex })
+                val (filteredClasses, filteredClassMetas) = if (hideMentorship) {
+                    Pair(sourceData?.get(selectedQuarter)?.classes?.filter {
+                        !MENTORSHIP_NAMES.contains(it.name)
+                    }, classMetas?.filter {
+                        !MENTORSHIP_NAMES.contains(it.name)
+                    })
                 } else {
                     Pair(sourceData?.get(selectedQuarter)?.classes, classMetas)
                 }
@@ -207,16 +220,19 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                     2
                 }
                 filteredClasses?.chunked(columns)?.forEachIndexed {row, it ->
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth().then(if (!scrollHomeScreen) Modifier.weight(1f) else Modifier)) {
                         it.forEachIndexed { column, it ->
                             val index = row*columns + column
                             val meta = filteredClassMetas?.getOrNull(index)
                             val classForGradePage = viewModel.classForGradePage
                             val preferReported by viewModel.preferReported()
                             val screenSize = getScreenSize()
+                            val updates = key(it, updatedAssignments) {
+                                it.assignments_parsed.filter { it._assignmentsections.firstOrNull()?._id?.let { updatedAssignments[it] } == true }.size
+                            }
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
-                                    ClassCard(it, meta, updatedClasses[it.name] ?: false, false, gradeColors, preferReported = preferReported) {
+                                    ClassCard(it, meta, updates, false, gradeColors, square = scrollHomeScreen, preferReported = preferReported) {
                                         classForGradePage.value = it
                                         navHost.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
@@ -224,7 +240,7 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                             }
                         }
 
-                        (0 until columns-it.size).forEach {
+                        (0 until columns-it.size).forEach { _ ->
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {}
                         }
                     }
@@ -241,7 +257,7 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
 }
 
 @Composable
-fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: Boolean, gradeColors: GradeColors, preferReported: Boolean = false, onClick: (() -> Unit)? = null) {
+fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Int, showDecimal: Boolean, gradeColors: GradeColors, square: Boolean = true, preferReported: Boolean = false, onClick: (() -> Unit)? = null) {
     val reportedGrade = when (`class`.reported_grade) {
         "[ i ]" -> null
         else -> `class`.reported_grade
@@ -270,12 +286,14 @@ fun ClassCard(`class`: Class, meta: ClassMeta?, updates: Boolean, showDecimal: B
             }
         }
     }
-    val modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+    val modifier = Modifier.fillMaxWidth().then(if (square) Modifier.aspectRatio(1f) else Modifier)
     val themeModifier = darkModeColorModifier()
-    val colors = (grade ?: reportedGrade)?.first()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
+    val colors = (grade ?: reportedGrade)?.firstOrNull()?.toString()?.let {gradeColors.gradeColor(it)?.let {CardDefaults.cardColors(containerColor = it*themeModifier) } } ?: CardDefaults.cardColors()
     BadgedBox(badge = {
-        if (updates) {
-            Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
+        if (updates != 0) {
+            Badge(containerColor = gradeColors.EColor) {
+                Text("$updates")
+            }
         }
     }) {
         if (onClick == null) {

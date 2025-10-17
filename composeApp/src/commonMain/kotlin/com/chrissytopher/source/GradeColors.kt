@@ -54,6 +54,16 @@ data class GradeColors(
                 Color(0xfffa2f2f),
             )
         }
+
+        fun theoMode(): GradeColors {
+            return GradeColors(
+                Color(0xff7595ff),
+                Color(0xff8a1a1a),
+                Color(0xffb777bf),
+                Color(0xff43614d),
+                Color(0xff2f3017),
+            )
+        }
     }
 
     fun gradeColor(letter: String): Color? {

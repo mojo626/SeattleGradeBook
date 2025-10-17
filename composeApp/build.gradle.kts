@@ -69,6 +69,8 @@ kotlin {
             implementation(libs.mp.stools)
             implementation(libs.napier)
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.coil.network.ktor3)
             implementation(libs.colormath)
@@ -77,6 +79,7 @@ kotlin {
             implementation(libs.material.kolor)
             implementation(libs.haze)
             implementation(libs.haze.materials)
+            implementation(libs.ksoup)
         }
         iosMain.dependencies {
             implementation(libs.kvault)
@@ -104,8 +107,8 @@ android {
         applicationId = "com.chrissytopher.source"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 12
-        versionName = "1.3.1"
+        versionCode = 13
+        versionName = "1.4.0"
     }
     packaging {
         resources {

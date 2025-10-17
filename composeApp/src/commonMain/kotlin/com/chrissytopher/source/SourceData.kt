@@ -13,6 +13,7 @@ data class SourceData(
     var grade_level: String?,
     var student_name: String,
     var past_classes: List<PastClass>,
+    var teachers: HashMap<String, String>,
 )
 
 @Serializable
@@ -92,6 +93,7 @@ class ClassMeta(classData: Class, allowLessThanE: Boolean = false) {
     var earnedPoints: Float = 0f
     var finalScore: Float? = null
     var grade: String? = null
+    var name: String = classData.name
 
     init {
         classData.assignments_parsed.forEach { assignment ->

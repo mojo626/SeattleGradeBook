@@ -10,6 +10,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.io.Source
 import org.jetbrains.compose.resources.DrawableResource
 
 abstract class Platform {
@@ -31,6 +32,14 @@ abstract class Platform {
     abstract fun BackHandler(enabled: Boolean, onBack: () -> Unit)
 
     abstract fun shareText(text: String)
+
+    abstract suspend fun pickFile(mimeType: String): Source?
+
+    abstract fun imageTypeDescriptor(): String
+    abstract fun jsonTypeDescriptor(): String
+
+    abstract fun successVibration()
+    abstract fun failureVibration()
 }
 
 @Composable

@@ -15,6 +15,10 @@ import androidx.lifecycle.viewModelScope
 import coil3.PlatformContext
 import dev.chrisbanes.haze.HazeState
 import io.github.aakira.napier.Napier
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -26,9 +30,12 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.io.files.Path
+import kotlinx.serialization.ExperimentalSerializationApi
 
-abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel() {
-    val json = Json { ignoreUnknownKeys = true }
+abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: Path) : ViewModel() {
+    val json = json()
+    val sourceApi = sourceApi(downloadDir, json)
     abstract val platformContext: PlatformContext
     abstract val notificationSender: NotificationSender?
 
@@ -37,7 +44,6 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     abstract fun requestNotificationPermissions()
 
     val classForGradePage: MutableState<Class?> = mutableStateOf(null)
-    val assignmentForPage: MutableState<AssignmentSection?> = mutableStateOf(null)
     val refreshedAlready = mutableStateOf(false)
     val homeScrollState = ScrollState(0)
     val hazeState = HazeState()
@@ -47,11 +53,14 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     private lateinit var _sourceData: StateFlow<HashMap<String, SourceData>?>
     private lateinit var _selectedQuarter: StateFlow<String>
     private lateinit var _showMiddleName: StateFlow<Boolean>
-    private lateinit var _updateClasses: StateFlow<HashMap<String, Boolean>>
+    private lateinit var _scrollHomeScreen: StateFlow<Boolean>
+//    private lateinit var _updateClasses: StateFlow<HashMap<String, Boolean>>
+private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     private lateinit var _hideMentorship: StateFlow<Boolean>
     private lateinit var _preferReported: StateFlow<Boolean>
     private lateinit var _currentTheme: StateFlow<ThemeVariant>
     private lateinit var _gradeColors: StateFlow<GradeColors>
+    private lateinit var _autoSync: StateFlow<Boolean>
 
     private lateinit var _notificationsEveryAssignment: StateFlow<Boolean>
     private lateinit var _notificationsLetterGradeChange: StateFlow<Boolean>
@@ -70,8 +79,9 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             } }.stateIn(viewModelScope)
             _selectedQuarter = dataStore.data.map { it[QUARTER_PREFERENCE] ?: getCurrentQuarter() }.stateIn(viewModelScope)
             _showMiddleName = dataStore.data.map { it[SHOW_MIDDLE_NAME_PREFERENCE] ?: false }.stateIn(viewModelScope)
-            _updateClasses = dataStore.data.map { it[CLASS_UPDATES_PREFERENCE]?.let {
-                json.decodeFromString<HashMap<String, Boolean>>(it)
+            _scrollHomeScreen = dataStore.data.map { it[SCROLL_HOME_SCREEN_PREFERENCE] ?: true }.stateIn(viewModelScope)
+            _updateAssignments = dataStore.data.map { it[ASSIGNMENT_UPDATES_PREFERENCE]?.let {
+                json.decodeFromString<HashMap<Int, Boolean>>(it)
             } ?: hashMapOf() }.stateIn(viewModelScope)
             _hideMentorship = dataStore.data.map { it[HIDE_MENTORSHIP_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _preferReported = dataStore.data.map { it[PREFER_REPORTED_PREFERENCE] ?: true }.stateIn(viewModelScope)
@@ -79,6 +89,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             _gradeColors = dataStore.data.map { it[GRADE_COLORS_PREFERENCE]?.let {
                 runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default()
             }.stateIn(viewModelScope)
+            _autoSync = dataStore.data.map { it[AUTO_SYNC_PREFERENCE] ?: true }.stateIn(viewModelScope)
 
             _notificationsEveryAssignment = dataStore.data.map { it[NEW_ASSIGNMENTS_NOTIFICATIONS_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _notificationsLetterGradeChange = dataStore.data.map { it[LETTER_GRADE_CHANGES_NOTIFICATIONS_PREFERENCE] ?: false }.stateIn(viewModelScope)
@@ -100,17 +111,21 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     @Composable
     fun selectedQuarter(): State<String> = _selectedQuarter.collectAsState()
     @Composable
-    fun updateClasses(): State<HashMap<String, Boolean>> = _updateClasses.collectAsState()
+    fun updatedAssignments(): State<HashMap<Int, Boolean>> = _updateAssignments.collectAsState()
     @Composable
     fun hideMentorship(): State<Boolean> = _hideMentorship.collectAsState()
     @Composable
     fun showMiddleName() = _showMiddleName.collectAsState()
+    @Composable
+    fun scrollHomeScreen() = _scrollHomeScreen.collectAsState()
     @Composable
     fun preferReported(): State<Boolean> = _preferReported.collectAsState()
     @Composable
     fun currentTheme(): State<ThemeVariant> = _currentTheme.collectAsState()
     @Composable
     fun gradeColors(): State<GradeColors> = _gradeColors.collectAsState()
+    @Composable
+    fun autoSync(): State<Boolean> = _autoSync.collectAsState()
     @Composable
     fun username(): State<String?> = _username.collectAsState()
 
@@ -133,14 +148,16 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
                     val newSourceData = gradeSyncManager.getSourceData(username, password, _selectedQuarter.value, false).getOrNullAndThrow()
                     if (newSourceData != null && !(newSourceData.classes.isEmpty() && newSourceData.past_classes.isEmpty())) {
                         if (_selectedQuarter.value == getCurrentQuarter()) {
-                            val currentUpdates = _updateClasses.value
-                            val updatedClasses = newSourceData.classes.filter { newClass ->
-                                val oldClass = _sourceData.value?.get(_selectedQuarter.value)?.classes?.find { it.name == newClass.name} ?: return@filter false
-                                (oldClass.totalScores() != newClass.totalScores())
+                            val currentUpdates = _updateAssignments.value
+                            val oldAssignments = hashMapOf<Int, Assignment>(*_sourceData.value?.get(_selectedQuarter.value)?.classes.orEmpty().map { it.assignments_parsed }.flatten().mapNotNull { assignment -> assignment._assignmentsections.firstOrNull()?.let { Pair(it._id, assignment) } }.toTypedArray())
+                            val allNewAssignments = newSourceData.classes.map { it.assignments_parsed }.flatten()
+                            val updatedAssignments = allNewAssignments.filter {
+                                it._assignmentsections.size > (it._assignmentsections.firstOrNull()?.let { oldAssignments[it._id]?._assignmentsections?.size } ?: 0)
                             }
-                            val updatedClassesMap = hashMapOf(*updatedClasses.map { Pair(it.name, true) }.toTypedArray())
+                            //I'm explicitly unwrapping the section because the previous step implicitly filters assignments with no sections
+                            val updatedAssignmentsMap = hashMapOf(*updatedAssignments.map { Pair(it._assignmentsections.firstOrNull()!!._id, true) }.toTypedArray())
                             dataStore.edit {
-                                it[CLASS_UPDATES_PREFERENCE] = json.encodeToString<Map<String, Boolean>>(currentUpdates + updatedClassesMap)
+                                it[ASSIGNMENT_UPDATES_PREFERENCE] = json.encodeToString<Map<Int, Boolean>>(currentUpdates + updatedAssignmentsMap)
                             }
                         }
                         dataStore.edit {
@@ -215,6 +232,12 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
         }
     }
 
+    fun setScrollHomeScreen(scrollHomeScreen: Boolean) = viewModelScope.launch {
+        dataStore.edit {
+            it[SCROLL_HOME_SCREEN_PREFERENCE] = scrollHomeScreen
+        }
+    }
+
     fun setShowMiddleName(showMiddleName: Boolean) = viewModelScope.launch {
         dataStore.edit {
             it[SHOW_MIDDLE_NAME_PREFERENCE] = showMiddleName
@@ -227,11 +250,24 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
         }
     }
 
-    fun markClassRead(readClass: Class) = viewModelScope.launch {
-        var updateClasses: Map<String, Boolean> = _updateClasses.value
-        readClass.name.let { currentName -> updateClasses = updateClasses.filter { it.key != currentName } }
+    fun setAutoSync(autoSync: Boolean) = viewModelScope.launch {
         dataStore.edit {
-            it[CLASS_UPDATES_PREFERENCE] = json.encodeToString(updateClasses)
+            it[AUTO_SYNC_PREFERENCE] = autoSync
+        }
+    }
+
+    fun markClassRead(readClass: Class) = viewModelScope.launch {
+        var updateAssignments: Map<Int, Boolean> = _updateAssignments.value
+        val readAssignments = hashMapOf(*readClass.assignments_parsed.mapNotNull { it._assignmentsections.firstOrNull()?._id?.let { Pair(it, Unit) } }.toTypedArray())
+        updateAssignments = updateAssignments.filter { !readAssignments.contains(it.key) }
+        dataStore.edit {
+            it[ASSIGNMENT_UPDATES_PREFERENCE] = json.encodeToString(updateAssignments)
+        }
+    }
+
+    fun _setUpdatedAssignments(updateAssignments: Map<Int, Boolean>) = viewModelScope.launch {
+        dataStore.edit {
+            it[ASSIGNMENT_UPDATES_PREFERENCE] = json.encodeToString(updateAssignments)
         }
     }
 
@@ -268,11 +304,10 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
     }
 
     val gradeSyncManager by lazy { GradeSyncManager(this) }
-    protected abstract fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData>
     class GradeSyncManager(private val viewModel: AppViewModel) {
         private var deferredResult: Deferred<Result<SourceData>>? = null
 
-        suspend fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> {
+        suspend fun getSourceData(username: String, password: String, quarter: String, loadPfpSynchronously: Boolean): Result<SourceData> {
             deferredResult?.let {
                 if (it.isActive) {
                     Napier.d("deferring")
@@ -281,7 +316,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
             }
             Napier.d("running new call")
             val newDeferred = CoroutineScope(Dispatchers.Default).async {
-                viewModel.getSourceData(username, password, quarter, loadPfp)
+                viewModel.sourceApi.getSourceData(username, password, quarter, true, loadPfpSynchronously, null)
             }
             deferredResult = newDeferred
             return newDeferred.await()
@@ -292,3 +327,18 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>) : ViewModel()
 }
 
 fun HashMap<String, SourceData>.getSchool(): School? = get(getCurrentQuarter())?.let { schoolFromClasses(it) }?.firstOrNull()?.let { id -> School.entries.find { it.id == id } }
+
+@OptIn(ExperimentalSerializationApi::class)
+fun json() = Json {
+    ignoreUnknownKeys = true
+    allowTrailingComma = true
+    explicitNulls = false
+}
+
+fun sourceApi(downloadDir: Path, json: Json = json()) =
+    SourceApi(HttpClient {
+        install(ContentNegotiation) {
+            json(json)
+        }
+        install(HttpCookies)
+    }, json, downloadDir)

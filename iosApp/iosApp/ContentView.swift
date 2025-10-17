@@ -5,7 +5,7 @@ import ComposeApp
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let filesDir = filesDir()
-        return MainViewControllerKt.MainViewController(getSourceData: getSourceData, filesDir: filesDir, sendNotification: sendNotification(title:body:), openLink: openLink)
+        return MainViewControllerKt.MainViewController(filesDir: filesDir, sendNotification: sendNotification(title:body:), openLink: openLink)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}

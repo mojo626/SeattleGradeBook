@@ -14,16 +14,17 @@ import com.liftric.kvault.KVault
 import dev.icerock.moko.permissions.Permission
 import dev.icerock.moko.permissions.PermissionsController
 import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
 
-class AndroidAppViewModel(private val applicationContext: Context) : AppViewModel(createDataStore(applicationContext)) {
+class AndroidAppViewModel(private val applicationContext: Context) : AppViewModel(createDataStore(applicationContext), Path(applicationContext.filesDir.absolutePath)) {
     val kVault = KVault(applicationContext)
     override val platformContext: PlatformContext = applicationContext
     val permissionsController: PermissionsController = PermissionsController(applicationContext)
     override val notificationSender = AndroidNotificationSender(applicationContext)
 
-    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
-        json.decodeFromString(SourceApi.getSourceData(username, password, applicationContext.filesDir.absolutePath, quarter, loadPfp))
-    }
+//    override fun getSourceData(username: String, password: String, quarter: String, loadPfp: Boolean): Result<SourceData> = runCatching {
+//        json.decodeFromString(SourceApi.getSourceData(username, password, applicationContext.filesDir.absolutePath, quarter, loadPfp))
+//    }
 
     companion object {
         fun factory(applicationContext: Context) : ViewModelProvider.Factory = viewModelFactory {

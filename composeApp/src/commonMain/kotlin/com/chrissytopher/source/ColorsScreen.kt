@@ -169,6 +169,19 @@ fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Fiona Mode", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
                     }
+                    Row(Modifier
+                        .fillMaxWidth()
+                        .padding(0.dp, 5.dp)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
+                        .clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp))
+                        .clickable {
+                            viewModel.setGradeColors(GradeColors.theoMode())
+                            pendingGrade = null
+                        }.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Theo Mode", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+                    }
                 }
             }
         }

@@ -141,7 +141,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                             ClassCard(
                                 currentClass,
                                 ClassMeta(currentClass),
-                                false, true,
+                                0, true,
                                 gradeColors,
                             )
                         }
@@ -152,7 +152,7 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
                             ClassCard(
                                 currentClass,
                                 ClassMeta(currentClass.copy(assignments_parsed = (changedAssignments ?: listOf()) + addedAssignments), allowLessThanE = true),
-                                false, true,
+                                0, true,
                                 gradeColors,
                             )
                         }

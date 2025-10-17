@@ -27,7 +27,7 @@ fun ClassWidgetPicker(viewModel: AppViewModel, pickedClass: (Class) -> Unit) {
                 row.forEach {
                     val meta = remember { ClassMeta(it) }
                     Box (modifier = Modifier.weight(1f).padding(10.dp)) {
-                        ClassCard(it, meta, false, false, GradeColors.default()) {
+                        ClassCard(it, meta, 0, false, GradeColors.default()) {
                             pickedClass(it)
                         }
                     }

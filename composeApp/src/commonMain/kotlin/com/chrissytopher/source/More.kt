@@ -54,7 +54,7 @@ fun MoreScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, inn
         Text("Sharing", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         val preferReported by viewModel.preferReported()
         Row(modifier = Modifier.padding(0.dp, 2.dp).clip(RoundedCornerShape(15.dp, 15.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
-            val classes = sourceData?.get(selectedQuarter)?.classes?.filter { !hideMentorship || it.name != MENTORSHIP_NAME }
+            val classes = sourceData?.get(selectedQuarter)?.classes?.filter { !hideMentorship || !MENTORSHIP_NAMES.contains(it.name) }
             val classGrades = if (preferReported) {
                 classes?.map { it.reported_grade ?: ClassMeta(it).grade }
             } else {
@@ -62,7 +62,7 @@ fun MoreScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, inn
             }
             val gradesText = classGrades?.map {
                 when (it?.first()) {
-                    'A' -> "\uD83D\uDFE9"
+                    'A', 'P' -> "\uD83D\uDFE9"
                     'B' -> "\uD83D\uDFE6"
                     'C' -> "\uD83D\uDFE8"
                     'D' -> "\uD83D\uDFE7"

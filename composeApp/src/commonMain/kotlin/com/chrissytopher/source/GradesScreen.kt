@@ -29,6 +29,8 @@ import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,6 +86,8 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
     }
     val platform = LocalPlatform.current
 
+    val updatedAssignments by viewModel.updatedAssignments()
+    val lockedUpdates = remember(currentClass) { updatedAssignments }
     LaunchedEffect(currentClass) {
         launch {
             viewModel.markClassRead(currentClass)
@@ -116,7 +120,7 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
         val gradeColors by viewModel.gradeColors()
         Row {
             Box (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
-                ClassCard(currentClass, meta, false, true, gradeColors)
+                ClassCard(currentClass, meta, 0, true, gradeColors)
             }
             Column (modifier = Modifier.aspectRatio(1f).weight(1f).padding(10.dp)) {
                 Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -144,14 +148,14 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
                 checked = showPercent,
                 onCheckedChange = { showPercent = it },
                 thumbContent = {
-                        Icon(
-                            imageVector = Icons.Filled.Percent,
-                            contentDescription = null,
-                            modifier = Modifier.size(SwitchDefaults.IconSize),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.Percent,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                        tint = if (showPercent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
             )
-
         }
 
         var assignmentsSorted: List<Assignment>? by remember { mutableStateOf(null) }
@@ -163,7 +167,11 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
 
         Column(Modifier.fillMaxSize()) {
             assignmentsSorted?.forEach { assignment ->
-                Box(Modifier.padding(0.dp, 5.dp)) {
+                BadgedBox(badge = {
+                    if (assignment._assignmentsections.firstOrNull()?.let { lockedUpdates[it._id] } == true) {
+                        Badge(Modifier.size(15.dp), containerColor = gradeColors.EColor)
+                    }
+                }, modifier = Modifier.padding(0.dp, 5.dp)) {
                     AssignmentCard(assignment, if (showPercent) ScoreDisplay.Percent else ScoreDisplay.Points, gradeColors) {
                         val newestSection = assignment._assignmentsections.maxByOrNull { LocalDate.parse(it.duedate) } ?: return@AssignmentCard
                         val newestScore = newestSection._assignmentscores.maxByOrNull { LocalDateTime.parse(it.scoreentrydate) }
@@ -296,6 +304,11 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
                 )
 
                 Spacer(Modifier.height(20.dp))
+
+                val username by viewModel.username()
+                if (username == "1cjhuntwork") {
+                    Text("Assignment ID: ${newestSection._id}, Update: ${lockedUpdates[newestSection._id]}")
+                }
             }
         }
     }
