@@ -19,6 +19,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +36,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.io.files.Path
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.io.files.Path
 import kotlinx.serialization.ExperimentalSerializationApi
 
@@ -71,6 +80,9 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
 
     private val _schoolTitleImagePainter: MutableState<Painter?> = mutableStateOf(null)
     val schoolTitleImage: State<Painter?> = _schoolTitleImagePainter
+
+    private var _congraduationPageContent = MutableStateFlow<String?>(null)
+    val congraduationsPageContent = _congraduationPageContent.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -176,6 +188,11 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
                 }
             }
         }
+    }
+
+    suspend fun loadCongraduationsContent() = runCatching {
+        val pageContentString = sourceApi.httpClient.get(PAGE_CONTENT_URL).bodyAsText()
+        _congraduationPageContent.value = pageContentString
     }
 
     fun changeLogin(username : String, password : String, sourceData: HashMap<String, SourceData>) = viewModelScope.launch {

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import com.chrissytopher.source.navigation.NavigationStack
 import dev.chrisbanes.haze.hazeSource
 import io.github.aakira.napier.Napier
@@ -136,11 +137,15 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
             val platform = LocalPlatform.current
             val selectedQuarter by viewModel.selectedQuarter()
             val coroutineScope = rememberCoroutineScope()
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
-                coroutineScope.launch {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).clickable {
+                viewModel.viewModelScope.launch {
+                    Napier.d("start sourcedata")
                     val sourceData = runCatching { viewModel.json.decodeFromString<SourceData>(platform.pickFile(platform.jsonTypeDescriptor())!!.buffered().readString()) }.getOrNullAndThrow() ?: return@launch
+                    Napier.d("Done sourcedata")
                     val newSourceData = HashMap<String, SourceData>().apply {
-                        set(selectedQuarter, sourceData)
+                        for (quarter in listOf("Q1", "Q2", "S1", "Q3", "Q4", "S2")) {
+                            set(quarter, sourceData)
+                        }
                     }
                     SystemFileSystem.delete(Path("${platform.filesDir().decodeURLPart()}/pfp.jpeg"), mustExist = false)
                     viewModel.setSourceData(newSourceData)
@@ -148,8 +153,11 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
             }.padding(10.dp, 10.dp)) {
                 Text("Load SourceData From JSON", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
-            val sourceData by viewModel.sourceData()
-            val updatedAssignments by viewModel.updatedAssignments()
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).clickable {
+                navHost.navigateTo(NavScreen.Congraduation, screenSize.width.toFloat())
+            }.padding(10.dp, 10.dp)) {
+                Text("Open Congraduations", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
                 coroutineScope.launch {
                     val assignments = sourceData?.get(getCurrentQuarter())?.classes.orEmpty().map { it.assignments_parsed }.flatten().mapNotNull { it._assignmentsections.firstOrNull()?._id }
@@ -161,8 +169,8 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
                 Text("Add Updates", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
-                coroutineScope.launch {
-                    val image = runCatching { platform.pickFile(platform.imageTypeDescriptor())!!.buffered() }.getOrNullAndThrow() ?: return@launch
+                viewModel.viewModelScope.launch {
+                    val image = runCatching { platform.pickFile(platform.imageTypeDescriptor())!!.buffered() }.getOrThrow()// ?: return@launch
                     SystemFileSystem.sink(Path("${platform.filesDir().decodeURLPart()}/pfp.jpeg")).asByteWriteChannel().writeSource(image)
                 }
             }.padding(10.dp, 10.dp)) {

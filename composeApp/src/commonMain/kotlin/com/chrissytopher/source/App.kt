@@ -69,6 +69,7 @@ enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVec
     More(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb),
     GPA(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
     Calculator(Icons.Filled.Lightbulb, Icons.Outlined.Lightbulb, showInNavBar = false),
+    Congraduation(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false, hideNavBar = true),
 }
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
@@ -166,6 +167,9 @@ fun App(viewModel: AppViewModel) {
                         }
                         composable(route = NavScreen.Colors) {
                             ColorsScreen(viewModel, navigationStack, paddingValues)
+                        }
+                        composable(route = NavScreen.Congraduation) {
+                            CongraduationPage(viewModel, navigationStack, paddingValues)
                         }
                     }
                 }
