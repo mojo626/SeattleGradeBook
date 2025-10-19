@@ -216,7 +216,7 @@ fun NotificationSettings(everyAssignment: Boolean, letterGradeChange: Boolean, t
 }
 
 @Composable
-fun OnboardingScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+fun OnboardingScreen(viewModel: AppViewModel, clearStack: (NavScreen) -> Unit, innerPadding: PaddingValues) {
     Box(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().padding(innerPadding)) {
         var loggedIn by remember { mutableStateOf(false) }
         if (!loggedIn) {
@@ -225,7 +225,7 @@ fun OnboardingScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen
             }
         } else {
             NotificationsScreen(viewModel) {
-                navHost.clearStack(NavScreen.Home)
+                clearStack(NavScreen.Home)
             }
         }
     }

@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,10 +79,10 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
-    val currentClassNullable by viewModel.classForGradePage
+fun GradesScreen(viewModel: AppViewModel, navigateBack: () -> Unit, navigateTo: (NavScreen) -> Unit, innerPadding: PaddingValues) {
+    val currentClassNullable by viewModel.classForGradePage.collectAsState()
     val currentClass = currentClassNullable ?: run {
-        navHost.popStack(getScreenSize().width.toFloat())
+        navigateBack()
         return
     }
     val platform = LocalPlatform.current
@@ -105,16 +106,18 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
     }
 
     Column(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().verticalScroll(rememberScrollState()).padding(innerPadding).padding(6.dp)) {
-        Box(Modifier.fillMaxWidth()) {
-            Row(Modifier.align(Alignment.CenterStart)) {
-                Spacer(Modifier.width(20.dp))
-                val screenSize = getScreenSize()
-                IconButton({ navHost.popStack(screenSize.width.toFloat()) }) {
-                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+        if (WithinApp.current) {
+            Box(Modifier.fillMaxWidth()) {
+                Row(Modifier.align(Alignment.CenterStart)) {
+                    Spacer(Modifier.width(20.dp))
+                    val screenSize = getScreenSize()
+                    IconButton({ navigateBack() }) {
+                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(5.dp))
+                    }
                 }
-            }
 
-            Text(currentClass.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
+                Text(currentClass.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center).padding(5.dp), textAlign = TextAlign.Center)
+            }
         }
 
         val gradeColors by viewModel.gradeColors()
@@ -133,9 +136,8 @@ fun GradesScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, i
                         })
                     }
                 }
-                val screenSize = getScreenSize()
                 Box(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp)).padding(10.dp).fillMaxWidth().clickable {
-                    navHost.navigateTo(NavScreen.Calculator, animateWidth = screenSize.width.toFloat())
+                    navigateTo(NavScreen.Calculator)
                 }) {
                     Text("Grade Calculator", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
                 }

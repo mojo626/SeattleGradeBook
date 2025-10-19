@@ -14,7 +14,12 @@ import dev.icerock.moko.permissions.ios.PermissionsController
 import kotlinx.coroutines.launch
 import kotlinx.io.files.Path
 
-class IosAppViewModel(override val notificationSender: NotificationSender?, dataStore: DataStore<Preferences>, filesDir: Path) : AppViewModel(dataStore, filesDir) {
+class IosAppViewModel(val sendNotification: (String, String) -> Unit, filesDir: String) : AppViewModel(createDataStore(filesDir), Path(filesDir)) {
+    override val notificationSender: NotificationSender? = object : NotificationSender() {
+        override fun sendNotification(title: String, body: String) {
+            this@IosAppViewModel.sendNotification(title, body)
+        }
+    }
     val permissionsController: PermissionsController = PermissionsController()
     private val kVault = KVault()
     override val platformContext: PlatformContext = PlatformContext.INSTANCE

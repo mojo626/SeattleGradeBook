@@ -60,13 +60,15 @@ class MainActivity : ComponentActivity() {
 //        }
         setContent {
             CompositionLocalProvider(LocalPlatform provides platform) {
-                AppTheme {
-                    val viewModelInitialized by viewModel.initializedFlows.collectAsState()
-                    if (!viewModelInitialized) {
-                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
-                        return@AppTheme
+                CompositionLocalProvider(WithinApp provides true) {
+                    AppTheme {
+                        val viewModelInitialized by viewModel.initializedFlows.collectAsState()
+                        if (!viewModelInitialized) {
+                            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+                            return@AppTheme
+                        }
+                        App(viewModel)
                     }
-                    App(viewModel)
                 }
             }
         }

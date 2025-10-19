@@ -10,7 +10,7 @@ import okio.Path.Companion.toPath
 
 fun createDataStore(producePath: () -> String): DataStore<Preferences> =
     PreferenceDataStoreFactory.createWithPath(
-        produceFile = { producePath().toPath() }
+        produceFile = { producePath().toPath(normalize = true) }
     )
 
 internal val dataStoreFileName = "seattle_gradebook.preferences_pb"
@@ -22,6 +22,7 @@ val QUARTER_PREFERENCE = stringPreferencesKey(QUARTER_KEY)
 val HIDE_MENTORSHIP_PREFERENCE = booleanPreferencesKey(HIDE_MENTORSHIP_KEY)
 val SHOW_MIDDLE_NAME_PREFERENCE = booleanPreferencesKey(SHOW_MIDDLE_NAME_KEY)
 val SCROLL_HOME_SCREEN_PREFERENCE = booleanPreferencesKey("SCROLL_HOME_SCREEN")
+val IMPLEMENT_PLUEY_PREFERENCE = booleanPreferencesKey("IMPLEMENT_PLUEY")
 
 val GRADE_COLORS_PREFERENCE = stringPreferencesKey(GRADE_COLORS_KEY)
 //val CLASS_UPDATES_PREFERENCE = stringPreferencesKey(CLASS_UPDATES_KEY)

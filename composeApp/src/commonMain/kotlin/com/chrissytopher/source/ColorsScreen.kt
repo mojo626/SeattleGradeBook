@@ -50,18 +50,20 @@ import dev.chrisbanes.haze.hazeSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+fun ColorsScreen(viewModel: AppViewModel, navigateBack: () -> Unit, innerPadding: PaddingValues) {
     val selectedTheme by viewModel.currentTheme()
 
     Column(Modifier.fillMaxSize().hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(innerPadding).padding(12.dp)) {
-        Box(Modifier.fillMaxWidth()) {
-            Row(Modifier.align(Alignment.CenterStart)) {
-                Spacer(Modifier.width(8.dp))
-                val screenSize = getScreenSize()
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(CircleShape).clickable { navHost.popStack(screenSize.width.toFloat()) })
-            }
+        if (WithinApp.current) {
+            Box(Modifier.fillMaxWidth()) {
+                Row(Modifier.align(Alignment.CenterStart)) {
+                    Spacer(Modifier.width(8.dp))
+                    val screenSize = getScreenSize()
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(CircleShape).clickable { navigateBack() })
+                }
 
-            Text("Colors and Themes", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                Text("Colors and Themes", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+            }
         }
 
         Text("App Theme", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))

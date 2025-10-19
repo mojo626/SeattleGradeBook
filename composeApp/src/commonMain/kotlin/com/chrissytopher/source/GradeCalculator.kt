@@ -58,6 +58,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
@@ -94,14 +96,14 @@ import kotlin.random.Random
 
 //@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, outerPadding: PaddingValues) {
+fun GradeCalculatorScreen(viewModel: AppViewModel, navigateBack: () -> Unit, outerPadding: PaddingValues) {
     val sourceDataState = viewModel.sourceData()
     val selectedQuarter by viewModel.selectedQuarter()
     val currClasses = remember { sourceDataState.value?.get(selectedQuarter)?.classes }
     val gradeColors by viewModel.gradeColors()
 
     val currentClassState = viewModel.classForGradePage
-    val currentClass by currentClassState
+    val currentClass by currentClassState.collectAsState()
 
 //    var newAssignmentsChanged by remember { mutableStateOf(false) } //toggle to recompose new classes when something changes
 
@@ -122,17 +124,18 @@ fun GradeCalculatorScreen(viewModel: AppViewModel, navHost: NavigationStack<NavS
     } //this is the only way that I could find to force a recompose :(
     //all g sometimes you just gotta do that
     Scaffold(topBar = {
-        Column(Modifier.hazeEffect(viewModel.hazeState, hazeMaterial()).padding(bottom = 8.dp, top = outerPadding.calculateTopPadding(), start = outerPadding.calculateStartPadding(LocalLayoutDirection.current), end = outerPadding.calculateEndPadding(LocalLayoutDirection.current)).padding(6.dp)) {
-            Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                Row(Modifier.align(Alignment.CenterStart)) {
-                    Spacer(Modifier.width(8.dp))
-                    val screenSize = getScreenSize()
-                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
-                        CircleShape
-                    ).clickable { navHost.popStack(screenSize.width.toFloat()) })
-                }
+        Column((if (WithinApp.current) Modifier.hazeEffect(viewModel.hazeState, hazeMaterial()) else Modifier).padding(bottom = 8.dp, top = outerPadding.calculateTopPadding(), start = outerPadding.calculateStartPadding(LocalLayoutDirection.current), end = outerPadding.calculateEndPadding(LocalLayoutDirection.current)).padding(6.dp)) {
+            if (WithinApp.current) {
+                Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+                    Row(Modifier.align(Alignment.CenterStart)) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
+                            CircleShape
+                        ).clickable { navigateBack() })
+                    }
 
-                Text("Grade Calculator", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                    Text("Grade Calculator", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                }
             }
             if (selectedClassName != "Select a Class") {
                 currentClass?.let { currentClass ->

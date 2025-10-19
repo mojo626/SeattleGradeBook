@@ -18,6 +18,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -43,14 +44,16 @@ fun GPAScreen(viewModel: AppViewModel, innerPadding: PaddingValues) {
     val pastClasses = sourceDataState.value?.get(selectedQuarter)?.past_classes
     var ignoreClasses: List<String> by remember { mutableStateOf(listOf()) }
 
-    var gpaSelector by remember { mutableStateOf(0) }
+    val gpaSelector by viewModel.gpaTypeSelectionState.collectAsState()
 
     val preferReported by viewModel.preferReported()
 
     Column(modifier = Modifier.hazeSource(viewModel.hazeState).verticalScroll(rememberScrollState()).padding(innerPadding)) {
-        TabRow( selectedTabIndex = gpaSelector, containerColor = MaterialTheme.colorScheme.surfaceContainerLow ) {
-            Tab(text = {Text("Unweighted GPA")}, selected = gpaSelector == 0, onClick = { gpaSelector = 0 })
-            Tab(text = {Text("Weighted GPA")}, selected = gpaSelector == 1, onClick = { gpaSelector = 1 })
+        if (WithinApp.current) {
+            TabRow( selectedTabIndex = gpaSelector, containerColor = MaterialTheme.colorScheme.surfaceContainerLow ) {
+                Tab(text = {Text("Unweighted GPA")}, selected = gpaSelector == 0, onClick = { viewModel.gpaTypeSelectionState.value = 0 })
+                Tab(text = {Text("Weighted GPA")}, selected = gpaSelector == 1, onClick = { viewModel.gpaTypeSelectionState.value = 1 })
+            }
         }
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
             key(ignoreClasses) {

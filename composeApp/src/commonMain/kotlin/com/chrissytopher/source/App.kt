@@ -3,6 +3,7 @@ package com.chrissytopher.source
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -54,13 +56,14 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 val LocalPlatform = compositionLocalOf<Platform> { error("no platform provided") }
+val WithinApp = compositionLocalOf { false }
 
 @OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun hazeMaterial() = HazeMaterials.regular(MaterialTheme.colorScheme.surface)
 
 enum class NavScreen(val selectedIcon: ImageVector, val unselectedIcon: ImageVector, val showInNavBar: Boolean = true, val hideNavBar: Boolean = false, val displayName: String? = null) {
-    School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),
+//    School(Icons.Filled.School, Icons.Outlined.School, showInNavBar = false),
     Grades(Icons.Filled.Home, Icons.Outlined.Home, showInNavBar = false),
     Settings(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false),
     Colors(Icons.Filled.Settings, Icons.Outlined.Settings, showInNavBar = false),
@@ -106,7 +109,7 @@ fun App(viewModel: AppViewModel) {
     val loggedIn = remember { username != null }
     val navigationStack : NavigationStack<NavScreen> = remember { NavigationStack(if (loggedIn) NavScreen.Home else NavScreen.Onboarding) }
     val platform = LocalPlatform.current
-    val classForGradePage by viewModel.classForGradePage
+    val classForGradePage by viewModel.classForGradePage.collectAsState()
     navigationStack.onStackChanged = { fromRoute, toRoute ->
         if (toRoute == NavScreen.Home && fromRoute == NavScreen.Grades) {
             if (classForGradePage?.let { ClassMeta(it) }?.grade == "P") {
@@ -148,43 +151,68 @@ fun App(viewModel: AppViewModel) {
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
+                        val screenWidth = getScreenSize().width.toFloat()
+                        fun navigateTo(route: NavScreen) {
+                            navigationStack.navigateTo(route, animateWidth = screenWidth)
+                        }
+                        fun navigateBack() {
+                            navigationStack.popStack(animateWidth = screenWidth)
+                        }
+                        fun clearStack(newInitialRoute: NavScreen) {
+                            navigationStack.clearStack(newInitialRoute, animateWidth = screenWidth)
+                        }
                         composable(route = NavScreen.Home) {
-                            HomeScreen(viewModel, navigationStack, paddingValues)
+                            HomeScreen(viewModel, ::navigateTo, paddingValues)
                         }
                         composable(route = NavScreen.Grades) {
-                            GradesScreen(viewModel, navigationStack, paddingValues)
+                            GradesScreen(viewModel, ::navigateBack, ::navigateTo, paddingValues)
                         }
                         composable(route = NavScreen.Settings) {
-                            SettingsScreen(viewModel, navigationStack, paddingValues)
+                            SettingsScreen(viewModel, ::navigateBack, ::navigateTo, ::clearStack, paddingValues)
                         }
                         composable(route = NavScreen.Onboarding) {
-                            OnboardingScreen(viewModel, navigationStack, paddingValues)
+                            OnboardingScreen(viewModel, ::clearStack, paddingValues)
                         }
                         composable(route = NavScreen.More) {
-                            MoreScreen(viewModel, navigationStack, paddingValues)
+                            MoreScreen(viewModel, ::navigateTo, paddingValues)
                         }
                         composable(route = NavScreen.GPA) {
                             GPAScreen(viewModel, paddingValues)
                         }
                         composable(route = NavScreen.Calculator) {
-                            GradeCalculatorScreen(viewModel, navigationStack, paddingValues)
+                            GradeCalculatorScreen(viewModel, ::navigateBack, paddingValues)
                         }
-                        composable(route = NavScreen.School) {
-                            Box(Modifier.padding(paddingValues)) {
-                                SchoolScreen(viewModel)
-                            }
-                        }
+//                        composable(route = NavScreen.School) {
+//                            Box(Modifier.padding(paddingValues)) {
+//                                SchoolScreen(viewModel)
+//                            }
+//                        }
                         composable(route = NavScreen.Colors) {
-                            ColorsScreen(viewModel, navigationStack, paddingValues)
+                            ColorsScreen(viewModel, ::navigateBack, paddingValues)
                         }
                         composable(route = NavScreen.Congraduation) {
-                            CongraduationPage(viewModel, navigationStack, paddingValues)
+                            CongraduationPage(viewModel, ::navigateBack, paddingValues)
                         }
                     }
                 }
             }
 //        }
 //    }
+}
+@Composable
+fun NavSwitcher(viewModel: AppViewModel, screen: NavScreen?, paddingValues: PaddingValues, navigateTo: (NavScreen) -> Unit, navigateBack: () -> Unit, navigationStackCleared: (NavScreen) -> Unit) {
+    when (screen) {
+        NavScreen.Grades -> GradesScreen(viewModel, navigateBack, navigateTo, paddingValues)
+        NavScreen.Settings -> SettingsScreen(viewModel, navigateBack, navigateTo, navigationStackCleared, paddingValues)
+        NavScreen.Colors -> ColorsScreen(viewModel, navigateBack, paddingValues)
+        NavScreen.Home -> HomeScreen(viewModel, navigateTo, paddingValues)
+        NavScreen.Onboarding -> OnboardingScreen(viewModel, navigationStackCleared, paddingValues)
+        NavScreen.More -> MoreScreen(viewModel, navigateTo, paddingValues)
+        NavScreen.GPA -> GPAScreen(viewModel, paddingValues)
+        NavScreen.Calculator -> GradeCalculatorScreen(viewModel, navigateBack, paddingValues)
+        NavScreen.Congraduation -> CongraduationPage(viewModel, navigateBack, paddingValues)
+        else -> {}
+    }
 }
 
 fun <T> Result<T>.getOrNullAndThrow(): T? {

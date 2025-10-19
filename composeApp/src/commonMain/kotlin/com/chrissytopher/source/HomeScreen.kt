@@ -78,7 +78,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, outerPaddingValues: PaddingValues) {
+fun HomeScreen(viewModel: AppViewModel, navigateTo: (NavScreen) -> Unit, outerPaddingValues: PaddingValues) {
     val refreshingInProgress by viewModel.refreshingInProgress
     val refreshSuccess: Boolean? by viewModel.refreshSuccess
 
@@ -124,59 +124,10 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
     ) {
         val updatedAssignments by viewModel.updatedAssignments()
         Scaffold(topBar = {
-            Column(Modifier.zIndex(1.1f).hazeEffect(state = viewModel.hazeState, style = hazeMaterial()).padding(bottom = 8.dp, top = outerPaddingValues.calculateTopPadding(), start = outerPaddingValues.calculateStartPadding(LocalLayoutDirection.current), end = outerPaddingValues.calculateEndPadding(LocalLayoutDirection.current))) {
-                Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                    var bigPfp by remember { mutableStateOf(false) }
-                    var normalPfpSize by remember { mutableStateOf(IntSize.Zero) }
-                    val screenSize = getScreenSize()
-                    val pfpBigWidth = 0.9f
-                    val bigScalar = (screenSize.width.toFloat() * pfpBigWidth) / normalPfpSize.width.toFloat()
-                    val pfpScale by animateFloatAsState(if (bigPfp) bigScalar else 1f)
-                    val pfpPosition by animateOffsetAsState(
-                        if (bigPfp) Offset(
-                            screenSize.width.toFloat() * pfpBigWidth / 2f,
-                            screenSize.height.toFloat() * pfpBigWidth / 2f
-                        ) else Offset(0f, 0f)
-                    )
-                    Box(Modifier.zIndex(2f).onSizeChanged { if (!bigPfp) normalPfpSize = it }.offset { pfpPosition.round() }.scale(pfpScale)) {
-                        val pfpImage = remember { "file://${platform.filesDir()}/pfp.jpeg" }
-                        AsyncImage(
-                            pfpImage,
-                            "Content",
-                            Modifier.size(50.dp).shadow(8.dp, CircleShape).clip(CircleShape).clickable { bigPfp = !bigPfp },
-                            filterQuality = FilterQuality.High,
-                            alignment = Alignment.Center,
-                            contentScale = ContentScale.FillWidth,
-                        )
-                    }
-                    var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
-                    val showMiddleName by viewModel.showMiddleName()
-                    if (!showMiddleName) {
-                        val names = studentName.split(" ")
-                        studentName = "${names.first()} ${names.last()}"
-                    }
-                    Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                    val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
-                    if (isLincoln) {
-                        Box(
-                            Modifier
-                                .size(50.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable { navHost.navigateTo(NavScreen.Settings, animateWidth = screenSize.width.toFloat()) }
-                        ) {
-                            Icon(
-                                imageVector = vectorResource(Res.drawable.settings_customized),
-                                contentDescription = "Settings",
-                                modifier = Modifier.size(40.dp).align(Alignment.Center),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    } else {
-                        Spacer(Modifier.size(50.dp))
-                    }
+            Column(Modifier.zIndex(1.1f).then(if (WithinApp.current) Modifier.hazeEffect(state = viewModel.hazeState, style = hazeMaterial()) else Modifier).padding(bottom = 8.dp, top = outerPaddingValues.calculateTopPadding(), start = outerPaddingValues.calculateStartPadding(LocalLayoutDirection.current), end = outerPaddingValues.calculateEndPadding(LocalLayoutDirection.current))) {
+                if (WithinApp.current) {
+                    HomeScreenHeader(viewModel, navigateTo)
                 }
-
                 val selectionDisabledAlpha by animateFloatAsState(
                     if (refreshingInProgress) 0.5f else 1.0f,
                     animationSpec = tween(200)
@@ -226,18 +177,17 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                             val meta = filteredClassMetas?.getOrNull(index)
                             val classForGradePage = viewModel.classForGradePage
                             val preferReported by viewModel.preferReported()
-                            val screenSize = getScreenSize()
                             val updates = key(it, updatedAssignments) {
                                 it.assignments_parsed.filter { it._assignmentsections.firstOrNull()?._id?.let { updatedAssignments[it] } == true }.size
                             }
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
                                     ClassCard(it, meta, updates, false, gradeColors, square = scrollHomeScreen, preferReported = preferReported) {
-                                        if (meta?.grade == "P") {
+                                        if (it.reported_grade == "P") {
                                             platform.implementPluey(reverse = false)
                                         }
                                         classForGradePage.value = it
-                                        navHost.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
+                                        navigateTo(NavScreen.Grades)
                                     }
                                 }
                             }
@@ -256,6 +206,67 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
     val today = now.toLocalDateTime(TimeZone.currentSystemDefault()).date
     if (today.month == Month.DECEMBER && today.dayOfMonth == 25) {
         Snow(viewModel)
+    }
+}
+
+@Composable
+fun HomeScreenHeader(viewModel: AppViewModel, navigateTo: (NavScreen) -> Unit) {
+    val platform = LocalPlatform.current
+    val sourceData by viewModel.sourceData()
+    val selectedQuarter by viewModel.selectedQuarter()
+    Row(Modifier.zIndex(2f).fillMaxWidth().padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+        var bigPfp by remember { mutableStateOf(false) }
+        var normalPfpSize by remember { mutableStateOf(IntSize.Zero) }
+        val screenSize = getScreenSize()
+        val pfpBigWidth = 0.9f
+        val bigScalar = (screenSize.width.toFloat() * pfpBigWidth) / normalPfpSize.width.toFloat()
+        val pfpScale by animateFloatAsState(if (bigPfp) bigScalar else 1f)
+        val pfpPosition by animateOffsetAsState(
+            if (bigPfp) Offset(
+                screenSize.width.toFloat() * pfpBigWidth / 2f,
+                screenSize.height.toFloat() * pfpBigWidth / 2f
+            ) else Offset(0f, 0f)
+        )
+        Box(Modifier.zIndex(2f).onSizeChanged { if (!bigPfp) normalPfpSize = it }.offset { pfpPosition.round() }.scale(pfpScale)) {
+            val pfpImage = remember { "${platform.filesDir()}/pfp.jpeg" }
+            AsyncImage(
+                pfpImage,
+                "Content",
+                Modifier.size(50.dp).shadow(8.dp, CircleShape).clip(CircleShape).clickable { bigPfp = !bigPfp },
+                filterQuality = FilterQuality.High,
+                alignment = Alignment.Center,
+                contentScale = ContentScale.FillWidth,
+                onState = {
+                    Napier.d("$it")
+                }
+            )
+        }
+        var studentName = sourceData?.get(selectedQuarter)?.student_name ?: ""
+        val showMiddleName by viewModel.showMiddleName()
+        if (!showMiddleName) {
+            val names = studentName.split(" ")
+            studentName = "${names.first()} ${names.last()}"
+        }
+        Text(text = studentName, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        val isLincoln = true //sourceData?.get(getCurrentQuarter())?.let { rememberSchoolFromClasses(it) }?.contains("15") == true
+        if (isLincoln) {
+            Box(
+                Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .clickable { navigateTo(NavScreen.Settings) }
+            ) {
+                Icon(
+                    imageVector = vectorResource(Res.drawable.settings_customized),
+                    contentDescription = "Settings",
+                    modifier = Modifier.size(40.dp).align(Alignment.Center),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Spacer(Modifier.size(50.dp))
+        }
     }
 }
 

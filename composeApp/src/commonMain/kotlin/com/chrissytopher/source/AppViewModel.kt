@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.io.files.Path
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 
 abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: Path) : ViewModel() {
     val json = json()
@@ -47,7 +48,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: 
     abstract fun notificationsAllowed(): State<Boolean>
     abstract fun requestNotificationPermissions()
 
-    val classForGradePage: MutableState<Class?> = mutableStateOf(null)
+    val classForGradePage: MutableStateFlow<Class?> = MutableStateFlow(null)
     val refreshedAlready = mutableStateOf(false)
     val homeScrollState = ScrollState(0)
     val hazeState = HazeState()
@@ -58,6 +59,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: 
     private lateinit var _selectedQuarter: StateFlow<String>
     private lateinit var _showMiddleName: StateFlow<Boolean>
     private lateinit var _scrollHomeScreen: StateFlow<Boolean>
+    lateinit var _implementPluey: StateFlow<Boolean>
 //    private lateinit var _updateClasses: StateFlow<HashMap<String, Boolean>>
 private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     private lateinit var _hideMentorship: StateFlow<Boolean>
@@ -70,7 +72,7 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     private lateinit var _notificationsLetterGradeChange: StateFlow<Boolean>
     private lateinit var _notificationsThreshold: StateFlow<Boolean>
     private lateinit var _notificationsPoints: StateFlow<Float>
-    private lateinit var _username: StateFlow<String?>
+    lateinit var _username: StateFlow<String?>
     private lateinit var _password: StateFlow<String?>
 
     private val _schoolTitleImagePainter: MutableState<Painter?> = mutableStateOf(null)
@@ -78,6 +80,10 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
 
     private var _congraduationPageContent = MutableStateFlow<String?>(null)
     val congraduationsPageContent = _congraduationPageContent.asStateFlow()
+
+    val displayNameState = MutableStateFlow("")
+    val currentClassNameState = MutableStateFlow("")
+    val gpaTypeSelectionState = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
@@ -87,6 +93,7 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
             _selectedQuarter = dataStore.data.map { it[QUARTER_PREFERENCE] ?: getCurrentQuarter() }.stateIn(viewModelScope)
             _showMiddleName = dataStore.data.map { it[SHOW_MIDDLE_NAME_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _scrollHomeScreen = dataStore.data.map { it[SCROLL_HOME_SCREEN_PREFERENCE] ?: true }.stateIn(viewModelScope)
+            _implementPluey = dataStore.data.map { it[IMPLEMENT_PLUEY_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _updateAssignments = dataStore.data.map { it[ASSIGNMENT_UPDATES_PREFERENCE]?.let {
                 json.decodeFromString<HashMap<Int, Boolean>>(it)
             } ?: hashMapOf() }.stateIn(viewModelScope)
@@ -105,6 +112,26 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
             _username = dataStore.data.map { it[USERNAME_PREFERENCE] }.stateIn(viewModelScope)
             _password = dataStore.data.map { it[PASSWORD_PREFERENCE] }.stateIn(viewModelScope)
             migrations()
+
+            viewModelScope.launch {
+                combine(_sourceData, _showMiddleName, _selectedQuarter) { it }.collect { (sourceDataAny, showMiddleNameAny, selectedQuarterAny) ->
+                    val sourceData = sourceDataAny as HashMap<String, SourceData>?
+                    val showMiddleName = showMiddleNameAny as Boolean
+                    val selectedQuarter = selectedQuarterAny as String
+                    var displayName = sourceData?.get(selectedQuarter)?.student_name ?: ""
+                    if (!showMiddleName) {
+                        val names = displayName.split(" ")
+                        displayName = "${names.first()} ${names.last()}"
+                    }
+                    displayNameState.value = displayName
+                }
+            }
+            viewModelScope.launch {
+                classForGradePage.collect {
+                    currentClassNameState.value = it?.name ?: ""
+                }
+            }
+
             initializedFlows.value = true
 
             launch {
@@ -123,6 +150,8 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     fun hideMentorship(): State<Boolean> = _hideMentorship.collectAsState()
     @Composable
     fun showMiddleName() = _showMiddleName.collectAsState()
+    @Composable
+    fun implementPluey() = _implementPluey.collectAsState()
     @Composable
     fun scrollHomeScreen() = _scrollHomeScreen.collectAsState()
     @Composable
@@ -241,6 +270,12 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     fun setHideMentorship(hideMentorship: Boolean) = viewModelScope.launch {
         dataStore.edit {
             it[HIDE_MENTORSHIP_PREFERENCE] = hideMentorship
+        }
+    }
+
+    fun setImplementPluey(implementPluey: Boolean) = viewModelScope.launch {
+        dataStore.edit {
+            it[IMPLEMENT_PLUEY_PREFERENCE] = implementPluey
         }
     }
 

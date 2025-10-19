@@ -52,18 +52,20 @@ import kotlinx.io.readString
 import kotlinx.serialization.json.Json
 
 @Composable
-fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, innerPadding: PaddingValues) {
+fun SettingsScreen(viewModel: AppViewModel, navigateBack: () -> Unit, navigateTo: (NavScreen) -> Unit, clearStack: (NavScreen) -> Unit, innerPadding: PaddingValues) {
     Column(Modifier.hazeSource(viewModel.hazeState).fillMaxSize().verticalScroll(rememberScrollState()).padding(innerPadding).padding(12.dp)) {
-        Box(Modifier.fillMaxWidth()) {
-            Row(Modifier.align(Alignment.CenterStart)) {
-                Spacer(Modifier.width(8.dp))
-                val screenSize = getScreenSize()
-                Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
-                    CircleShape
-                ).clickable { navHost.popStack(screenSize.width.toFloat()) })
-            }
+        if (WithinApp.current) {
+            Box(Modifier.fillMaxWidth()) {
+                Row(Modifier.align(Alignment.CenterStart)) {
+                    Spacer(Modifier.width(8.dp))
+                    val screenSize = getScreenSize()
+                    Icon(Icons.Outlined.ChevronLeft, contentDescription = "left arrow", modifier = Modifier.padding(0.dp, 5.dp).clip(
+                        CircleShape
+                    ).clickable { navigateBack() })
+                }
 
-            Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+                Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center), textAlign = TextAlign.Center)
+            }
         }
 
         Text("Home Options", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
@@ -86,6 +88,12 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
             Switch(showMiddleName, onCheckedChange = { viewModel.setShowMiddleName(it) })
         }
 
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).padding(10.dp, 5.dp)) {
+            val implementPluey by viewModel.implementPluey()
+            Text("Implement Pluey", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            Switch(implementPluey, onCheckedChange = { viewModel.setImplementPluey(it) })
+        }
+
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).padding(10.dp, 5.dp)) {
             val preferReported by viewModel.preferReported()
             Text("Prefer Website Grades", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
@@ -96,7 +104,7 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
         Spacer(Modifier.height(4.dp))
         Text("Customization", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         Row(Modifier.fillMaxWidth().padding(0.dp, 5.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
-            navHost.navigateTo(NavScreen.Colors, animateWidth = screenSize.width.toFloat())
+            navigateTo(NavScreen.Colors)
         }.padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Colors and Themes", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             Icon(Icons.Outlined.ChevronRight, "Open")
@@ -154,7 +162,7 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
                 Text("Load SourceData From JSON", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).clickable {
-                navHost.navigateTo(NavScreen.Congraduation, screenSize.width.toFloat())
+                navigateTo(NavScreen.Congraduation)
             }.padding(10.dp, 10.dp)) {
                 Text("Open Congraduations", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
@@ -183,7 +191,7 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
         Button(onClick = {
             viewModel.logOut()
             SystemFileSystem.delete(Path("${platform.filesDir()}/pfp.jpeg"), mustExist = false)
-            navHost.clearStack(NavScreen.Onboarding)
+            clearStack(NavScreen.Onboarding)
         }, modifier = Modifier.align(Alignment.CenterHorizontally).padding(20.dp)) {
             Text("Log out", fontSize = 20.sp)
         }

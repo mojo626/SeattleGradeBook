@@ -32,7 +32,7 @@ import source2.composeapp.generated.resources.Res
 import source2.composeapp.generated.resources.icon_apple
 import source2.composeapp.generated.resources.snowflake_apple
 
-class IOSPlatform(private val uiViewController: UIViewController?, private var filesDir: String, private var openLinkSwift: (String) -> Unit): Platform() {
+class IOSPlatform(private val uiViewController: UIViewController?, private var filesDir: String, private var openLinkSwift: (String) -> Unit, private var implementPlueySwift: (Boolean) -> Unit): Platform() {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
 
     override fun closeApp() {
@@ -104,20 +104,7 @@ class IOSPlatform(private val uiViewController: UIViewController?, private var f
     }
 
     override fun implementPluey(reverse: Boolean) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val path = NSURL(fileURLWithPath = NSBundle.mainBundle.pathForResource("pluey", "m4a")!!)
-            val playerItem = AVPlayerItem(path)
-            val player = AVPlayer(playerItem)
-            if (reverse) {
-                player.rate = -1f
-                println("reverse pluing")
-            } else {
-                println("pluing")
-            }
-            player.play()
-            delay(1000)
-
-        }
+        implementPlueySwift(reverse)
     }
 }
 

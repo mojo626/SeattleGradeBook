@@ -40,7 +40,7 @@ const val PLACEHOLDER_CONTENT = "{\n" +
         "}"
 
 @Composable
-fun CongraduationPage(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, outerPadding: PaddingValues) {
+fun CongraduationPage(viewModel: AppViewModel, navigateBack: () -> Unit, outerPadding: PaddingValues) {
     val allPageContentString by viewModel.congraduationsPageContent.collectAsStateWithLifecycle()
     val username by viewModel.username()
     val sourceData by viewModel.sourceData()
@@ -54,7 +54,7 @@ fun CongraduationPage(viewModel: AppViewModel, navHost: NavigationStack<NavScree
     val pageContent = allPageContent.getMyContent(username ?: "default", schoolId ?: "default", gradeLevel ?: "default") ?: return
     Column(Modifier.verticalScroll(rememberScrollState()).padding(outerPadding)) {
         Box(Modifier.fillMaxWidth().aspectRatio(2f)) {
-            FilledIconButton(onClick = { navHost.popStack(screenSize.width.toFloat()) }) {
+            FilledIconButton(onClick = { navigateBack() }) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
             }
             Text(pageContent.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.Center))
