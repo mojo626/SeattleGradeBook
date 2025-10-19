@@ -5,29 +5,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
+import io.github.aakira.napier.Napier
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.refTo
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.io.Buffer
 import kotlinx.io.Source
 import okio.BufferedSource
-import platform.UIKit.*
-import platform.Foundation.*
-import platform.darwin.NSObject
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
-import kotlinx.io.Buffer
-import kotlinx.io.Source
+import platform.AVFoundation.AVPlayer
+import platform.AVFoundation.AVPlayerItem
+import platform.AVFoundation.play
+import platform.AVFoundation.rate
 import platform.UIKit.*
 import platform.Foundation.*
 import platform.darwin.NSObject
@@ -106,6 +101,23 @@ class IOSPlatform(private val uiViewController: UIViewController?, private var f
 
     override fun failureVibration() {
         vibration(UINotificationFeedbackType.UINotificationFeedbackTypeError)
+    }
+
+    override fun implementPluey(reverse: Boolean) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val path = NSURL(fileURLWithPath = NSBundle.mainBundle.pathForResource("pluey", "m4a")!!)
+            val playerItem = AVPlayerItem(path)
+            val player = AVPlayer(playerItem)
+            if (reverse) {
+                player.rate = -1f
+                println("reverse pluing")
+            } else {
+                println("pluing")
+            }
+            player.play()
+            delay(1000)
+
+        }
     }
 }
 

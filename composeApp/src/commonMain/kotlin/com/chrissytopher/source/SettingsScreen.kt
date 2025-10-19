@@ -158,6 +158,8 @@ fun SettingsScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>,
             }.padding(10.dp, 10.dp)) {
                 Text("Open Congraduations", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             }
+            val sourceData by viewModel.sourceData()
+            val updatedAssignments by viewModel.updatedAssignments()
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 2.dp).shadow(3.dp, RoundedCornerShape(5.dp, 5.dp, 5.dp, 5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(5.dp, 5.dp, 15.dp, 15.dp)).clickable {
                 coroutineScope.launch {
                     val assignments = sourceData?.get(getCurrentQuarter())?.classes.orEmpty().map { it.assignments_parsed }.flatten().mapNotNull { it._assignmentsections.firstOrNull()?._id }

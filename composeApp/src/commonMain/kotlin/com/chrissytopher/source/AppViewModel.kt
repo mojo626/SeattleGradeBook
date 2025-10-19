@@ -15,9 +15,6 @@ import androidx.lifecycle.viewModelScope
 import coil3.PlatformContext
 import dev.chrisbanes.haze.HazeState
 import io.github.aakira.napier.Napier
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -39,8 +36,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.io.files.Path
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.io.files.Path
-import kotlinx.serialization.ExperimentalSerializationApi
 
 abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: Path) : ViewModel() {
     val json = json()

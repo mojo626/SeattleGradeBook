@@ -40,6 +40,8 @@ abstract class Platform {
 
     abstract fun successVibration()
     abstract fun failureVibration()
+
+    abstract fun implementPluey(reverse: Boolean)
 }
 
 @Composable

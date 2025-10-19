@@ -105,6 +105,15 @@ fun App(viewModel: AppViewModel) {
     val username by viewModel.username()
     val loggedIn = remember { username != null }
     val navigationStack : NavigationStack<NavScreen> = remember { NavigationStack(if (loggedIn) NavScreen.Home else NavScreen.Onboarding) }
+    val platform = LocalPlatform.current
+    val classForGradePage by viewModel.classForGradePage
+    navigationStack.onStackChanged = { fromRoute, toRoute ->
+        if (toRoute == NavScreen.Home && fromRoute == NavScreen.Grades) {
+            if (classForGradePage?.let { ClassMeta(it) }?.grade == "P") {
+                platform.implementPluey(reverse = true)
+            }
+        }
+    }
 //    CompositionLocalProvider(LocalNavHost provides navigationStack) {
 //        CompositionLocalProvider(LocalGradeColors provides mutableStateOf(kvault?.string(GRADE_COLORS_KEY)?.let { runCatching { Json.decodeFromString<GradeColors>(it) }.getOrNull() } ?: GradeColors.default())) {
 //            val localJson = LocalJson.current

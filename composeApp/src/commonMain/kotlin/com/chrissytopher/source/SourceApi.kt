@@ -28,7 +28,7 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 
-class SourceApi(private val httpClient: HttpClient, private val json: Json, private val downloadDir: Path) {
+class SourceApi(val httpClient: HttpClient, private val json: Json, private val downloadDir: Path) {
 //    fun getSourceDataFlow(username: String, password: String, quarter: String, loadPfpSynchronously: Boolean, previous: SourceData?): Flow<Result<SourceData>> = flow {
 //        val previous =
 //        emit(getSourceData(username, password, quarter, ))

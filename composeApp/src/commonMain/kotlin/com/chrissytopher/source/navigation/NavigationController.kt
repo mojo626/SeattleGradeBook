@@ -104,8 +104,10 @@ class NavigationStack<T>(private val initialRoute: T) {
     private val _previousState: MutableState<T> = mutableStateOf(initialRoute)
     var dragOffset = mutableStateOf(Animatable(0f))
     var coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+    var onStackChanged: ((T, T) -> Unit)? = null
     fun popStack(animateWidth: Float = 0f) {
         coroutineScope.launch {
+            onStackChanged?.invoke(navigationStackState.value.lastOrNull() ?: initialRoute, navigationStackState.value.getOrNull(navigationStackState.value.size-2) ?: initialRoute)
             doTransition(0f, animateWidth)
             navigationStackState.value = navigationStackState.value.toMutableList().apply { removeLastOrNull() }
             if (navigationStackState.value.isEmpty()) {
@@ -118,6 +120,7 @@ class NavigationStack<T>(private val initialRoute: T) {
     }
 
     fun navigateTo(route: T, animateWidth: Float = 0f) {
+        onStackChanged?.invoke(_routeState.value, route)
         navigationStackState.value += route
         _previousState.value = _routeState.value
         _routeState.value = route
@@ -125,6 +128,7 @@ class NavigationStack<T>(private val initialRoute: T) {
     }
 
     fun clearStack(initialRoute: T, animateWidth: Float = 0f) {
+        onStackChanged?.invoke(_routeState.value, initialRoute)
         navigationStackState.value = listOf(initialRoute)
         _previousState.value = _routeState.value
         _routeState.value = initialRoute

@@ -233,6 +233,9 @@ fun HomeScreen(viewModel: AppViewModel, navHost: NavigationStack<NavScreen>, out
                             Box (modifier = Modifier.fillMaxSize().weight(1f).padding(10.dp)) {
                                 key(sourceData) {
                                     ClassCard(it, meta, updates, false, gradeColors, square = scrollHomeScreen, preferReported = preferReported) {
+                                        if (meta?.grade == "P") {
+                                            platform.implementPluey(reverse = false)
+                                        }
                                         classForGradePage.value = it
                                         navHost.navigateTo(NavScreen.Grades, animateWidth = screenSize.width.toFloat())
                                     }
