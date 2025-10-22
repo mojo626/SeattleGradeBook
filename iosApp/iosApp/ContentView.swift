@@ -81,7 +81,7 @@ struct NavigationHolderView: View {
                             }
                         }
                         .toolbar {
-                            ToolbarItem(placement: .principal) {
+                            ToolbarItem(placement: .title) {
                                 let title = if route == NavScreen.grades {
                                     viewModel.currentClassBinding?.name ?? ""
                                 } else {
@@ -112,7 +112,7 @@ struct NavigationHolderView: View {
             if initialScreen == NavScreen.home {
                 inner
                     .toolbar {
-                        ToolbarItem(placement: .principal) {
+                        ToolbarItem(placement: .title) {
                             let text = Text(viewModel.displayNameBinding)
                             if #available(iOS 26.0, *) {
                                 text
@@ -130,18 +130,33 @@ struct NavigationHolderView: View {
                                 Image(systemName: "gearshape")
                             }
                         }
-                        ToolbarItem(placement: .topBarLeading) {
-                            UIImage(contentsOfFile: "\(filesDir())/pfp.jpeg").map { it in
-                                Image(uiImage: it)
+                        if let image = UIImage(contentsOfFile: "\(filesDir())/pfp.jpeg") {
+                            ToolbarItem(placement: .topBarLeading) {
+                                let image = Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .clipShape(Circle())
+                                if #available(iOS 26.0, *) {
+                                    image
+                                } else {
+                                    image
+                                        .frame(width: 48, height: 48)
+                                }
                             }
                         }
                     }
                     .toolbarTitleDisplayMode(.inline)
             } else {
                 inner
+            }
+        }
+        .onAppear {
+            if #available(iOS 26.0, *) {
+                
+            } else {
+                let appearance = UINavigationBarAppearance()
+                appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+                UINavigationBar.appearance().scrollEdgeAppearance = appearance
             }
         }
     }
@@ -170,10 +185,22 @@ struct ContentView: View {
                 if viewModel.loggedIn == true {
                     TabView {
                         Tab("Grades", systemImage: "graduationcap") {
-                            NavigationHolderView(initialScreen: NavScreen.home)
+                            let view = NavigationHolderView(initialScreen: NavScreen.home)
+                            if #available(iOS 26.0, *) {
+                                view
+                            } else {
+                                view
+                                    .toolbarBackground(.visible, for: .tabBar, .bottomBar, .navigationBar)
+                            }
                         }
                         Tab("More", systemImage: "lightbulb") {
-                            NavigationHolderView(initialScreen: NavScreen.more)
+                            let view = NavigationHolderView(initialScreen: NavScreen.more)
+                            if #available(iOS 26.0, *) {
+                                view
+                            } else {
+                                view
+                                    .toolbarBackground(.visible, for: .tabBar, .bottomBar, .navigationBar)
+                            }
                         }
                     }
                 } else {

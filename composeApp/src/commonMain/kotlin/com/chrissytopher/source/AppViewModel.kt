@@ -95,7 +95,7 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
             _scrollHomeScreen = dataStore.data.map { it[SCROLL_HOME_SCREEN_PREFERENCE] ?: true }.stateIn(viewModelScope)
             _implementPluey = dataStore.data.map { it[IMPLEMENT_PLUEY_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _updateAssignments = dataStore.data.map { it[ASSIGNMENT_UPDATES_PREFERENCE]?.let {
-                json.decodeFromString<HashMap<Int, Boolean>>(it)
+                runCatching { json.decodeFromString<HashMap<Int, Boolean>>(it) }.getOrNullAndThrow()
             } ?: hashMapOf() }.stateIn(viewModelScope)
             _hideMentorship = dataStore.data.map { it[HIDE_MENTORSHIP_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _preferReported = dataStore.data.map { it[PREFER_REPORTED_PREFERENCE] ?: true }.stateIn(viewModelScope)

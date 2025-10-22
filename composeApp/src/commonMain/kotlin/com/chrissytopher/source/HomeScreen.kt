@@ -132,7 +132,7 @@ fun HomeScreen(viewModel: AppViewModel, navigateTo: (NavScreen) -> Unit, outerPa
                     if (refreshingInProgress) 0.5f else 1.0f,
                     animationSpec = tween(200)
                 )
-                Row(Modifier.alpha(selectionDisabledAlpha)) {
+                Row(Modifier.alpha(selectionDisabledAlpha).padding(top = if (WithinApp.current) 0.dp else 4.dp)) {
                     for (quarter in quarters) {
                         BadgedBox(modifier = Modifier.weight(1f).padding(5.dp, 0.dp), badge = {
                             if (quarter == getCurrentQuarter() && updatedAssignments.isNotEmpty()) {

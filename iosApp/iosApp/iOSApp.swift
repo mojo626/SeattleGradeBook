@@ -53,6 +53,7 @@ func moveFile(sourcePath: String, destinationPath: String) {
     
     print("item exists, moving \(sourcePath) to \(destinationPath)")
     do {
+        try? fileManager.removeItem(atPath: destinationPath)
         try fileManager.moveItem(atPath: sourcePath, toPath: destinationPath)
     } catch {
         print("\(error)")
