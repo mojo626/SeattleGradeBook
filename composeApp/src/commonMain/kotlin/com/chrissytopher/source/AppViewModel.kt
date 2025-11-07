@@ -64,6 +64,7 @@ abstract class AppViewModel(val dataStore: DataStore<Preferences>, downloadDir: 
 private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     private lateinit var _hideMentorship: StateFlow<Boolean>
     private lateinit var _preferReported: StateFlow<Boolean>
+    lateinit var _platformNavigation: StateFlow<Boolean>
     private lateinit var _currentTheme: StateFlow<ThemeVariant>
     private lateinit var _gradeColors: StateFlow<GradeColors>
     private lateinit var _autoSync: StateFlow<Boolean>
@@ -94,6 +95,7 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
             _showMiddleName = dataStore.data.map { it[SHOW_MIDDLE_NAME_PREFERENCE] ?: false }.stateIn(viewModelScope)
             _scrollHomeScreen = dataStore.data.map { it[SCROLL_HOME_SCREEN_PREFERENCE] ?: true }.stateIn(viewModelScope)
             _implementPluey = dataStore.data.map { it[IMPLEMENT_PLUEY_PREFERENCE] ?: false }.stateIn(viewModelScope)
+            _platformNavigation = dataStore.data.map { it[PLATFORM_NAVIGATION_PREFERENCE] ?: true }.stateIn(viewModelScope)
             _updateAssignments = dataStore.data.map { it[ASSIGNMENT_UPDATES_PREFERENCE]?.let {
                 runCatching { json.decodeFromString<HashMap<Int, Boolean>>(it) }.getOrNullAndThrow()
             } ?: hashMapOf() }.stateIn(viewModelScope)
@@ -152,6 +154,8 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     fun showMiddleName() = _showMiddleName.collectAsState()
     @Composable
     fun implementPluey() = _implementPluey.collectAsState()
+    @Composable
+    fun platformNavigation() = _platformNavigation.collectAsState()
     @Composable
     fun scrollHomeScreen() = _scrollHomeScreen.collectAsState()
     @Composable
@@ -270,6 +274,12 @@ private lateinit var _updateAssignments: StateFlow<HashMap<Int, Boolean>>
     fun setHideMentorship(hideMentorship: Boolean) = viewModelScope.launch {
         dataStore.edit {
             it[HIDE_MENTORSHIP_PREFERENCE] = hideMentorship
+        }
+    }
+
+    fun setPlatformNavigation(platformNavigation: Boolean) = viewModelScope.launch {
+        dataStore.edit {
+            it[PLATFORM_NAVIGATION_PREFERENCE] = platformNavigation
         }
     }
 

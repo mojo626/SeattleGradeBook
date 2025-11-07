@@ -181,7 +181,7 @@ struct ContentView: View {
     
     var body: some View {
         if viewModel.initialized && viewModel.loggedIn != nil {
-            if #available(iOS 18.0, *) {
+            if #available(iOS 18.0, *), viewModel.platformNavigation {
                 if viewModel.loggedIn == true {
                     TabView {
                         Tab("Grades", systemImage: "graduationcap") {

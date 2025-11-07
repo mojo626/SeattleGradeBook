@@ -100,7 +100,6 @@ fun SettingsScreen(viewModel: AppViewModel, navigateBack: () -> Unit, navigateTo
             Switch(preferReported, onCheckedChange = { viewModel.setPreferReported(it) })
         }
 
-        val screenSize = getScreenSize()
         Spacer(Modifier.height(4.dp))
         Text("Customization", modifier = Modifier, style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary))
         Row(Modifier.fillMaxWidth().padding(0.dp, 5.dp).clip(RoundedCornerShape(15.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable {
@@ -108,6 +107,11 @@ fun SettingsScreen(viewModel: AppViewModel, navigateBack: () -> Unit, navigateTo
         }.padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Colors and Themes", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
             Icon(Icons.Outlined.ChevronRight, "Open")
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(0.dp, 5.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(15.dp)).padding(10.dp, 5.dp)) {
+            val platformNavigation by viewModel.platformNavigation()
+            Text("Platform Navigation", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium))
+            Switch(platformNavigation, onCheckedChange = { viewModel.setPlatformNavigation(it) })
         }
 
         Spacer(Modifier.height(4.dp))

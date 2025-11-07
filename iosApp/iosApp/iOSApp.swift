@@ -73,6 +73,7 @@ class ViewModelWrapper: ObservableObject {
     @Published var loggedIn: Bool? = nil
     @Published var currentClassBinding: Class? = nil
     @Published var implementPluey = false
+    @Published var platformNavigation = true
     @Published var gpaTypeSelectionBinding = 0 {
         didSet {
             self.viewModel.gpaTypeSelectionState.setValue(gpaTypeSelectionBinding)
@@ -121,6 +122,14 @@ class ViewModelWrapper: ObservableObject {
                             .collect(collector:  FlowCollector<KotlinBoolean> { implementPluey in
                                 await MainActor.run {
                                     self.implementPluey = implementPluey.boolValue
+                                }
+                            })
+                    }
+                    Task {
+                        try? await self.viewModel._platformNavigation
+                            .collect(collector:  FlowCollector<KotlinBoolean> { platformNavigation in
+                                await MainActor.run {
+                                    self.platformNavigation = platformNavigation.boolValue
                                 }
                             })
                     }
